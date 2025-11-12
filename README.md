@@ -25,6 +25,8 @@ You're the tour guide, and Claude is the tourist who keeps asking for directions
 
 **No external dependencies. No databases. Pure bash + hooks.**
 
+**⭐ If SUPER CLAUDE helps you, please star the repo!**
+
 ---
 
 ## Features
@@ -250,13 +252,7 @@ Contributions welcome! Areas for improvement:
 2. Create a feature branch
 3. Submit a pull request
 
----
 
-## License
-
-MIT License - See [LICENSE](LICENSE) file
-
----
 
 ## Acknowledgments
 
@@ -273,8 +269,7 @@ MIT License - See [LICENSE](LICENSE) file
 - GitHub: [@arpitnath](https://github.com/arpitnath)
 - LinkedIn: [@Arpit](https://www.linkedin.com/in/arpit-nath-38280a173/)
 
----
 
-**⭐ If SUPER CLAUDE helps you, please star the repo!**
+## License
 
----
+[MIT License](https://opensource.org/licenses/MIT) - Copyright (c) 2025 Arpit Nath
