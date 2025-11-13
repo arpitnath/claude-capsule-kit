@@ -205,8 +205,66 @@ if [ ! -f "$INSTALL_DIR/.claude/settings.local.json" ]; then
 EOF
   echo "✓ Created settings.local.json"
 else
-  echo "⚠️  settings.local.json exists, skipping..."
-  echo "   Manual merge may be needed for hooks configuration"
+  echo "✓ settings.local.json exists, merging hooks..."
+
+  # Smart merge: Add missing hooks without overwriting existing settings
+  python3 << 'PYTHON_MERGE'
+import json
+import sys
+
+# Read existing settings
+with open('.claude/settings.local.json', 'r') as f:
+    existing = json.load(f)
+
+# Define required hooks from v1.1.0
+required_hooks = {
+    "SessionStart": [{
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": "bash .claude/hooks/session-start.sh"}]
+    }],
+    "UserPromptSubmit": [{
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": "bash .claude/hooks/pre-task-analysis.sh"}]
+    }],
+    "PostToolUse": [{
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": "bash .claude/hooks/post-tool-use.sh"}]
+    }],
+    "PreToolUse": [{
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": "bash .claude/hooks/pre-tool-use.sh"}]
+    }],
+    "Stop": [{
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": "bash .claude/hooks/stop.sh"}]
+    }],
+    "SessionEnd": [{
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": "bash .claude/hooks/session-end.sh"}]
+    }]
+}
+
+# Ensure hooks object exists
+if 'hooks' not in existing:
+    existing['hooks'] = {}
+
+# Merge: Add missing hooks, preserve existing
+merged = False
+for hook_name, hook_config in required_hooks.items():
+    if hook_name not in existing['hooks']:
+        existing['hooks'][hook_name] = hook_config
+        merged = True
+        print(f"  + Added {hook_name} hook")
+
+# Write back merged settings
+with open('.claude/settings.local.json', 'w') as f:
+    json.dump(existing, f, indent=2)
+
+if merged:
+    print("  ✓ Hooks merged successfully")
+else:
+    print("  ✓ All hooks already configured")
+PYTHON_MERGE
 fi
 echo ""
 
