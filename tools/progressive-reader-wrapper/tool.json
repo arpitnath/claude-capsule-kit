@@ -1,0 +1,54 @@
+{
+  "name": "progressive-reader",
+  "version": "2.0.0",
+  "description": "Read large files efficiently using semantic chunking with tree-sitter AST parsing",
+  "type": "bash",
+  "entry": "progressive-reader.sh",
+  "author": "Arpit Nath",
+  "keywords": ["progressive", "chunking", "tree-sitter", "ast", "semantic", "toon", "large-files"],
+  "usage": {
+    "command": "progressive-reader",
+    "flags": {
+      "--path": "File path to read (required)",
+      "--chunk": "Specific chunk number to read (0-indexed)",
+      "--continue-file": "Path to continuation token file (TOON format)",
+      "--max-tokens": "Maximum tokens per chunk (default: 2000)",
+      "--list": "List all chunks without content",
+      "--version": "Show version",
+      "--help": "Show help message"
+    },
+    "examples": [
+      {
+        "description": "Read first chunk of a file",
+        "command": "progressive-reader --path src/auth.service.ts"
+      },
+      {
+        "description": "Read specific chunk",
+        "command": "progressive-reader --path src/auth.service.ts --chunk 2"
+      },
+      {
+        "description": "Continue from previous read",
+        "command": "progressive-reader --continue-file /tmp/continue.toon"
+      },
+      {
+        "description": "List all chunks (lightweight preview)",
+        "command": "progressive-reader --path src/auth.service.ts --list"
+      }
+    ]
+  },
+  "outputs": {
+    "format": "text with TOON continuation token",
+    "location": "/tmp/continue.toon",
+    "schema": {
+      "Output": "Formatted code chunk with line numbers and metadata",
+      "Token": "CONTINUE:file=... CONTINUE:offset=... CONTINUE:language=... ---"
+    }
+  },
+  "permissions": {
+    "read": ["**/*"],
+    "write": ["/tmp/continue.toon"],
+    "network": false
+  },
+  "languages": ["typescript", "javascript", "python", "go"],
+  "notes": "Requires progressive-reader binary to be installed at ~/.claude/bin/progressive-reader"
+}

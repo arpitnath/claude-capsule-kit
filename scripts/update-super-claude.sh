@@ -5,6 +5,14 @@
 
 set -euo pipefail
 
+# Parse flags
+DEV_MODE=false
+if [ "${1:-}" = "--dev" ]; then
+  DEV_MODE=true
+  echo "🔧 Development mode enabled - will update regardless of version"
+  echo ""
+fi
+
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🔄 Super Claude Kit Update Check"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -39,11 +47,13 @@ echo "Latest version:  $LATEST_VERSION"
 echo ""
 
 # Compare versions
-if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ]; then
+if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ] && [ "$DEV_MODE" = false ]; then
   echo "✅ Already on latest version"
   echo ""
   echo "Current version: $CURRENT_VERSION"
   echo "No update needed"
+  echo ""
+  echo "💡 Tip: Use --dev flag to force update for testing/development"
   exit 0
 fi
 
@@ -98,11 +108,28 @@ echo ""
 
 # Download and run installer
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "⬇️  Downloading and installing update..."
+if [ "$DEV_MODE" = true ]; then
+  echo "🔧 Installing from local repository..."
+else
+  echo "⬇️  Downloading and installing update..."
+fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install | bash
+if [ "$DEV_MODE" = true ]; then
+  # Dev mode: Use local install script
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
+  if [ -f "$SCRIPT_DIR/install" ]; then
+    bash "$SCRIPT_DIR/install"
+  else
+    echo "❌ Error: Local install script not found at $SCRIPT_DIR/install"
+    echo "   Make sure you're running from the super-claude-kit repository"
+    exit 1
+  fi
+else
+  # Normal mode: Download from GitHub
+  curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install | bash
+fi
 
 echo ""
 

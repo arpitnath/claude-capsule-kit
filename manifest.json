@@ -47,7 +47,8 @@
       "query-deps",
       "impact-analysis",
       "find-circular",
-      "find-dead-code"
+      "find-dead-code",
+      "progressive-reader-wrapper"
     ],
     "skills": [
       "context-saver",

@@ -3,8 +3,20 @@
 # Super Claude Kit Session Start Hook
 # Runs at session start to load context and restore memory
 
+# Debug mode - set via environment variable
+DEBUG_MODE="${CLAUDE_DEBUG_HOOKS:-false}"
+DEBUG_LOG=".claude/session-start-debug.log"
+
+if [ "$DEBUG_MODE" = "true" ]; then
+  echo "=== SESSION START DEBUG LOG ===" > "$DEBUG_LOG"
+  echo "Timestamp: $(date)" >> "$DEBUG_LOG"
+  echo "Working directory: $(pwd)" >> "$DEBUG_LOG"
+  echo "" >> "$DEBUG_LOG"
+fi
+
 # Persist previous session (if any) before starting new one
 if [ -f ".claude/session_start.txt" ]; then
+  [ "$DEBUG_MODE" = "true" ] && echo "Running persist-capsule.sh..." >> "$DEBUG_LOG"
   ./.claude/hooks/persist-capsule.sh 2>/dev/null
 fi
 
@@ -132,4 +144,38 @@ if [ -f ".claude/.super-claude-version" ]; then
 fi
 
 # Generate initial context capsule
-./.claude/hooks/update-capsule.sh 2>/dev/null
+if [ "$DEBUG_MODE" = "true" ]; then
+  echo "Running update-capsule.sh..." >> "$DEBUG_LOG"
+  ./.claude/hooks/update-capsule.sh 2>&1 | tee -a "$DEBUG_LOG"
+else
+  ./.claude/hooks/update-capsule.sh 2>/dev/null
+fi
+
+# Display capsule at session start (ensures context is visible to Claude)
+if [ "$DEBUG_MODE" = "true" ]; then
+  echo "" >> "$DEBUG_LOG"
+  echo "Running inject-capsule.sh..." >> "$DEBUG_LOG"
+  echo "--- CAPSULE OUTPUT START ---" >> "$DEBUG_LOG"
+  ./.claude/hooks/inject-capsule.sh 2>&1 | tee -a "$DEBUG_LOG"
+  echo "--- CAPSULE OUTPUT END ---" >> "$DEBUG_LOG"
+  echo "" >> "$DEBUG_LOG"
+  echo "DEBUG: Session start hook completed at $(date)" >> "$DEBUG_LOG"
+  echo "DEBUG: Check this file for full execution trace" >> "$DEBUG_LOG"
+
+  # Also output a marker that's visible in the session
+  echo ""
+  echo "🔧 DEBUG MODE: Session start completed - check .claude/session-start-debug.log"
+  echo ""
+else
+  ./.claude/hooks/inject-capsule.sh 2>/dev/null
+fi
+
+# Output JSON to make activation message visible to user
+cat << 'EOF'
+{
+  "hookSpecificOutput": {
+    "systemMessage": "🚀 Super Claude Kit v2.0 Active - Context Loaded",
+    "additionalContext": "Session initialized with capsule, git state, and tool access"
+  }
+}
+EOF
