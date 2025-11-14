@@ -6,7 +6,8 @@
     "lib": [
       "tool-runner.sh",
       "sandbox-validator.sh",
-      "audit-logger.sh"
+      "audit-logger.sh",
+      "toon-parser.sh"
     ],
     "hooks": [
       "check-refresh-needed.sh",
