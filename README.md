@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Compatible-blue.svg)](https://claude.ai)
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/arpitnath/super-claude-kit)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/arpitnath/super-claude-kit)
 
 ---
 

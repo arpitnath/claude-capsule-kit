@@ -11,7 +11,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 GITHUB_REPO="arpitnath/super-claude-kit"
-VERSION="${VERSION:-v1.0.1}"
+VERSION="${VERSION:-v1.0.0}"
 GITHUB_RAW="https://raw.githubusercontent.com/$GITHUB_REPO/$VERSION"
 
 INSTALL_DIR="$(pwd)"

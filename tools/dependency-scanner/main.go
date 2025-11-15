@@ -29,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	if *versionFlag {
-		fmt.Println("Super Claude Kit Dependency Scanner v1.0.1")
+		fmt.Println("Super Claude Kit Dependency Scanner v1.0.0")
 		fmt.Println("Built with tree-sitter for accurate multi-language parsing")
 		os.Exit(0)
 	}
