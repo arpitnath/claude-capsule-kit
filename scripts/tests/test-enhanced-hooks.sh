@@ -175,7 +175,7 @@ fi
 print_test "10" "Pre-edit-analysis hook can analyze file impact"
 
 # Create a mock dependency graph for testing
-TEMP_DEP_GRAPH="$HOME/.claude/dep-graph.json"
+TEMP_DEP_GRAPH="$HOME/.claude/dep-graph.toon"
 TEMP_DIR_CREATED=false
 
 if [ ! -d "$HOME/.claude" ]; then
@@ -184,14 +184,12 @@ if [ ! -d "$HOME/.claude" ]; then
 fi
 
 cat > "$TEMP_DEP_GRAPH" << 'EOF'
-{
-  "Files": {
-    "/tmp/test-file.ts": {
-      "Path": "/tmp/test-file.ts",
-      "ImportedBy": ["/tmp/other-file.ts", "/tmp/another-file.ts"]
-    }
-  }
-}
+FILE:/tmp/test-file.ts
+LANG:typescript
+IMPORTS:
+EXPORTS:
+IMPORTEDBY:/tmp/other-file.ts,/tmp/another-file.ts
+---
 EOF
 
 OUTPUT=$(./hooks/pre-edit-analysis.sh "/tmp/test-file.ts" 2>/dev/null || true)

@@ -259,10 +259,10 @@ Claude: [Runs: ./.claude/tools/find-dead-code.sh]
 1. **SessionStart**: Scanner runs automatically
    - Parses all source files into AST
    - Builds dependency graph
-   - Saves to `.claude/dep-graph.json`
+   - Saves to `.claude/dep-graph.toon`
 
 2. **During Session**: Claude uses query tools
-   - Read `.claude/dep-graph.json`
+   - Read `.claude/dep-graph.toon`
    - Run bash scripts to query specific info
    - Provide insights before making changes
 

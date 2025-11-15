@@ -161,7 +161,7 @@ if [[ -f "$SCANNER_BIN" ]]; then
     echo "export const foo = 'bar';" > "$TEST_DIR/src/test.ts"
 
     # Run scanner with timeout
-    if timeout 5 "$SCANNER_BIN" --path "$TEST_DIR" --output "$HOME/.claude/dep-graph.json" >/dev/null 2>&1; then
+    if timeout 5 "$SCANNER_BIN" --path "$TEST_DIR" --output "$HOME/.claude/dep-graph.toon" >/dev/null 2>&1; then
         # Run find-circular with timeout
         if OUTPUT=$(timeout 3 run_tool find-circular 2>&1); then
             if [[ "$OUTPUT" == *"No circular dependencies"* ]] || [[ "$OUTPUT" == *"circular"* ]] || [[ "$OUTPUT" == *"Dependency graph not built"* ]]; then

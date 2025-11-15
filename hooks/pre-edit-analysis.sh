@@ -10,7 +10,7 @@ if [ -z "$FILE_PATH" ]; then
     exit 0
 fi
 
-DEP_GRAPH="$HOME/.claude/dep-graph.json"
+DEP_GRAPH="$HOME/.claude/dep-graph.toon"
 
 if [ ! -f "$DEP_GRAPH" ]; then
     TOOL_RUNNER_PATH="$HOME/.claude/lib/tool-runner.sh"
@@ -27,20 +27,27 @@ if [ ! -f "$DEP_GRAPH" ]; then
     exit 0
 fi
 
-FILE_IN_GRAPH=$(jq -r --arg path "$FILE_PATH" '.Files[$path] // empty' "$DEP_GRAPH" 2>/dev/null || true)
-
-if [ -z "$FILE_IN_GRAPH" ]; then
+# Source TOON parser
+TOON_PARSER="$HOME/.claude/lib/toon-parser.sh"
+if [ -f "$TOON_PARSER" ]; then
+    source "$TOON_PARSER"
+else
     exit 0
 fi
 
-IMPORTER_COUNT=$(jq -r --arg path "$FILE_PATH" '.Files[$path].ImportedBy | length' "$DEP_GRAPH" 2>/dev/null || echo "0")
+# Check if file exists in graph
+if ! toon_file_exists "$DEP_GRAPH" "$FILE_PATH"; then
+    exit 0
+fi
+
+IMPORTER_COUNT=$(toon_count_importers "$DEP_GRAPH" "$FILE_PATH")
 
 if [ "$IMPORTER_COUNT" -gt 0 ]; then
     echo ""
     echo "Impact Analysis for: $(basename "$FILE_PATH")"
     echo "   Files that import this: $IMPORTER_COUNT"
 
-    IMPORTERS=$(jq -r --arg path "$FILE_PATH" '.Files[$path].ImportedBy[:5][]' "$DEP_GRAPH" 2>/dev/null || true)
+    IMPORTERS=$(toon_get_importers "$DEP_GRAPH" "$FILE_PATH" | head -5)
 
     if [ -n "$IMPORTERS" ]; then
         echo "   Affected files:"

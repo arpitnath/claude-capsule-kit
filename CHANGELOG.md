@@ -54,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated `manifest.json` to include new `tools` component type
 - Enhanced install script to install dependency tools and binaries
 - SessionStart hook now builds dependency graph automatically
-- Output format: dependency graph saved to `.claude/dep-graph.json`
+- Output format: dependency graph saved to `.claude/dep-graph.toon`
 
 ### Upgrade
 

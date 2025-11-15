@@ -246,7 +246,7 @@ rm .claude/last_refresh_state.txt
 ls -la ~/.claude/bin/dependency-scanner
 
 # Rebuild manually
-~/.claude/bin/dependency-scanner --path . --output .claude/dep-graph.json
+~/.claude/bin/dependency-scanner --path . --output .claude/dep-graph.toon
 ```
 
 ### Debug Mode

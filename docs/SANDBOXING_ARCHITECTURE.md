@@ -43,7 +43,7 @@
       "~/.claude/*.json"   // Can read Claude config
     ],
     "write": [
-      "~/.claude/dep-graph.json",  // Can write dependency graph
+      "~/.claude/dep-graph.toon",  // Can write dependency graph
       "/tmp/*"                      // Can write to temp
     ],
     "network": {

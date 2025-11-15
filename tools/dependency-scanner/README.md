@@ -10,7 +10,7 @@ Part of **Super Claude Kit v2.0**.
 - 🔍 **Dependency tracking**: Imports, exports, and reverse dependencies
 - ⚠️ **Circular dependency detection**: Uses Tarjan's algorithm
 - 🗑️ **Dead code detection**: Finds unused files
-- 💾 **JSON output**: Easy to query and integrate
+- 💾 **TOON/JSON output**: Easy to query and integrate
 - ⚡ **Fast**: Scans 1000+ files in seconds
 
 ## Installation
@@ -50,14 +50,14 @@ make install
 ### Basic Scan
 
 ```bash
-dependency-scanner --path /path/to/project --output dep-graph.json
+dependency-scanner --path /path/to/project --output dep-graph.toon
 ```
 
 ### Options
 
 ```
 --path string      Path to scan (default: ".")
---output string    Output JSON file (default: "dep-graph.json")
+--output string    Output file (default: "dep-graph.toon", .json for JSON format)
 --verbose         Enable verbose logging
 --version         Show version
 ```
@@ -73,10 +73,31 @@ $ dependency-scanner --path ~/projects/my-app
    ✅ No circular dependencies
    🗑️  Found 3 potentially dead files
    ⏱️  Completed in 1.23s
-💾 Saved to: dep-graph.json
+💾 Saved to: dep-graph.toon
 ```
 
 ## Output Format
+
+The scanner supports two output formats:
+
+### TOON Format (default)
+
+Optimized for bash parsing with grep/awk:
+```
+FILE:/absolute/path/to/file.ts
+LANG:typescript
+IMPORTS:./utils:5,@/lib/api:1
+EXPORTS:authenticate:function:10,User:class:25
+IMPORTEDBY:/path/to/importer.ts
+---
+CIRCULAR:file1>file2>file3>file1
+---
+DEADCODE:/unused/file.ts
+---
+META:lastUpdated=2025-11-15T17:52:00Z
+```
+
+### JSON Format (use .json extension)
 
 The scanner generates a JSON file with the following structure:
 
@@ -126,7 +147,7 @@ This scanner is automatically run by Super Claude Kit on session start:
 # In .claude/hooks/session-start.sh
 dependency-scanner \
   --path "$(pwd)" \
-  --output .claude/dep-graph.json
+  --output .claude/dep-graph.toon
 ```
 
 Claude then uses query tools to analyze the graph:
