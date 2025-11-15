@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.2] - 2025-11-15
+
+### Fixed
+
+- Broken dependency analysis tools due to JSON/TOON format mismatch
+- All dependency tools now work correctly (query-deps, impact-analysis, find-circular, find-dead-code)
+- Added relative path support to dependency query tools
+
+### Changed
+
+- TOON format is now the default output (71-74% token reduction vs JSON)
+- Simplified lib/toon-parser.sh - removed Python dependency, uses grep/awk only
+- All .json references updated to .toon across hooks, scripts, and documentation
+- Backwards compatible: .json extension still works for JSON format
+
+### Technical Details
+
+- Restored original grep/awk-based TOON parser (simpler, faster, no Python)
+- Added `_resolve_path()` and `_find_file_in_graph()` for relative path support
+- Updated 10 files to use .toon extension by default
+- Net code reduction: -79 lines (168 deletions, 89 insertions)
+
+### Testing
+
+- Verified in super-claude-kit: 15 files, 0.05s scan time
+- Verified in blumeloop: 1,228 files, 2.97s scan time
+- All 4 dependency tools tested with both absolute and relative paths
+
+---
+
 ## [2.0.1] - 2025-11-15
 
 ### Fixed
