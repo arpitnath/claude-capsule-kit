@@ -173,7 +173,7 @@ fi
 # Include capsule in additionalContext so Claude receives it
 if command -v jq > /dev/null 2>&1; then
   jq -n \
-    --arg msg "🚀 Super Claude Kit  Active - Context Loaded" \
+    --arg msg "Super Claude Kit - Context and tools loaded" \
     --arg context "$CAPSULE_OUTPUT" \
     '{
       systemMessage: $msg,
@@ -186,7 +186,7 @@ else
   # Fallback without jq (less safe but works)
   cat << EOF
 {
-  "systemMessage": "🚀 Super Claude Kit  Active - Context Loaded",
+  "systemMessage": "Super Claude Kit - Context and tools loaded",
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
     "additionalContext": "Session initialized with capsule, git state, and tool access"

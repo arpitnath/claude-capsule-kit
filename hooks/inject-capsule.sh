@@ -26,9 +26,7 @@ fi
 
 # Capsule changed or first injection - display it
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📦 CONTEXT CAPSULE (Updated)"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "<context-capsule updated=\"true\">"
 
 # Parse and display capsule sections in human-readable format
 while IFS= read -r line; do
@@ -42,22 +40,22 @@ while IFS= read -r line; do
 
     case "$SECTION" in
       "GIT")
-        echo "🌿 Git State:"
+        echo "<git-state>"
         ;;
       "FILES")
-        echo "📁 Files in Context:"
+        echo "<files-in-context>"
         ;;
       "TASK")
-        echo "✅ Current Tasks:"
+        echo "<current-tasks>"
         ;;
       "SUBAGENT")
-        echo "🤖 Sub-Agent Results:"
+        echo "<subagent-results>"
         ;;
       "DISCOVERY")
-        echo "💡 Session Discoveries:"
+        echo "<session-discoveries>"
         ;;
       "META")
-        echo "⏱️  Session Info:"
+        echo "<session-meta>"
         ;;
     esac
     continue
@@ -78,10 +76,10 @@ while IFS= read -r line; do
           DIRTY=$(echo "$DATA" | cut -d',' -f3)
           AHEAD=$(echo "$DATA" | cut -d',' -f4)
           BEHIND=$(echo "$DATA" | cut -d',' -f5)
-          echo "   Branch: $BRANCH (HEAD: $HEAD)"
-          [ "$DIRTY" != "0" ] && echo "   ⚠️  $DIRTY dirty file(s)"
-          [ "$AHEAD" != "0" ] && echo "   ↑ $AHEAD commit(s) ahead"
-          [ "$BEHIND" != "0" ] && echo "   ↓ $BEHIND commit(s) behind"
+          echo "  <branch>$BRANCH</branch> <head>$HEAD</head>"
+          [ "$DIRTY" != "0" ] && echo "  <dirty-files count=\"$DIRTY\"/>"
+          [ "$AHEAD" != "0" ] && echo "  <ahead count=\"$AHEAD\"/>"
+          [ "$BEHIND" != "0" ] && echo "  <behind count=\"$BEHIND\"/>"
           ;;
         "FILES")
           # path,action,age_seconds
@@ -98,24 +96,14 @@ while IFS= read -r line; do
             AGE_STR="$((AGE / 3600))h ago"
           fi
 
-          echo "   • $PATH_NAME ($ACTION, $AGE_STR)"
+          echo "  <file path=\"$PATH_NAME\" action=\"$ACTION\" age=\"$AGE_STR\"/>"
           ;;
         "TASK")
           # status,content
           STATUS=$(echo "$DATA" | cut -d',' -f1)
           CONTENT=$(echo "$DATA" | cut -d',' -f2-)
 
-          case "$STATUS" in
-            "in_progress")
-              echo "   🔄 [IN PROGRESS] $CONTENT"
-              ;;
-            "pending")
-              echo "   ⏳ [PENDING] $CONTENT"
-              ;;
-            "completed")
-              echo "   ✅ [DONE] $CONTENT"
-              ;;
-          esac
+          echo "  <task status=\"$STATUS\">$CONTENT</task>"
           ;;
         "SUBAGENT")
           # age_seconds,type,summary
@@ -132,7 +120,7 @@ while IFS= read -r line; do
             AGE_STR="$((AGE / 3600))h ago"
           fi
 
-          echo "   • [$TYPE] $SUMMARY ($AGE_STR)"
+          echo "  <subagent type=\"$TYPE\" age=\"$AGE_STR\">$SUMMARY</subagent>"
           ;;
         "DISCOVERY")
           # age_seconds,category,content
@@ -149,18 +137,7 @@ while IFS= read -r line; do
             AGE_STR="$((AGE / 3600))h ago"
           fi
 
-          # Category emoji
-          case "$CATEGORY" in
-            "pattern") CAT_ICON="🔍" ;;
-            "insight") CAT_ICON="💭" ;;
-            "decision") CAT_ICON="🎯" ;;
-            "architecture") CAT_ICON="🏗️" ;;
-            "bug") CAT_ICON="🐛" ;;
-            "optimization") CAT_ICON="⚡" ;;
-            *) CAT_ICON="📝" ;;
-          esac
-
-          echo "   $CAT_ICON [$CATEGORY] $CONTENT ($AGE_STR)"
+          echo "  <discovery category=\"$CATEGORY\" age=\"$AGE_STR\">$CONTENT</discovery>"
           ;;
         "META")
           # messages,duration_seconds,updated_at
@@ -177,17 +154,16 @@ while IFS= read -r line; do
             DUR_STR="$((DURATION / 3600))h $((DURATION % 3600 / 60))m"
           fi
 
-          echo "   Messages: $MESSAGES | Session: $DUR_STR"
+          echo "  <messages>$MESSAGES</messages> <duration>$DUR_STR</duration>"
           ;;
       esac
     fi
   fi
 done < "$CAPSULE_FILE"
 
+echo "</context-capsule>"
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "💡 Capsule contains current session state for context efficiency"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "<reminder>Capsule contains session state - check before redundant operations</reminder>"
 echo ""
 
 # Save hash for next comparison

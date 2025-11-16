@@ -1,59 +1,235 @@
-# Super Claude Kit
+<p align="center">
+  <!-- TODO: Add logo -->
+  <!-- <img src="./.github/super-claude-kit-logo.png" alt="Super Claude Kit" width="200" /> -->
+  <h1>Super Claude Kit</h1>
+</p>
 
-> Persistent memory and intelligent context management for Claude Code
+<p align="center">
+  <code>bash <(curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install)</code>
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Claude Code](https://img.shields.io/badge/Claude_Code-Compatible-blue.svg)](https://claude.ai)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/arpitnath/super-claude-kit)
+<p align="center">
+  <strong>Super Claude Kit</strong> adds persistent memory to Claude Code.
+  <br/>
+  <br/>
+  Claude Code forgets everything between sessions. Super Claude Kit remembers.
+  <br/>
+  Files, tasks, discoveries — all restored instantly.
+</p>
+
+<p align="center">
+  <!-- TODO: Add hero GIF showing capsule restore -->
+  <!-- <img src="./.github/capsule-restore.gif" alt="Context Capsule Restore" width="80%" /> -->
+  <em>(Hero GIF: Context Capsule Restore - Coming Soon)</em>
+</p>
+
+<p align="center">
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://claude.ai"><img src="https://img.shields.io/badge/Claude_Code-Compatible-blue.svg" alt="Claude Code"></a>
+  <a href="https://github.com/arpitnath/super-claude-kit"><img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version"></a>
+</p>
 
 ---
 
-## Overview
+## Quickstart
 
-Super Claude Kit transforms Claude Code from a stateless assistant into an intelligent development partner with persistent memory, context awareness, and dependency understanding. Built entirely with bash hooks and lightweight tools, it requires no external dependencies or databases.
+### Installing Super Claude Kit
 
-### Key Capabilities
+Run the one-line installer:
 
-- **Persistent Memory** - 24-hour context window preserving files, tasks, and discoveries across sessions
-- **Dependency Analysis** - Multi-language dependency graph with impact analysis and circular dependency detection
-- **Smart Context Management** - Automatic session state tracking with 52% token reduction using TOON format
-- **Quality Automation** - 95% automated logging with intelligent refresh heuristics
-- **Progressive Reading** - Semantic chunking for efficient large file exploration
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install)
+```
+
+That's it! Restart Claude Code and you'll see the context capsule on every session.
+
+<details>
+<summary>Manual installation (advanced)</summary>
+
+```bash
+# Clone the repository
+git clone https://github.com/arpitnath/super-claude-kit.git
+cd super-claude-kit
+
+# Run the installer
+bash install
+```
+
+The installer will:
+- Install hooks to `.claude/hooks/`
+- Build Go tools (dependency-scanner, progressive-reader)
+- Configure `~/.claude/settings.local.json`
+- Auto-install Go 1.23+ if not present
+
+</details>
+
+### What you get immediately
+
+<p align="center">
+  <!-- TODO: Add session resume GIF -->
+  <!-- <img src="./.github/session-resume.gif" alt="Session Resume" width="80%" /> -->
+  <em>(GIF: Session Resume - Coming Soon)</em>
+</p>
+
+**After installation, Claude Code will:**
+- 🧠 **Remember files** you've accessed (no re-reads)
+- 📦 **Restore context** between sessions (up to 24 hours)
+- ✅ **Track tasks** across restarts
+- 🔍 **Log discoveries** as you work
+- 🔗 **Understand dependencies** in your codebase
+
+### How it works
+
+Super Claude Kit uses **hooks** (SessionStart, UserPromptSubmit) to:
+
+1. **Capture context** as you work (file access, tasks, git state)
+2. **Store in capsule** (`.claude/capsule.json`)
+3. **Restore on restart** (automatic, zero manual input)
+
+No configuration needed. It just works.
 
 ---
 
 ## Features
 
-### Context Persistence
+### 🧠 Persistent Memory
 
-Maintains session state across messages and sessions, including:
+<p align="center">
+  <!-- TODO: Add file re-read prevention GIF -->
+  <!-- <img src="./.github/file-reread-prevention.gif" alt="File Re-read Prevention" width="70%" /> -->
+  <em>(GIF: File Re-read Prevention - Coming Soon)</em>
+</p>
 
-- Files accessed and modified
-- Active tasks and completion status
-- Sub-agent execution results
-- Architectural discoveries
-- Git repository state
+**Stop wasting tokens on re-reads.**
 
-### Dependency Graph Analysis
+Vanilla Claude Code re-reads files on every question. Super Claude Kit tracks what's been read and references from memory.
 
-Multi-language dependency scanner supporting TypeScript, JavaScript, Python, and Go:
+**Result:** ~50% token savings on multi-turn conversations.
 
-- **Import/Export Mapping** - Complete dependency relationships
-- **Impact Analysis** - Understand change ripple effects before refactoring
-- **Circular Dependency Detection** - Tarjan's algorithm for cycle detection
-- **Dead Code Identification** - Find unused files and modules
-- **Performance** - 1000 files scanned in <5 seconds
+---
 
-### Intelligent Automation
+### 📦 Context Capsule
 
-Quality improvement hooks that work automatically:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📦 CONTEXT CAPSULE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-- **95% Auto-logging** - File operations and tool usage tracked automatically
-- **Smart Refresh** - Context updates only when state changes (60-70% reduction)
-- **Proactive Warnings** - Prevent redundant operations and token waste
-- **Session Persistence** - Auto-save on exit, auto-restore on start
+🌿 Git State:
+   Branch: feat/oauth (2 commits ahead)
 
-### Specialized Sub-Agents
+📁 Files in Context:
+   • auth/OAuthController.ts (read 2h ago)
+   • config/google.ts (edited 1h ago)
+   • routes/auth.ts (read 2h ago)
+
+🔍 Discoveries:
+   • Google OAuth requires state parameter
+   • Token stored in httpOnly cookie
+
+✅ Current Tasks:
+   ⚡ Implementing OAuth callback handler
+   ✓ Controller setup complete
+   ✓ Google provider config added
+
+💡 Previous session: 2 hours ago
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**See exactly what Claude remembers.** Every session start shows your capsule with:
+- Git branch and commit status
+- Files accessed with timestamps
+- Discoveries logged during work
+- Active and completed tasks
+- Time since last session
+
+The capsule uses TOON format for **52% token reduction** compared to JSON.
+
+---
+
+### 🔗 Dependency Intelligence
+
+<p align="center">
+  <!-- TODO: Add dependency graph GIF -->
+  <!-- <img src="./.github/dependency-graph.gif" alt="Dependency Graph" width="70%" /> -->
+  <em>(GIF: Dependency Graph - Coming Soon)</em>
+</p>
+
+**Know what breaks before you break it.**
+
+Built-in dependency scanner analyzes your codebase:
+
+#### Available Commands
+
+```bash
+# Query what files import this file
+.claude/tools/query-deps/query-deps.sh src/auth.ts
+
+# Analyze impact of changing a file
+.claude/tools/impact-analysis/impact-analysis.sh src/database.ts
+
+# Find circular dependencies
+.claude/tools/find-circular/find-circular.sh
+
+# Identify unused files
+.claude/tools/find-dead-code/find-dead-code.sh
+```
+
+#### Performance
+
+- **1,000 files** scanned in <5 seconds
+- **10,000 files** scanned in <30 seconds
+- Supports TypeScript, JavaScript, Python, Go
+
+**No other AI coding tool has this.**
+
+---
+
+### 🛠️ Built-in Tools
+
+#### Progressive Reader
+
+Read large files (>50KB) in semantic chunks using tree-sitter AST parsing.
+
+```bash
+# Read first chunk of a large file
+progressive-reader --path src/large-file.ts
+
+# List all chunks without content (preview)
+progressive-reader --list --path src/large-file.ts
+
+# Read specific chunk by index
+progressive-reader --chunk 2 --path src/large-file.ts
+
+# Continue from previous read (uses TOON token)
+progressive-reader --continue-file /tmp/continue.toon
+```
+
+**Supported languages:** TypeScript, JavaScript, Python, Go
+
+**When to use:**
+- Files > 50KB that would consume too much context
+- Reading sub-agent outputs progressively
+- Large codebase exploration with minimal context usage
+
+#### Dependency Scanner
+
+Analyzes code structure and relationships using tree-sitter AST parsing.
+
+```bash
+# Build dependency graph
+~/.claude/bin/dependency-scanner --path . --output .claude/dep-graph.toon
+```
+
+**Features:**
+- Import/export tracking
+- Circular dependency detection (Tarjan's algorithm)
+- Impact analysis
+- Dead code identification
+
+---
+
+### 🤖 Specialized Sub-Agents
 
 Production-safe, read-only agents for common development tasks:
 
@@ -62,117 +238,76 @@ Production-safe, read-only agents for common development tasks:
 - **agent-developer** - Build and debug AI agents with MCP integration
 - **github-issue-tracker** - Create well-formatted issues from discoveries
 
+All agents are sandboxed and require explicit permission for write operations.
+
 ---
 
-## Installation
+## Docs & Guides
 
-### Prerequisites
+- **Getting Started**
+  - [Installation & Verification](#installing-super-claude-kit)
+  - [Understanding the Capsule](#-context-capsule)
+  - [First Session Walkthrough](.claude/docs/CAPSULE_USAGE_GUIDE.md#first-session)
+- **Usage Guide**
+  - [File Access Logging](.claude/docs/CAPSULE_USAGE_GUIDE.md#file-logging)
+  - [Task Tracking](.claude/docs/CAPSULE_USAGE_GUIDE.md#task-tracking)
+  - [Discovery Logging](.claude/docs/CAPSULE_USAGE_GUIDE.md#discovery-logging)
+  - [Best Practices](.claude/docs/CAPSULE_USAGE_GUIDE.md#best-practices)
+- **Tools**
+  - [Progressive Reader](docs/PROGRESSIVE_READER_ARCHITECTURE.md)
+  - [Dependency Scanner](docs/DEPENDENCY_GRAPH_ARCHITECTURE.md)
+  - [Custom Tools Guide](docs/CUSTOM_TOOLS.md)
+- **Architecture**
+  - [System Architecture](.claude/docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md)
+  - [Hook System](.claude/docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md#hooks)
+  - [Capsule Design](.claude/docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md#capsule)
+  - [Sandboxing](docs/SANDBOXING_ARCHITECTURE.md)
+- **Advanced**
+  - [Configuration](docs/CONFIGURATION.md)
+  - [Debug Mode](#debug-mode)
+  - [Custom Hooks](docs/CUSTOM_HOOKS.md)
+  - [Contributing](CONTRIBUTING.md)
+- **Reference**
+  - [CHANGELOG](CHANGELOG.md)
+  - [FAQ](docs/FAQ.md)
+  - [Troubleshooting](#troubleshooting)
 
-- Claude Code (any version with hooks support)
-- Git (recommended)
-- Bash 4.0+
+---
 
-### Quick Install
+## Requirements
+
+- **Claude Code** (Desktop CLI or VSCode extension)
+- **macOS** or **Linux** (Windows WSL supported)
+- **Go 1.23+** (auto-installed if not present)
+- **Git** (recommended for branch-aware features)
+- **Bash 4.0+**
+
+---
+
+## Verification
+
+After installation, verify everything works:
 
 ```bash
-cd your-project
-curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install | bash
-```
-
-### Verify Installation
-
-```bash
+# Run comprehensive tests
 bash .claude/scripts/test-super-claude.sh
+
+# View current stats
 bash .claude/scripts/show-stats.sh
+
+# Check installed tools
+~/.claude/bin/dependency-scanner --version
+~/.claude/bin/progressive-reader --version
 ```
 
----
-
-## Usage
-
-### Automatic Features
-
-Super Claude Kit operates transparently with zero configuration:
-
-- Session state tracking activates on first message
-- Dependency graph builds automatically on session start
-- Context updates trigger only on state changes
-- Discoveries persist across 24-hour window
-
-### Manual Discovery Logging
-
-For significant architectural insights:
-
-```bash
-./.claude/hooks/log-discovery.sh "pattern" "Auth uses JWT tokens stored in Redis"
-./.claude/hooks/log-discovery.sh "decision" "PostgreSQL chosen for ACID guarantees"
-./.claude/hooks/log-discovery.sh "architecture" "Microservices communicate via gRPC"
+Expected output:
 ```
-
-### Dependency Analysis Tools
-
-```bash
-./.claude/tools/query-deps/query-deps.sh src/auth.ts
-./.claude/tools/impact-analysis/impact-analysis.sh src/database.ts
-./.claude/tools/find-circular/find-circular.sh
-./.claude/tools/find-dead-code/find-dead-code.sh
+✅ Super Claude Kit v1.0.0
+✅ dependency-scanner v1.0.0
+✅ progressive-reader v1.0.0
+✅ All hooks configured
+✅ All tests passed
 ```
-
-### Progressive Reader
-
-Efficient reading of large files through semantic chunking:
-
-```bash
-progressive-reader --path src/large-file.ts
-progressive-reader --chunk 2
-progressive-reader --list
-```
-
----
-
-## Architecture
-
-### Core Components
-
-**Context Capsule**
-- TOON format for 52% token reduction
-- Hash-based change detection
-- Smart refresh heuristics
-
-**Dependency Graph**
-- AST-based parsing with tree-sitter
-- O(n) circular dependency detection
-- Reverse dependency mapping
-
-**Hook System**
-- SessionStart - Initialize context and build graphs
-- UserPromptSubmit - Smart context refresh
-- PostToolUse - Automatic operation logging
-- PreToolUse - Redundancy prevention
-- SessionEnd - Persistent state save
-
-**Tool Runner**
-- Sandboxed execution environment
-- Permission-based access control
-- Cross-platform compatibility
-
-### Performance Characteristics
-
-- **Context Overhead** - <100ms per refresh
-- **Graph Building** - 1000 files in <5s, 10000 files in <30s
-- **Memory Footprint** - ~20MB for typical projects
-- **Token Efficiency** - 52% reduction vs JSON
-
----
-
-## Documentation
-
-- [Capsule Usage Guide](.claude/docs/CAPSULE_USAGE_GUIDE.md) - Detailed usage patterns and best practices
-- [System Architecture](.claude/docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md) - Technical deep dive
-- [Progressive Reader Architecture](docs/PROGRESSIVE_READER_ARCHITECTURE.md) - Semantic chunking design
-- [Dependency Graph Architecture](docs/DEPENDENCY_GRAPH_ARCHITECTURE.md) - Graph building and analysis
-- [Sandboxing Architecture](docs/SANDBOXING_ARCHITECTURE.md) - Security and isolation design
-- [CHANGELOG](CHANGELOG.md) - Version history and release notes
 
 ---
 
@@ -186,6 +321,8 @@ bash .claude/scripts/update-super-claude.sh
 
 ### Development Mode
 
+Install latest development version:
+
 ```bash
 bash .claude/scripts/update-super-claude.sh --dev
 ```
@@ -194,38 +331,42 @@ bash .claude/scripts/update-super-claude.sh --dev
 
 ## Configuration
 
-### Settings
+### Settings Location
 
-Located at `.claude/settings.local.json`:
+`.claude/settings.local.json`
 
 ```json
 {
   "permissions": {
-    "allow": ["Bash(git add:*)", "Bash(jq:*)"],
-    "deny": [],
-    "ask": []
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(~/.claude/bin/dependency-scanner:*)",
+      "Bash(progressive-reader:*)"
+    ]
   },
   "hooks": {
-    "SessionStart": [...],
-    "UserPromptSubmit": [...]
+    "SessionStart": ["bash .claude/hooks/session-start.sh"],
+    "UserPromptSubmit": ["bash .claude/hooks/pre-task-analysis.sh"]
   }
 }
 ```
 
 ### Customization
 
-- Add custom hooks in `hooks/`
-- Create custom tools in `tools/`
-- Add specialized agents in `agents/`
-- Define reusable skills in `skills/`
+- **Custom hooks** - Add to `hooks/` directory
+- **Custom tools** - Add to `tools/` directory
+- **Specialized agents** - Add to `agents/` directory
+- **Reusable skills** - Add to `skills/` directory
+
+See [Configuration Guide](docs/CONFIGURATION.md) for details.
 
 ---
 
 ## Troubleshooting
 
-### Common Issues
+### Hooks not executing
 
-**Hooks not executing:**
 ```bash
 # Verify settings
 cat .claude/settings.local.json
@@ -234,13 +375,18 @@ cat .claude/settings.local.json
 bash .claude/hooks/session-start.sh
 ```
 
-**Capsule not updating:**
+### Capsule not updating
+
 ```bash
 # Force refresh
 rm .claude/last_refresh_state.txt
+
+# Check logs
+tail -f .claude/hooks.log
 ```
 
-**Dependency graph not building:**
+### Dependency graph not building
+
 ```bash
 # Verify scanner installation
 ls -la ~/.claude/bin/dependency-scanner
@@ -251,9 +397,46 @@ ls -la ~/.claude/bin/dependency-scanner
 
 ### Debug Mode
 
+Enable verbose logging:
+
 ```bash
 CLAUDE_DEBUG_HOOKS=true claude
 ```
+
+For more issues, see [FAQ](docs/FAQ.md) or [open an issue](https://github.com/arpitnath/super-claude-kit/issues).
+
+---
+
+## Performance
+
+### Benchmarks
+
+| Operation | Performance | Details |
+|-----------|-------------|---------|
+| **Context Refresh** | <100ms | Smart change detection |
+| **Graph Building** | 1000 files in <5s | Parallel parsing |
+| **Large Project** | 10000 files in <30s | Incremental updates |
+| **Memory Footprint** | ~20MB | Typical projects |
+| **Token Efficiency** | 52% reduction | TOON vs JSON |
+
+### Tested On
+
+- ✅ React projects (100-500 files)
+- ✅ Node.js APIs (50-200 files)
+- ✅ Python packages (200-1000 files)
+- ✅ Go services (100-500 files)
+- ✅ Monorepos (1000+ files)
+
+---
+
+## Uninstall
+
+```bash
+cd super-claude-kit
+bash uninstall
+```
+
+Removes hooks, tools, and configuration. Your `.claude/` data logs are preserved in `.claude/backup/`.
 
 ---
 
@@ -263,9 +446,11 @@ Contributions are welcome! Please follow these guidelines:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
+3. Commit changes with clear messages
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a pull request
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ### Development Setup
 
@@ -285,7 +470,9 @@ bash .claude/scripts/test-super-claude.sh
 
 ## License
 
-[MIT License](LICENSE) - Copyright (c) 2025 Arpit Nath
+This repository is licensed under the [MIT License](LICENSE).
+
+Copyright (c) 2025 Arpit Nath
 
 ---
 
@@ -298,21 +485,24 @@ bash .claude/scripts/test-super-claude.sh
 
 ---
 
-## Author
+## Star History
 
-**Arpit Nath**
+If you found Super Claude Kit useful, please star the repo! ⭐
 
-- GitHub: [@arpitnath](https://github.com/arpitnath)
-- LinkedIn: [Arpit Nath](https://www.linkedin.com/in/arpit-nath-38280a173/)
-
----
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/arpitnath/super-claude-kit/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/arpitnath/super-claude-kit/discussions)
-- **Documentation**: [Full Documentation](https://github.com/arpitnath/super-claude-kit/tree/master/.claude/docs)
+<p align="center">
+  <a href="https://star-history.com/#arpitnath/super-claude-kit&Date">
+    <img src="https://api.star-history.com/svg?repos=arpitnath/super-claude-kit&type=Date" alt="Star History Chart" width="600">
+  </a>
+</p>
 
 ---
 
-**If Super Claude Kit helps improve your Claude Code workflow, please star the repository!** ⭐
+<p align="center">
+  <strong>Never re-explain yourself to Claude. Ever.</strong>
+  <br/>
+  <br/>
+  <a href="https://github.com/arpitnath/super-claude-kit/issues">Report Bug</a> ·
+  <a href="https://github.com/arpitnath/super-claude-kit/issues">Request Feature</a> ·
+  <a href="https://github.com/arpitnath">GitHub</a> ·
+  <a href="https://www.linkedin.com/in/arpit-nath-38280a173/">LinkedIn</a>
+</p>

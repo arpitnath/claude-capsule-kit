@@ -97,6 +97,54 @@ BEFORE asking about current task → Check capsule (Current Tasks)
 6. Complete task → Mark as completed
 ```
 
+## ⚡ Tool Enforcement Rules
+
+**CRITICAL**: Super Claude Kit provides specialized tools that are FASTER and MORE ACCURATE than generic exploration. You MUST use them when applicable.
+
+### Dependency Analysis Queries
+
+**ALWAYS USE** Super Claude Kit tools for these queries:
+- ❓ "What imports this file?" → `bash .claude/tools/query-deps/query-deps.sh <file>`
+- ❓ "Who uses this function?" → `bash .claude/tools/query-deps/query-deps.sh <file>`
+- ❓ "What depends on X?" → `bash .claude/tools/query-deps/query-deps.sh <file>`
+- ❓ "What would break if I change X?" → `bash .claude/tools/impact-analysis/impact-analysis.sh <file>`
+- ❓ "Are there circular dependencies?" → `bash .claude/tools/find-circular/find-circular.sh`
+- ❓ "Find dead/unused code" → `bash .claude/tools/find-dead-code/find-dead-code.sh`
+
+**NEVER USE** Task tool (Explore sub-agent) for dependency queries because:
+- ❌ Slower: Must read and parse files sequentially
+- ❌ Incomplete: May miss indirect dependencies
+- ❌ Expensive: High token usage for simple queries
+- ❌ Limited: Cannot detect circular dependencies
+
+### File Search Queries
+
+**ALWAYS USE** Glob tool for file searches:
+- ❓ "Where is the auth file?" → `Glob pattern: **/*auth*`
+- ❓ "Find all TypeScript files" → `Glob pattern: **/*.ts`
+
+**NEVER USE** Task tool for simple file searches.
+
+### Code Pattern Search
+
+**ALWAYS USE** Grep tool for code searches:
+- ❓ "Find all TODO comments" → `Grep pattern: TODO`
+- ❓ "Where is function X defined?" → `Grep pattern: function X`
+
+### When to Use Task Tool
+
+**ONLY USE** Task tool for:
+- ✅ Complex architectural questions requiring analysis
+- ✅ "How does X work?" (implementation understanding)
+- ✅ Multi-file refactoring planning
+- ✅ Design pattern identification
+
+**NOT FOR** dependency lookups, file searches, or code searches!
+
+### Enforcement
+
+The PreToolUse hook will warn you if you try to use Task tool for dependency queries. **HEED THESE WARNINGS** and use the recommended tools instead.
+
 ## 🚦 Hooks (Automatic)
 
 These run automatically via `.claude/settings.local.json`:

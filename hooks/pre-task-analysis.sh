@@ -19,7 +19,7 @@ fi
 if [ "$NEW_COUNT" -eq 1 ]; then
   cat << 'EOF'
 {
-  "systemMessage": "🚀 Super Claude Kit v2.0 Active - Context and tools loaded"
+  "systemMessage": "Super Claude Kit - Context and tools loaded"
 }
 EOF
 fi
@@ -35,85 +35,103 @@ fi
 SUGGESTIONS_MADE=false
 
 if echo "$USER_PROMPT" | grep -qiE "explore|find.*file|search.*code|where.*is|how does.*work|understand.*architecture|locate|discover|investigate|show.*me"; then
-    echo ""
-    echo "DELEGATION SUGGESTION: Explore sub-agent"
-    echo "   Task Type: Codebase exploration/discovery"
-    echo "   Best Approach: Use 'Explore' sub-agent"
-    echo "   Why: Fast multi-round investigation, pattern matching"
-    echo ""
-    echo "   Usage: Task tool with subagent_type='Explore'"
-    echo "   Thoroughness: 'quick', 'medium', or 'very thorough'"
-    echo ""
+    cat << 'EOF'
+
+<delegation-suggestion>
+  <agent type="Explore" task-type="exploration-discovery">
+    <reason>Fast multi-round investigation with pattern matching</reason>
+    <usage>Task tool with subagent_type='Explore'</usage>
+    <thoroughness options="quick, medium, very thorough"/>
+  </agent>
+</delegation-suggestion>
+
+EOF
     SUGGESTIONS_MADE=true
 fi
 
 if echo "$USER_PROMPT" | grep -qiE "plan|implement|build|create|develop|design|architect|add.*feature|new.*system"; then
-    echo ""
-    echo "DELEGATION SUGGESTION: Plan sub-agent"
-    echo "   Task Type: Planning/Implementation"
-    echo "   Best Approach: Use 'Plan' sub-agent"
-    echo "   Why: Creates systematic implementation strategy"
-    echo ""
-    echo "   Usage: Task tool with subagent_type='Plan'"
-    echo "   Returns: Detailed implementation plan with steps"
-    echo ""
+    cat << 'EOF'
+
+<delegation-suggestion>
+  <agent type="Plan" task-type="planning-implementation">
+    <reason>Creates systematic implementation strategy</reason>
+    <usage>Task tool with subagent_type='Plan'</usage>
+    <returns>Detailed implementation plan with steps</returns>
+  </agent>
+</delegation-suggestion>
+
+EOF
     SUGGESTIONS_MADE=true
 fi
 
 if echo "$USER_PROMPT" | grep -qiE "fix.*and.*test|migrate.*and.*verify|update.*across|refactor.*entire"; then
-    echo ""
-    echo "DELEGATION SUGGESTION: general-purpose sub-agent"
-    echo "   Task Type: Complex multi-step task"
-    echo "   Best Approach: Use 'general-purpose' sub-agent"
-    echo "   Why: Handles complex workflows with multiple operations"
-    echo ""
-    echo "   Usage: Task tool with subagent_type='general-purpose'"
-    echo ""
+    cat << 'EOF'
+
+<delegation-suggestion>
+  <agent type="general-purpose" task-type="complex-multi-step">
+    <reason>Handles complex workflows with multiple operations</reason>
+    <usage>Task tool with subagent_type='general-purpose'</usage>
+  </agent>
+</delegation-suggestion>
+
+EOF
     SUGGESTIONS_MADE=true
 fi
 
 if echo "$USER_PROMPT" | grep -qiE "and|also|both|multiple|all three|check.*check|verify.*verify"; then
-    echo ""
-    echo "PERFORMANCE TIP: Parallel Tool Calls"
-    echo "   Detected: Multiple independent operations"
-    echo "   Best Practice: Execute tool calls in parallel"
-    echo "   Why: Faster execution (single message, multiple tools)"
-    echo ""
-    echo "   Example: Read 3 files -> Use 3 Read calls in one message"
-    echo ""
+    cat << 'EOF'
+
+<performance-tip type="parallel-tool-calls">
+  <detected>Multiple independent operations</detected>
+  <best-practice>Execute tool calls in parallel</best-practice>
+  <reason>Faster execution - single message with multiple tools</reason>
+  <example>Read 3 files -> Use 3 Read calls in one message</example>
+</performance-tip>
+
+EOF
     SUGGESTIONS_MADE=true
 fi
 
 if echo "$USER_PROMPT" | grep -qiE "continue|resume|pick.*up|where.*left|last.*time|previous|what.*next"; then
     if [ -f "docs/exploration/CURRENT_SESSION.md" ]; then
-        echo ""
-        echo "MEMORY AVAILABLE: Exploration Journal Found"
-        echo "   Action Required: Read exploration journal FIRST"
-        echo "   Location: docs/exploration/CURRENT_SESSION.md"
-        echo "   Why: Avoid repeating work, maintain continuity"
-        echo ""
-        echo "   Next: Summarize previous session for user"
-        echo ""
+        cat << 'EOF'
+
+<memory-available source="exploration-journal">
+  <action required="true">Read exploration journal FIRST</action>
+  <location>docs/exploration/CURRENT_SESSION.md</location>
+  <reason>Avoid repeating work, maintain continuity</reason>
+  <next-step>Summarize previous session for user</next-step>
+</memory-available>
+
+EOF
         SUGGESTIONS_MADE=true
     fi
 fi
 
 if echo "$USER_PROMPT" | grep -qiE "implement|build|create|fix.*bug|add.*feature"; then
-    echo ""
-    echo "REMINDER: Use TodoWrite for task tracking"
-    echo "   Break complex work into trackable steps"
-    echo ""
+    cat << 'EOF'
+
+<reminder type="task-tracking">
+  <tool>TodoWrite</tool>
+  <suggestion>Break complex work into trackable steps</suggestion>
+</reminder>
+
+EOF
     SUGGESTIONS_MADE=true
 fi
 
 if [ "$SUGGESTIONS_MADE" = false ]; then
     PROMPT_LENGTH=${#USER_PROMPT}
     if [ $PROMPT_LENGTH -gt 200 ]; then
-        echo ""
-        echo "REMINDER: Complex task detected (long prompt)"
-        echo "   Available sub-agents: Plan, Explore, general-purpose"
-        echo "   Consider: Breaking into smaller tasks with TodoWrite"
-        echo ""
+        cat << 'EOF'
+
+<reminder type="complex-task">
+  <detected>Long prompt - complex task</detected>
+  <available-subagents>Plan, Explore, general-purpose</available-subagents>
+  <consider>Breaking into smaller tasks with TodoWrite</consider>
+</reminder>
+
+EOF
     fi
 fi
 
