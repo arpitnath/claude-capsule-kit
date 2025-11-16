@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Arpit Nath",
   "description": "Super Claude Kit - Persistent Context Memory + Dependency Graph for Claude Code",
   "components": {
