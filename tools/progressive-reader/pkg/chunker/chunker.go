@@ -94,6 +94,48 @@ func (c *Chunker) chunkTypeScript(tree *sitter.Tree) ([]Chunk, error) {
 			nodeContent := c.getLinesRange(startLine, endLine)
 			nodeTokens := estimateTokens(nodeContent)
 
+			// Handle oversized single nodes - split into manageable chunks
+			if nodeTokens > c.maxTokens {
+				// Calculate how many lines to include per chunk
+				// Average ~50 chars per line, 4 chars per token = ~12-13 lines per 1000 tokens
+				avgCharsPerLine := len(nodeContent) / (endLine - startLine + 1)
+				if avgCharsPerLine == 0 {
+					avgCharsPerLine = 50 // default estimate
+				}
+				charsPerChunk := c.maxTokens * 4
+				linesPerChunk := charsPerChunk / avgCharsPerLine
+				if linesPerChunk < 10 {
+					linesPerChunk = 10 // minimum chunk size
+				}
+
+				numLines := endLine - startLine + 1
+
+				for offset := 0; offset < numLines; offset += linesPerChunk {
+					chunkStart := startLine + offset
+					chunkEnd := chunkStart + linesPerChunk - 1
+					if chunkEnd > endLine {
+						chunkEnd = endLine
+					}
+
+					chunkLines := []string{}
+					for i := chunkStart; i <= chunkEnd && i < len(c.sourceLines); i++ {
+						chunkLines = append(chunkLines, c.sourceLines[i])
+					}
+
+					if len(chunkLines) > 0 {
+						chunkContent := strings.Join(chunkLines, "\n")
+						chunks = append(chunks, Chunk{
+							Content:   chunkContent,
+							StartLine: chunkStart + 1,
+							EndLine:   chunkEnd + 1,
+							Type:      extractNodeType(nodeType),
+							Name:      extractNodeName(node, string(c.sourceCode)),
+						})
+					}
+				}
+				return
+			}
+
 			if currentTokens+nodeTokens > c.maxTokens && len(currentChunk) > 0 {
 				chunkContent := strings.Join(currentChunk, "\n")
 				chunks = append(chunks, Chunk{
@@ -178,6 +220,48 @@ func (c *Chunker) chunkJavaScript(tree *sitter.Tree) ([]Chunk, error) {
 			nodeContent := c.getLinesRange(startLine, endLine)
 			nodeTokens := estimateTokens(nodeContent)
 
+			// Handle oversized single nodes - split into manageable chunks
+			if nodeTokens > c.maxTokens {
+				// Calculate how many lines to include per chunk
+				// Average ~50 chars per line, 4 chars per token = ~12-13 lines per 1000 tokens
+				avgCharsPerLine := len(nodeContent) / (endLine - startLine + 1)
+				if avgCharsPerLine == 0 {
+					avgCharsPerLine = 50 // default estimate
+				}
+				charsPerChunk := c.maxTokens * 4
+				linesPerChunk := charsPerChunk / avgCharsPerLine
+				if linesPerChunk < 10 {
+					linesPerChunk = 10 // minimum chunk size
+				}
+
+				numLines := endLine - startLine + 1
+
+				for offset := 0; offset < numLines; offset += linesPerChunk {
+					chunkStart := startLine + offset
+					chunkEnd := chunkStart + linesPerChunk - 1
+					if chunkEnd > endLine {
+						chunkEnd = endLine
+					}
+
+					chunkLines := []string{}
+					for i := chunkStart; i <= chunkEnd && i < len(c.sourceLines); i++ {
+						chunkLines = append(chunkLines, c.sourceLines[i])
+					}
+
+					if len(chunkLines) > 0 {
+						chunkContent := strings.Join(chunkLines, "\n")
+						chunks = append(chunks, Chunk{
+							Content:   chunkContent,
+							StartLine: chunkStart + 1,
+							EndLine:   chunkEnd + 1,
+							Type:      extractNodeType(nodeType),
+							Name:      extractNodeName(node, string(c.sourceCode)),
+						})
+					}
+				}
+				return
+			}
+
 			if currentTokens+nodeTokens > c.maxTokens && len(currentChunk) > 0 {
 				chunkContent := strings.Join(currentChunk, "\n")
 				chunks = append(chunks, Chunk{
@@ -258,6 +342,48 @@ func (c *Chunker) chunkPython(tree *sitter.Tree) ([]Chunk, error) {
 
 			nodeContent := c.getLinesRange(startLine, endLine)
 			nodeTokens := estimateTokens(nodeContent)
+
+			// Handle oversized single nodes
+			if nodeTokens > c.maxTokens {
+				childCount := int(node.ChildCount())
+				if childCount > 0 {
+					for i := 0; i < childCount; i++ {
+						child := node.Child(i)
+						if child != nil {
+							walkNodes(child)
+						}
+					}
+					return
+				}
+
+				lineBudget := c.maxTokens * 4
+				for start := startLine; start <= endLine; start += lineBudget {
+					end := start + lineBudget
+					if end > endLine {
+						end = endLine
+					}
+
+					if len(currentChunk) > 0 {
+						chunkContent := strings.Join(currentChunk, "\n")
+						chunks = append(chunks, Chunk{
+							Content:   chunkContent,
+							StartLine: currentStartLine + 1,
+							EndLine:   currentStartLine + len(currentChunk),
+							Type:      extractPythonNodeType(nodeType),
+							Name:      extractNodeName(node, string(c.sourceCode)),
+						})
+						currentChunk = []string{}
+						currentTokens = 0
+					}
+
+					currentStartLine = start
+					for i := start; i <= end && i < len(c.sourceLines); i++ {
+						currentChunk = append(currentChunk, c.sourceLines[i])
+					}
+					currentTokens = estimateTokens(strings.Join(currentChunk, "\n"))
+				}
+				return
+			}
 
 			if currentTokens+nodeTokens > c.maxTokens && len(currentChunk) > 0 {
 				chunkContent := strings.Join(currentChunk, "\n")
@@ -341,6 +467,48 @@ func (c *Chunker) chunkGo(tree *sitter.Tree) ([]Chunk, error) {
 
 			nodeContent := c.getLinesRange(startLine, endLine)
 			nodeTokens := estimateTokens(nodeContent)
+
+			// Handle oversized single nodes
+			if nodeTokens > c.maxTokens {
+				childCount := int(node.ChildCount())
+				if childCount > 0 {
+					for i := 0; i < childCount; i++ {
+						child := node.Child(i)
+						if child != nil {
+							walkNodes(child)
+						}
+					}
+					return
+				}
+
+				lineBudget := c.maxTokens * 4
+				for start := startLine; start <= endLine; start += lineBudget {
+					end := start + lineBudget
+					if end > endLine {
+						end = endLine
+					}
+
+					if len(currentChunk) > 0 {
+						chunkContent := strings.Join(currentChunk, "\n")
+						chunks = append(chunks, Chunk{
+							Content:   chunkContent,
+							StartLine: currentStartLine + 1,
+							EndLine:   currentStartLine + len(currentChunk),
+							Type:      extractGoNodeType(nodeType),
+							Name:      extractNodeName(node, string(c.sourceCode)),
+						})
+						currentChunk = []string{}
+						currentTokens = 0
+					}
+
+					currentStartLine = start
+					for i := start; i <= end && i < len(c.sourceLines); i++ {
+						currentChunk = append(currentChunk, c.sourceLines[i])
+					}
+					currentTokens = estimateTokens(strings.Join(currentChunk, "\n"))
+				}
+				return
+			}
 
 			if currentTokens+nodeTokens > c.maxTokens && len(currentChunk) > 0 {
 				chunkContent := strings.Join(currentChunk, "\n")
