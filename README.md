@@ -1,7 +1,9 @@
 <p align="center">
-  <!-- TODO: Add logo -->
-  <!-- <img src="./.github/super-claude-kit-logo.png" alt="Super Claude Kit" width="200" /> -->
   <h1>Super Claude Kit</h1>
+</p>
+
+<p align="center">
+  <img src="./.github/hero.gif" alt="Super Claude Kit" width="100%" />
 </p>
 
 <p align="center">
@@ -12,16 +14,12 @@
   <strong>Super Claude Kit</strong> adds persistent memory to Claude Code.
   <br/>
   <br/>
-  Claude Code forgets everything between sessions. Super Claude Kit remembers.
+  A persistence layer for Claude Code.
   <br/>
   Files, tasks, discoveries — all restored instantly.
 </p>
 
-<p align="center">
-  <!-- TODO: Add hero GIF showing capsule restore -->
-  <!-- <img src="./.github/capsule-restore.gif" alt="Context Capsule Restore" width="80%" /> -->
-  <em>(Hero GIF: Context Capsule Restore - Coming Soon)</em>
-</p>
+
 
 <p align="center">
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
@@ -66,9 +64,9 @@ The installer will:
 ### What you get immediately
 
 <p align="center">
-  <!-- TODO: Add session resume GIF -->
-  <!-- <img src="./.github/session-resume.gif" alt="Session Resume" width="80%" /> -->
-  <em>(GIF: Session Resume - Coming Soon)</em>
+  
+  <img src="./.github/stats.png" alt="Session Resume" width="100%" />
+  
 </p>
 
 **After installation, Claude Code will:**
@@ -94,17 +92,10 @@ No configuration needed. It just works.
 
 ### 🧠 Persistent Memory
 
-<p align="center">
-  <!-- TODO: Add file re-read prevention GIF -->
-  <!-- <img src="./.github/file-reread-prevention.gif" alt="File Re-read Prevention" width="70%" /> -->
-  <em>(GIF: File Re-read Prevention - Coming Soon)</em>
-</p>
-
 **Stop wasting tokens on re-reads.**
 
 Vanilla Claude Code re-reads files on every question. Super Claude Kit tracks what's been read and references from memory.
 
-**Result:** ~50% token savings on multi-turn conversations.
 
 ---
 
@@ -150,9 +141,9 @@ The capsule uses TOON format for **52% token reduction** compared to JSON.
 ### 🔗 Dependency Intelligence
 
 <p align="center">
-  <!-- TODO: Add dependency graph GIF -->
-  <!-- <img src="./.github/dependency-graph.gif" alt="Dependency Graph" width="70%" /> -->
-  <em>(GIF: Dependency Graph - Coming Soon)</em>
+  
+  <img src="./.github/dependency-graph.png" alt="Dependency Graph" width="100%" />
+  
 </p>
 
 **Know what breaks before you break it.**
@@ -181,7 +172,6 @@ Built-in dependency scanner analyzes your codebase:
 - **10,000 files** scanned in <30 seconds
 - Supports TypeScript, JavaScript, Python, Go
 
-**No other AI coding tool has this.**
 
 ---
 
@@ -247,20 +237,20 @@ All agents are sandboxed and require explicit permission for write operations.
 - **Getting Started**
   - [Installation & Verification](#installing-super-claude-kit)
   - [Understanding the Capsule](#-context-capsule)
-  - [First Session Walkthrough](.claude/docs/CAPSULE_USAGE_GUIDE.md#first-session)
+  - [First Session Walkthrough](docs/CAPSULE_USAGE_GUIDE.md#first-session)
 - **Usage Guide**
-  - [File Access Logging](.claude/docs/CAPSULE_USAGE_GUIDE.md#file-logging)
-  - [Task Tracking](.claude/docs/CAPSULE_USAGE_GUIDE.md#task-tracking)
-  - [Discovery Logging](.claude/docs/CAPSULE_USAGE_GUIDE.md#discovery-logging)
-  - [Best Practices](.claude/docs/CAPSULE_USAGE_GUIDE.md#best-practices)
+  - [File Access Logging](docs/CAPSULE_USAGE_GUIDE.md#file-logging)
+  - [Task Tracking](docs/CAPSULE_USAGE_GUIDE.md#task-tracking)
+  - [Discovery Logging](docs/CAPSULE_USAGE_GUIDE.md#discovery-logging)
+  - [Best Practices](docs/CAPSULE_USAGE_GUIDE.md#best-practices)
 - **Tools**
   - [Progressive Reader](docs/PROGRESSIVE_READER_ARCHITECTURE.md)
   - [Dependency Scanner](docs/DEPENDENCY_GRAPH_ARCHITECTURE.md)
   - [Custom Tools Guide](docs/CUSTOM_TOOLS.md)
 - **Architecture**
-  - [System Architecture](.claude/docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md)
-  - [Hook System](.claude/docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md#hooks)
-  - [Capsule Design](.claude/docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md#capsule)
+  - [System Architecture](docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md)
+  - [Hook System](docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md#hooks)
+  - [Capsule Design](docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md#capsule)
   - [Sandboxing](docs/SANDBOXING_ARCHITECTURE.md)
 - **Advanced**
   - [Configuration](docs/CONFIGURATION.md)
@@ -420,16 +410,8 @@ For more issues, see [FAQ](docs/FAQ.md) or [open an issue](https://github.com/ar
 | **Context Refresh** | <100ms | Smart change detection |
 | **Graph Building** | 1000 files in <5s | Parallel parsing |
 | **Large Project** | 10000 files in <30s | Incremental updates |
-| **Memory Footprint** | ~20MB | Typical projects |
-| **Token Efficiency** | 52% reduction | TOON vs JSON |
+| **Token Efficiency** | ~52% reduction | TOON vs JSON and avoids re-reads |
 
-### Tested On
-
-- ✅ React projects (100-500 files)
-- ✅ Node.js APIs (50-200 files)
-- ✅ Python packages (200-1000 files)
-- ✅ Go services (100-500 files)
-- ✅ Monorepos (1000+ files)
 
 ---
 
@@ -485,7 +467,7 @@ Copyright (c) 2025 Arpit Nath
 - [Anthropic](https://www.anthropic.com/) - Claude and Claude Code
 - [TOON Format](https://github.com/toon-format/toon) - Token-Oriented Object Notation
 - [Tree-sitter](https://tree-sitter.github.io/) - Incremental parsing system
-- Developer community for feedback and contributions
+
 
 ---
 
