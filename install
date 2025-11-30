@@ -38,14 +38,9 @@ fi
 echo ""
 
 if [ ! -d "$INSTALL_DIR/.git" ]; then
-  echo "⚠️  Warning: Not in a git repository"
-  echo "   Super Claude Kit works best in git repositories"
-  echo ""
-  read -p "Continue anyway? (y/n) " -n 1 -r
-  echo ""
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    exit 1
-  fi
+  echo "ℹ️  Git repository not detected"
+  echo "   Super Claude Kit will use file-based change tracking"
+  echo "   (Git provides additional context but is not required)"
   echo ""
 fi
 
