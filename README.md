@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <code>curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install.sh | bash</code>
+  <code>curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install | bash</code>
 </p>
 
 <p align="center">
@@ -49,7 +49,7 @@ Run the one-line installer **from your project root**:
 
 ```bash
 cd your-project
-curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install | bash
 ```
 
 > **Note:** This installs to your project's `.claude/` directory (like `.claude/settings.json`).
@@ -68,7 +68,7 @@ git clone https://github.com/arpitnath/super-claude-kit.git .super-claude-kit-sr
 cd .super-claude-kit-src
 
 # Run the installer (installs to parent project)
-bash install.sh
+bash install
 ```
 
 The installer will:
@@ -214,7 +214,7 @@ See the difference when working with large files (187KB React source):
 ```bash
 # 1. Clone React and install Super Claude Kit
 git clone https://github.com/facebook/react.git && cd react
-curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install | bash
 
 # 2. Run Claude Code in debug mode
 claude --debug
