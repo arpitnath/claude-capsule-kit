@@ -2,7 +2,7 @@
 
 # Pre-Tool-Use Hook
 # 1. Warns before redundant file reads to encourage using capsule data
-# 2. Enforces Super Claude Kit tools for dependency analysis
+# 2. Enforces Claude Capsule Kit tools for dependency analysis
 # 3. Auto-logs file access to capsule
 # Runs BEFORE each tool call
 

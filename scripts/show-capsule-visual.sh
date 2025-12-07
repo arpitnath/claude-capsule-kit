@@ -20,7 +20,7 @@ RESET='\033[0m'
 
 echo ""
 echo -e "${BOLD}╔════════════════════════════════════════════════════════╗${RESET}"
-echo -e "${BOLD}║     Super Claude Kit - Context Capsule                 ║${RESET}"
+echo -e "${BOLD}║     Claude Capsule Kit - Context Capsule                 ║${RESET}"
 echo -e "${BOLD}╚════════════════════════════════════════════════════════╝${RESET}"
 echo ""
 

@@ -1,12 +1,12 @@
 #!/bin/bash
-# Super Claude Kit Installation Script
+# Claude Capsule Kit Installation Script
 # Works both locally (for testing) and remotely (curl | bash)
 # Author: Arpit Nath
 
 set -eo pipefail
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🚀 Super Claude Kit Installation"
+echo "🚀 Claude Capsule Kit Installation"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -58,7 +58,7 @@ echo ""
 
 if [ ! -d "$INSTALL_DIR/.git" ]; then
   echo "ℹ️  Git repository not detected"
-  echo "   Super Claude Kit will use file-based change tracking"
+  echo "   Claude Capsule Kit will use file-based change tracking"
   echo "   (Git provides additional context but is not required)"
   echo ""
 fi
@@ -428,35 +428,35 @@ echo ""
 
 echo "Updating .gitignore..."
 if [ -f "$INSTALL_DIR/.gitignore" ]; then
-  if ! grep -q "Super Claude Kit" "$INSTALL_DIR/.gitignore" 2>/dev/null; then
+  if ! grep -q "Claude Capsule Kit" "$INSTALL_DIR/.gitignore" 2>/dev/null; then
     echo "" >> "$INSTALL_DIR/.gitignore"
     echo "$MANIFEST" | python3 -c "import sys, json; [print(e) for e in json.load(sys.stdin)['gitignore_entries']]" >> "$INSTALL_DIR/.gitignore"
-    echo "✓ Added Super Claude Kit entries to .gitignore"
+    echo "✓ Added Claude Capsule Kit entries to .gitignore"
   else
-    echo "✓ .gitignore already contains Super Claude Kit entries"
+    echo "✓ .gitignore already contains Claude Capsule Kit entries"
   fi
 else
   echo "$MANIFEST" | python3 -c "import sys, json; [print(e) for e in json.load(sys.stdin)['gitignore_entries']]" > "$INSTALL_DIR/.gitignore"
-  echo "✓ Created .gitignore with Super Claude Kit entries"
+  echo "✓ Created .gitignore with Claude Capsule Kit entries"
 fi
 echo ""
 
 echo "Updating project instructions..."
 if [ -f "$INSTALL_DIR/CLAUDE.md" ]; then
-  if ! grep -q "Super Claude Kit Integration" "$INSTALL_DIR/CLAUDE.md" 2>/dev/null; then
+  if ! grep -q "Claude Capsule Kit Integration" "$INSTALL_DIR/CLAUDE.md" 2>/dev/null; then
     echo "" >> "$INSTALL_DIR/CLAUDE.md"
     echo "---" >> "$INSTALL_DIR/CLAUDE.md"
     echo "" >> "$INSTALL_DIR/CLAUDE.md"
     install_file "CLAUDE_TEMPLATE.md" ".claude/CLAUDE_TEMPLATE.tmp"
     cat "$INSTALL_DIR/.claude/CLAUDE_TEMPLATE.tmp" >> "$INSTALL_DIR/CLAUDE.md"
     rm "$INSTALL_DIR/.claude/CLAUDE_TEMPLATE.tmp"
-    echo "✓ Added Super Claude Kit section to CLAUDE.md"
+    echo "✓ Added Claude Capsule Kit section to CLAUDE.md"
   else
-    echo "✓ CLAUDE.md already has Super Claude Kit integration"
+    echo "✓ CLAUDE.md already has Claude Capsule Kit integration"
   fi
 else
   install_file "CLAUDE_TEMPLATE.md" "CLAUDE.md"
-  echo "✓ Created CLAUDE.md with Super Claude Kit instructions"
+  echo "✓ Created CLAUDE.md with Claude Capsule Kit instructions"
 fi
 echo ""
 
@@ -480,7 +480,7 @@ echo "✓ Version $MANIFEST_VERSION tracked"
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✅ Super Claude Kit Installed Successfully!"
+echo "✅ Claude Capsule Kit Installed Successfully!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "📊 Installed components:"
@@ -501,7 +501,7 @@ echo ""
 echo "🚀 Next steps:"
 echo "   1. Run tests: bash .claude/scripts/test-super-claude.sh"
 echo "   2. Start Claude Code in this directory"
-echo "   3. Look for: '🚀 Super Claude Kit ACTIVATED'"
+echo "   3. Look for: '🚀 Claude Capsule Kit ACTIVATED'"
 if [ -f "$HOME/.claude/bin/dependency-scanner" ]; then
   echo "   4. Try dependency tools: .claude/tools/find-circular.sh"
 fi

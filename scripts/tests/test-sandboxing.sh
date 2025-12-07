@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Super Claude Kit v2.0.0 - Test Sandboxing System
+# Claude Capsule Kit v2.0.0 - Test Sandboxing System
 # Tests Phase 4: Permission validation, audit logging, and resource limits
 
 set -euo pipefail

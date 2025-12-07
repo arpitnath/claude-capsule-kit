@@ -78,7 +78,7 @@ except:
     capsule = {}
 suggestions = json.loads('''$SUGGESTIONS''')
 output = {
-  'systemMessage': 'Super Claude Kit - Context and tools loaded',
+  'systemMessage': 'Claude Capsule Kit - Context and tools loaded',
   'hookSpecificOutput': {
     'hookEventName': 'UserPromptSubmit',
     'context': capsule,
@@ -86,7 +86,7 @@ output = {
   }
 }
 print(json.dumps(output))
-" 2>/dev/null || echo '{"systemMessage":"Super Claude Kit - Context and tools loaded"}'
+" 2>/dev/null || echo '{"systemMessage":"Claude Capsule Kit - Context and tools loaded"}'
 else
   # Subsequent messages - only if we have content
   if [ "$CAPSULE_JSON" != "{}" ] || [ "$SUGGESTIONS" != "[]" ]; then

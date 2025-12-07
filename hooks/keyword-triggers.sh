@@ -29,7 +29,7 @@ suggest_tool() {
 
     if ! $SUGGESTIONS_MADE; then
         echo ""
-        echo "Super Claude Kit - Available Tools:"
+        echo "Claude Capsule Kit - Available Tools:"
         SUGGESTIONS_MADE=true
     fi
 

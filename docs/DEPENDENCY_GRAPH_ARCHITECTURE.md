@@ -46,7 +46,7 @@ tools/dependency-scanner/
 ├── parser.go         # Multi-language parser using tree-sitter
 ├── algorithms.go     # Circular dependency detection (Tarjan's)
 ├── bin/              # Pre-compiled binaries (darwin-arm64, etc.)
-├── tool.json         # Tool manifest for Super Claude Kit
+├── tool.json         # Tool manifest for Claude Capsule Kit
 ├── go.mod
 ├── go.sum
 ├── Makefile
@@ -380,7 +380,7 @@ Claude: [Runs: find-dead-code.sh]
 - 52% smaller than JSON
 - Faster bash parsing (grep/awk friendly)
 - Human-readable for debugging
-- Consistent with Super Claude Kit
+- Consistent with Claude Capsule Kit
 
 ### Why Tarjan's Algorithm?
 

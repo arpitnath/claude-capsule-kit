@@ -51,7 +51,7 @@ for arg in "$@"; do
 done
 
 echo "========================================================================"
-echo "Super Claude Kit Test Suite "
+echo "Claude Capsule Kit Test Suite "
 echo "========================================================================"
 echo ""
 echo "Running tests..."

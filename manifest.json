@@ -1,7 +1,7 @@
 {
   "version": "1.2.1",
   "author": "Arpit Nath",
-  "description": "Super Claude Kit - Persistent Context Memory + Dependency Graph for Claude Code",
+  "description": "Claude Capsule Kit - Persistent Context Memory + Dependency Graph for Claude Code",
   "components": {
     "lib": [
       "tool-runner.sh",
@@ -75,7 +75,7 @@
     ]
   },
   "gitignore_entries": [
-    "# Super Claude Kit (generated at runtime)",
+    "# Claude Capsule Kit (generated at runtime)",
     ".claude/**",
     "CLAUDE.md"
   ]

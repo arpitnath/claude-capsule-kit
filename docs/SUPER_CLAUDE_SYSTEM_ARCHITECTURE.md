@@ -1,4 +1,4 @@
-# Super Claude Kit: Complete System Architecture
+# Claude Capsule Kit: Complete System Architecture
 
 **Document Version**: 1.0
 **Implementation Date**: November 12, 2025
@@ -25,7 +25,7 @@
 
 ### What Was Built
 
-Super Claude Kit is an architectural enhancement to Claude Code that provides:
+Claude Capsule Kit is an architectural enhancement to Claude Code that provides:
 - **Persistent Memory**: Context capsule system with cross-session persistence
 - **Intelligent Automation**: Hook-based event system with 16 automated workflows
 - **Token Optimization**: TOON storage format reducing tokens by 52%
@@ -54,7 +54,7 @@ Super Claude Kit is an architectural enhancement to Claude Code that provides:
 
 ### Before vs After
 
-#### Before Super Claude Kit
+#### Before Claude Capsule Kit
 ```
 User Message
     ↓
@@ -70,7 +70,7 @@ Claude Response
 - No task continuity
 - Context resets every message
 
-#### After Super Claude Kit
+#### After Claude Capsule Kit
 ```
 User Message
     ↓
@@ -315,7 +315,7 @@ Session Start Context
              │
              ▼
 ┌──────────────────────────┐
-│  Super Claude Kit Activated  │
+│  Claude Capsule Kit Activated  │
 └──────────────────────────┘
 ```
 
@@ -491,7 +491,7 @@ Session Start Context
 
 ### Hook: session-start.sh
 
-**Purpose**: Initialize Super Claude Kit on session start
+**Purpose**: Initialize Claude Capsule Kit on session start
 
 **Execution Flow:**
 
@@ -509,7 +509,7 @@ fi
 
 # 3. Display banner
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🚀 Super Claude Kit ACTIVATED - Context Loaded"
+echo "🚀 Claude Capsule Kit ACTIVATED - Context Loaded"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # 4. Restore context from previous session
@@ -1616,7 +1616,7 @@ Total: ~10-30KB per session
 
 ## Conclusion
 
-Super Claude Kit represents a comprehensive architectural enhancement to Claude Code, introducing:
+Claude Capsule Kit represents a comprehensive architectural enhancement to Claude Code, introducing:
 
 1. **Event-Driven Hook System**: Automated workflows triggered at session lifecycle events
 2. **Context Capsule**: Token-efficient state management with TOON storage format
@@ -1632,7 +1632,7 @@ Super Claude Kit represents a comprehensive architectural enhancement to Claude 
 - 6 comprehensive documentation guides created
 
 **Architectural Impact:**
-- Transformed stateless Claude into stateful Super Claude Kit
+- Transformed stateless Claude into stateful Claude Capsule Kit
 - Enabled persistent memory across messages and sessions
 - Optimized token usage with custom TOON format
 - Created permanent knowledge base through journal integration
@@ -1642,6 +1642,6 @@ Super Claude Kit represents a comprehensive architectural enhancement to Claude 
 
 ---
 
-**Document Prepared By**: Claude (Super Claude Kit)
+**Document Prepared By**: Claude (Claude Capsule Kit)
 **Implementation Date**: November 12, 2025
 **Version**: 1.0 - Complete System Architecture

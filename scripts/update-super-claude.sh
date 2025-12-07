@@ -1,5 +1,5 @@
 #!/bin/bash
-# Super Claude Kit Update Script
+# Claude Capsule Kit Update Script
 # Checks for updates and upgrades to latest version
 # Author: Arpit Nath
 
@@ -37,13 +37,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🔄 Super Claude Kit Update Check"
+echo "🔄 Claude Capsule Kit Update Check"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Check if we're in a Super Claude Kit installation
+# Check if we're in a Claude Capsule Kit installation
 if [ ! -d ".claude" ]; then
-  echo "❌ Error: Not in a Super Claude Kit installation"
+  echo "❌ Error: Not in a Claude Capsule Kit installation"
   echo "   Run this from your project directory"
   exit 1
 fi

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Complete release workflow for Super Claude Kit
+# Complete release workflow for Claude Capsule Kit
 # Usage: ./scripts/release.sh <version>
 # Example: ./scripts/release.sh v1.0.0
 
@@ -22,7 +22,7 @@ if [[ ! "$NEW_VERSION" =~ ^v ]]; then
 fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🚀 Super Claude Kit Release Workflow"
+echo "🚀 Claude Capsule Kit Release Workflow"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "📌 Target version: $NEW_VERSION"
@@ -132,7 +132,7 @@ fi
 
 git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION
 
-Super Claude Kit - Persistent Context Memory System for Claude Code
+Claude Capsule Kit - Persistent Context Memory System for Claude Code
 
 This release includes:
 - Updated binaries for all supported platforms
@@ -177,8 +177,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
   echo "Creating GitHub release..."
   if command -v gh &> /dev/null; then
     gh release create "$NEW_VERSION" \
-      --title "Super Claude Kit $NEW_VERSION" \
-      --notes "Super Claude Kit - Persistent Context Memory System for Claude Code
+      --title "Claude Capsule Kit $NEW_VERSION" \
+      --notes "Claude Capsule Kit - Persistent Context Memory System for Claude Code
 
 This release includes updated binaries for all supported platforms.
 
