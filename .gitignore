@@ -23,3 +23,4 @@ scatch.pad.txt
 
 # Tool binaries (built locally by users)
 tools/*/bin/
+__pycache__/
