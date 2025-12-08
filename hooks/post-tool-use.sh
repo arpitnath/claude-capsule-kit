@@ -7,6 +7,45 @@ set -euo pipefail
 # Read JSON from stdin (Claude Code's hook protocol)
 INPUT_JSON=$(cat)
 
+# Determine script directory for finding tools
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Check if we're in .claude/hooks (installed) or hooks/ (source)
+if [[ "$SCRIPT_DIR" == *".claude/hooks"* ]]; then
+    # Installed location - tools are in project root tools/
+    PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+    TOOLS_DIR="$PROJECT_ROOT/tools/memory-graph"
+else
+    # Source location - tools are sibling to hooks/
+    TOOLS_DIR="$(dirname "$SCRIPT_DIR")/tools/memory-graph"
+fi
+CAPTURE_PY="$TOOLS_DIR/lib/capture.py"
+GRAPH_PY="$TOOLS_DIR/lib/graph.py"
+
+# Memory graph config
+MEMORY_DIR="${CLAUDE_MEMORY_DIR:-.claude/memory}"
+MEMORY_ENABLED="false"
+if [ -d "$MEMORY_DIR" ] && [ -f "$CAPTURE_PY" ]; then
+    MEMORY_ENABLED="true"
+fi
+
+# Function to capture file access to memory graph
+capture_file() {
+    local file_path="$1"
+    local action="$2"
+    if [ "$MEMORY_ENABLED" = "true" ]; then
+        CLAUDE_MEMORY_DIR="$MEMORY_DIR" python3 "$CAPTURE_PY" file "$file_path" --action "$action" >/dev/null 2>&1 &
+    fi
+}
+
+# Function to capture task to memory graph
+capture_task() {
+    local content="$1"
+    local status="$2"
+    if [ "$MEMORY_ENABLED" = "true" ]; then
+        CLAUDE_MEMORY_DIR="$MEMORY_DIR" python3 "$CAPTURE_PY" task "$content" --status "$status" >/dev/null 2>&1 &
+    fi
+}
+
 # Extract fields from JSON using python3
 TOOL_NAME=$(echo "$INPUT_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('tool_name', ''))" 2>/dev/null || echo "")
 TOOL_INPUT=$(echo "$INPUT_JSON" | python3 -c "import sys, json; import json as j; print(j.dumps(json.load(sys.stdin).get('tool_input', {})))" 2>/dev/null || echo "{}")
@@ -21,6 +60,7 @@ case "$TOOL_NAME" in
     if FILE_PATH=$(echo "$TOOL_INPUT" | python3 -c "import sys, json; print(json.load(sys.stdin).get('file_path', ''))" 2>/dev/null); then
       if [ -n "$FILE_PATH" ]; then
         ./.claude/hooks/log-file-access.sh "$FILE_PATH" "read" 2>/dev/null || true
+        capture_file "$FILE_PATH" "read"
       fi
     fi
     ;;
@@ -29,6 +69,7 @@ case "$TOOL_NAME" in
     if FILE_PATH=$(echo "$TOOL_INPUT" | python3 -c "import sys, json; print(json.load(sys.stdin).get('file_path', ''))" 2>/dev/null); then
       if [ -n "$FILE_PATH" ]; then
         ./.claude/hooks/log-file-access.sh "$FILE_PATH" "edit" 2>/dev/null || true
+        capture_file "$FILE_PATH" "edit"
       fi
     fi
     ;;
@@ -37,6 +78,7 @@ case "$TOOL_NAME" in
     if FILE_PATH=$(echo "$TOOL_INPUT" | python3 -c "import sys, json; print(json.load(sys.stdin).get('file_path', ''))" 2>/dev/null); then
       if [ -n "$FILE_PATH" ]; then
         ./.claude/hooks/log-file-access.sh "$FILE_PATH" "write" 2>/dev/null || true
+        capture_file "$FILE_PATH" "write"
       fi
     fi
     ;;
@@ -84,6 +126,22 @@ try:
 except Exception as e:
     pass
 " 2>/dev/null || true
+      # Capture tasks to memory graph (only in_progress and completed)
+      echo "$TOOL_INPUT" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    todos = data.get('todos', [])
+    for todo in todos:
+        status = todo.get('status', '')
+        content = todo.get('content', '')
+        if content and status in ('in_progress', 'completed'):
+            print(f'{status}|{content}')
+except:
+    pass
+" 2>/dev/null | while IFS='|' read -r status content; do
+        capture_task "$content" "$status"
+      done
     fi
     ;;
 esac

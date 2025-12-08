@@ -138,6 +138,79 @@ class MemoryGraph:
         self.save_cache()
         return len(nodes)
 
+    def update_single_node(self, file_path: str) -> bool:
+        """
+        Update cache for a single node file (incremental update).
+        Much faster than full rebuild for single node changes.
+
+        Returns True if node was added/updated, False if invalid.
+        """
+        node = parse_node(file_path)
+        if not node:
+            return False
+
+        node_id = node.metadata.id
+        nodes = self.cache.get("nodes", {})
+        tags = self.cache.get("tags", {})
+        types = self.cache.get("types", {})
+
+        try:
+            mtime = os.path.getmtime(file_path)
+        except OSError:
+            mtime = 0
+
+        # Check if this is a new node or update
+        is_new = node_id not in nodes
+
+        # Update node data
+        nodes[node_id] = {
+            "path": file_path,
+            "type": node.metadata.type,
+            "tags": node.metadata.tags,
+            "links_to": node.links,
+            "backlinks": nodes.get(node_id, {}).get("backlinks", []),
+            "created": node.metadata.created,
+            "updated": node.metadata.updated,
+            "status": node.metadata.status,
+            "mtime": mtime
+        }
+
+        # Update tags index
+        for tag in node.metadata.tags:
+            if tag not in tags:
+                tags[tag] = []
+            if node_id not in tags[tag]:
+                tags[tag].append(node_id)
+
+        # Update types index
+        node_type = node.metadata.type
+        if node_type not in types:
+            types[node_type] = []
+        if node_id not in types[node_type]:
+            types[node_type].append(node_id)
+
+        # Recompute backlinks for this node's targets
+        for link_target in node.links:
+            if link_target in nodes:
+                if node_id not in nodes[link_target]["backlinks"]:
+                    nodes[link_target]["backlinks"].append(node_id)
+
+        # Update recent list
+        recent = self.cache.get("recent", [])
+        if node_id in recent:
+            recent.remove(node_id)
+        recent.insert(0, node_id)
+        self.cache["recent"] = recent[:20]
+
+        # Update counts
+        self.cache["nodes"] = nodes
+        self.cache["tags"] = tags
+        self.cache["types"] = types
+        self.cache["node_count"] = len(nodes)
+
+        self.save_cache()
+        return True
+
     def get_node(self, node_id: str) -> Optional[Dict]:
         """Get node metadata from cache."""
         return self.cache.get("nodes", {}).get(node_id)
@@ -235,6 +308,7 @@ if __name__ == "__main__":
         print("")
         print("Commands:")
         print("  rebuild              Rebuild the graph cache")
+        print("  update <file>        Update cache for a single node file")
         print("  stats                Show graph statistics")
         print("  recent [N]           Get N most recent nodes (default: 5)")
         print("  type <type>          Get nodes by type")
@@ -253,6 +327,18 @@ if __name__ == "__main__":
     if command == "rebuild":
         count = graph.rebuild()
         print(f"Rebuilt graph with {count} nodes")
+
+    elif command == "update":
+        if len(sys.argv) < 3:
+            print("Usage: graph.py update <node_file>", file=sys.stderr)
+            sys.exit(1)
+        node_file = sys.argv[2]
+        success = graph.update_single_node(node_file)
+        if success:
+            print(f"Updated cache for: {node_file}")
+        else:
+            print(f"Failed to update: {node_file}", file=sys.stderr)
+            sys.exit(1)
 
     elif command == "stats":
         stats = graph.get_stats()
