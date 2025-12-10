@@ -71,7 +71,32 @@ mkdir -p "$INSTALL_DIR/.claude/scripts"
 mkdir -p "$INSTALL_DIR/.claude/docs"
 mkdir -p "$INSTALL_DIR/.claude/lib"
 mkdir -p "$INSTALL_DIR/.claude/tools"
+# Memory graph directories
+mkdir -p "$INSTALL_DIR/.claude/memory/nodes/files"
+mkdir -p "$INSTALL_DIR/.claude/memory/nodes/tasks"
+mkdir -p "$INSTALL_DIR/.claude/memory/nodes/discoveries"
+mkdir -p "$INSTALL_DIR/.claude/memory/nodes/subagents"
+mkdir -p "$INSTALL_DIR/.claude/memory/nodes/errors"
+mkdir -p "$INSTALL_DIR/.claude/memory/nodes/sessions"
 echo "✓ Directories created"
+echo ""
+
+# Initialize memory graph
+if [ ! -f "$INSTALL_DIR/.claude/memory/graph.json" ]; then
+  cat > "$INSTALL_DIR/.claude/memory/graph.json" << 'EOF'
+{
+  "version": "1.0",
+  "node_count": 0,
+  "nodes": {},
+  "types": {},
+  "tags": {},
+  "recent": []
+}
+EOF
+  echo "✓ Memory graph initialized"
+else
+  echo "✓ Memory graph exists"
+fi
 echo ""
 
 echo "Loading manifest..."

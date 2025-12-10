@@ -53,7 +53,8 @@
       "find-circular",
       "find-dead-code",
       "progressive-reader",
-      "token-counter"
+      "token-counter",
+      "memory-graph"
     ],
     "skills": [
       "context-saver",
