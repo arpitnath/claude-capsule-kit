@@ -44,7 +44,10 @@
       "show-deps-tree.sh",
       "show-capsule-visual.sh",
       "test-super-claude.sh",
-      "update-super-claude.sh"
+      "update-super-claude.sh",
+      "sync-config.sh",
+      "push-session.sh",
+      "enable-sync.sh"
     ],
     "tools": [
       "dependency-scanner",
@@ -65,7 +68,15 @@
       "agent-developer.md",
       "architecture-explorer.md",
       "database-navigator.md",
-      "github-issue-tracker.md"
+      "github-issue-tracker.md",
+      "session-summarizer.md"
+    ],
+    "commands": [
+      "sync.md",
+      "sync-enable.md",
+      "sync-disable.md",
+      "sessions.md",
+      "load-session.md"
     ],
     "docs": [
       "CAPSULE_USAGE_GUIDE.md",

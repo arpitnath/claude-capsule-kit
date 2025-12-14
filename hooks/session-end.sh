@@ -53,6 +53,11 @@ if [ -f ".claude/hooks/session-end-memory.sh" ]; then
   ./.claude/hooks/session-end-memory.sh 2>/dev/null &
 fi
 
+# Sync session to GitHub (if enabled)
+if [ -f ".claude/scripts/push-session.sh" ]; then
+  bash ./.claude/scripts/push-session.sh 2>/dev/null &
+fi
+
 # Clear current task tracker (session ended)
 rm -f .claude/memory/.current_task 2>/dev/null || true
 
