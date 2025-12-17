@@ -23,6 +23,7 @@ func print(args ...interface{}) {
 func main() {
 	pathFlag := flag.String("path", ".", "Path to scan for dependencies")
 	outputFlag := flag.String("output", "", "Output file path for graph (default: .claude/dep-graph.toon)")
+	excludeFlag := flag.String("exclude", "", "Comma-separated list of additional directories to exclude")
 	verboseFlag := flag.Bool("verbose", false, "Enable verbose output")
 	versionFlag := flag.Bool("version", false, "Show version information")
 
@@ -46,14 +47,28 @@ func main() {
 
 	startTime := time.Now()
 
+	// Parse exclusions
+	var excludeDirs []string
+	if *excludeFlag != "" {
+		for _, dir := range strings.Split(*excludeFlag, ",") {
+			dir = strings.TrimSpace(dir)
+			if dir != "" {
+				excludeDirs = append(excludeDirs, dir)
+			}
+		}
+	}
+
 	if *verboseFlag {
 		fmt.Printf("Starting dependency scan...\n")
 		fmt.Printf("Path: %s\n", *pathFlag)
 		fmt.Printf("Output: %s\n", outputPath)
+		if len(excludeDirs) > 0 {
+			fmt.Printf("Additional exclusions: %v\n", excludeDirs)
+		}
 		fmt.Println()
 	}
 
-	scanner, err := NewScanner(*pathFlag, *verboseFlag)
+	scanner, err := NewScanner(*pathFlag, *verboseFlag, excludeDirs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: Failed to create scanner: %v\n", err)
 		os.Exit(1)

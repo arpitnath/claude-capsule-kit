@@ -7,17 +7,66 @@ import (
 	"strings"
 )
 
+// Default directories to always exclude
+var defaultExcludeDirs = map[string]bool{
+	// Version control
+	".git": true,
+	".svn": true,
+	".hg":  true,
+
+	// Package managers / dependencies
+	"node_modules": true,
+	"vendor":       true,
+	"bower_components": true,
+
+	// Python virtual environments
+	"venv":          true,
+	".venv":         true,
+	"virtualenv":    true,
+	".virtualenv":   true,
+	"env":           true,
+	".env":          true,
+	"__pycache__":   true,
+	".pytest_cache": true,
+	".mypy_cache":   true,
+	"site-packages": true,
+
+	// Build outputs
+	"dist":    true,
+	"build":   true,
+	".next":   true,
+	"out":     true,
+	"target":  true,
+	"_build":  true,
+	".output": true,
+
+	// IDE / Editor
+	".idea":   true,
+	".vscode": true,
+
+	// Data / cache directories (common in projects)
+	".data":  true,
+	".cache": true,
+	"cache":  true,
+
+	// Test coverage
+	"coverage":  true,
+	".coverage": true,
+	"htmlcov":   true,
+}
+
 // Scanner orchestrates the dependency scanning process
 type Scanner struct {
-	rootPath   string
-	parser     *Parser
-	graph      *DependencyGraph
-	verbose    bool
-	moduleName string  // Go module name from go.mod
+	rootPath    string
+	parser      *Parser
+	graph       *DependencyGraph
+	verbose     bool
+	moduleName  string            // Go module name from go.mod
+	excludeDirs map[string]bool   // Directories to exclude
 }
 
 // NewScanner creates a new scanner instance
-func NewScanner(rootPath string, verbose bool) (*Scanner, error) {
+func NewScanner(rootPath string, verbose bool, customExcludes []string) (*Scanner, error) {
 	// Load detected languages from .claude/.languages
 	languages, err := loadDetectedLanguages()
 	if err != nil {
@@ -51,12 +100,26 @@ func NewScanner(rootPath string, verbose bool) (*Scanner, error) {
 		}
 	}
 
+	// Merge default exclusions with custom ones
+	excludeDirs := make(map[string]bool)
+	for dir := range defaultExcludeDirs {
+		excludeDirs[dir] = true
+	}
+	for _, dir := range customExcludes {
+		excludeDirs[dir] = true
+	}
+
+	if verbose && len(customExcludes) > 0 {
+		printf("Custom exclusions added: %v\n", customExcludes)
+	}
+
 	return &Scanner{
-		rootPath:   rootPath,
-		parser:     parser,
-		graph:      NewDependencyGraph(),
-		verbose:    verbose,
-		moduleName: moduleName,
+		rootPath:    rootPath,
+		parser:      parser,
+		graph:       NewDependencyGraph(),
+		verbose:     verbose,
+		moduleName:  moduleName,
+		excludeDirs: excludeDirs,
 	}, nil
 }
 
@@ -110,10 +173,11 @@ func (s *Scanner) Scan() error {
 
 		// Skip directories
 		if info.IsDir() {
-			// Skip common directories
 			name := info.Name()
-			if name == "node_modules" || name == ".git" || name == "vendor" ||
-			   name == "dist" || name == "build" || name == ".next" {
+			if s.excludeDirs[name] {
+				if s.verbose {
+					printf("Skipping excluded directory: %s\n", path)
+				}
 				return filepath.SkipDir
 			}
 			return nil
