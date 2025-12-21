@@ -1,8 +1,4 @@
 <p align="center">
-  <h1>Claude Capsule Kit</h1>
-</p>
-
-<p align="center">
   <img src="./.github/super_claude_kit.png" alt="Claude Capsule Kit" width="100%" />
 </p>
 
@@ -38,6 +34,7 @@
 <p align="center">
   <img src="./.github/hero.gif" alt="Claude Capsule Kit" width="100%" />
 </p>
+
 
 ---
 
@@ -153,6 +150,36 @@ Vanilla Claude Code re-reads files on every question. Claude Capsule Kit tracks 
 - Time since last session
 
 The capsule uses TOON format for **52% token reduction** compared to JSON.
+
+---
+
+### 🧠 Memory Graph
+
+**Understand relationships, not just files.**
+
+Memory Graph tracks semantic connections between files, functions, decisions, and tasks as you work.
+
+<p align="center">
+  <img src="./.github/hero_memory.png" alt="Claude Capsule Kit" width="100%" />
+</p>
+
+```bash
+# Visualize the graph
+/memory-graph
+```
+
+
+
+**Auto-linking while you work:**
+- Read a file → Creates node
+- Edit imports → Links dependencies
+- Complete task → Updates relationships
+- Make decision → Links to affected files
+
+**Query the graph:**
+- "What depends on this file?" → Instant traversal
+- "Why did we choose X?" → Decision nodes with context
+- "What breaks if I change this?" → Impact via relationships
 
 ---
 

@@ -74,10 +74,10 @@ def visualize_graph(memory_dir: str = ".claude/memory"):
 
     # Header
     header = Text()
-    header.append("Memory Graph", style="bold")
-    header.append(f" · {stats['node_count']} nodes", style="dim")
-    header.append(f" · {stats['type_count']} types", style="dim")
-    header.append(f" · {stats['tag_count']} tags", style="dim")
+    header.append("Memory Graph", style="bold bright_magenta")
+    header.append(f" · {stats['node_count']} nodes", style="bright_cyan")
+    header.append(f" · {stats['type_count']} types", style="bright_cyan")
+    header.append(f" · {stats['tag_count']} tags", style="bright_cyan")
 
     # Create main tree
     tree = Tree(header)
@@ -93,25 +93,27 @@ def visualize_graph(memory_dir: str = ".claude/memory"):
         "decision": "🎯",
         "discovery": "💡",
         "session": "📅",
+        "subagent": "🤖",
         "error": "❌"
     }
 
     type_colors = {
-        "file-summary": "blue",
-        "task": "green",
-        "decision": "yellow",
-        "discovery": "cyan",
-        "session": "magenta",
-        "error": "red"
+        "file-summary": "bold bright_blue",
+        "task": "bold bright_green",
+        "decision": "bold bright_yellow",
+        "discovery": "bold bright_cyan",
+        "session": "bold bright_magenta",
+        "subagent": "bold bright_blue",
+        "error": "bold bright_red"
     }
 
-    # Status icons
-    status_icons = {
-        "completed": "[green]●[/green]",
-        "in_progress": "[yellow]○[/yellow]",
-        "pending": "[dim]◌[/dim]",
-        "active": "[green]●[/green]",
-        "archived": "[dim]◌[/dim]"
+    # Status icons with styles (will be converted to Text objects)
+    status_styles = {
+        "completed": ("●", "bold bright_green"),
+        "in_progress": ("○", "bold bright_yellow"),
+        "pending": ("◌", "bright_white"),
+        "active": ("●", "bold bright_green"),
+        "archived": ("◌", "dim")
     }
 
     # Render each type
@@ -128,7 +130,6 @@ def visualize_graph(memory_dir: str = ".claude/memory"):
 
             # Build node display
             status = node.get("status", "active")
-            status_icon = status_icons.get(status, "")
 
             # Get display name
             if node_type == "file-summary":
@@ -153,11 +154,13 @@ def visualize_graph(memory_dir: str = ".claude/memory"):
 
             # Build line
             line = Text()
-            if status_icon:
-                line.append(f"{status_icon} ")
-            line.append(truncate(name, 40))
+            # Add status icon with color
+            if status in status_styles:
+                icon_char, icon_style = status_styles[status]
+                line.append(icon_char + " ", style=icon_style)
+            line.append(truncate(name, 40), style="bright_white")
             if tags_str:
-                line.append(f" [{tags_str}]", style="dim cyan")
+                line.append(f" [{tags_str}]", style="bright_cyan")
             if time_ago:
                 line.append(f" {time_ago}", style="dim")
 
@@ -176,23 +179,23 @@ def visualize_graph(memory_dir: str = ".claude/memory"):
                 connections.append((node_id, target))
 
     if connections:
-        conn_branch = tree.add(f"🔗 [magenta]Connections[/magenta] [dim]· {len(connections)}[/dim]")
+        conn_branch = tree.add(f"🔗 [bold bright_magenta]Connections[/bold bright_magenta] [dim]· {len(connections)}[/dim]")
         for src, dst in connections[:5]:
             src_short = truncate(src, 25)
             dst_short = truncate(dst, 25)
-            conn_branch.add(f"[dim]{src_short}[/dim] → [dim]{dst_short}[/dim]")
+            conn_branch.add(f"[bright_white]{src_short}[/bright_white] [bright_yellow]→[/bright_yellow] [bright_white]{dst_short}[/bright_white]")
         if len(connections) > 5:
             conn_branch.add(f"[dim]... and {len(connections) - 5} more[/dim]")
 
     # Recent section
     recent = graph.get_recent(5)
     if recent:
-        recent_branch = tree.add(f"🕐 [white]Recent[/white] [dim]· last {len(recent)}[/dim]")
+        recent_branch = tree.add(f"🕐 [bold bright_white]Recent[/bold bright_white] [dim]· last {len(recent)}[/dim]")
         for node_id in recent:
             node = nodes_data.get(node_id, {})
             time_ago = get_time_ago(node.get("updated", ""))
             name = truncate(node_id, 40)
-            recent_branch.add(f"[dim]{name}[/dim] {time_ago}")
+            recent_branch.add(f"[bright_white]{name}[/bright_white] [bright_black]{time_ago}[/bright_black]")
 
     # Tags summary
     tags_data = graph.cache.get("tags", {})
@@ -200,8 +203,8 @@ def visualize_graph(memory_dir: str = ".claude/memory"):
         tag_counts = [(tag, len(ids)) for tag, ids in tags_data.items()]
         tag_counts.sort(key=lambda x: -x[1])
         top_tags = tag_counts[:8]
-        tags_str = " ".join([f"[cyan]{t}[/cyan]({c})" for t, c in top_tags])
-        tree.add(f"🏷️  [dim]Tags:[/dim] {tags_str}")
+        tags_str = " ".join([f"[bold bright_cyan]{t}[/bold bright_cyan][bright_yellow]({c})[/bright_yellow]" for t, c in top_tags])
+        tree.add(f"🏷️  [bold]Tags:[/bold] {tags_str}")
 
     # Print
     console.print()

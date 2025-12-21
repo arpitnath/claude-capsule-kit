@@ -67,7 +67,9 @@
       "database-navigator.md",
       "github-issue-tracker.md"
     ],
-    "commands": [],
+    "commands": [
+      "memory-graph.md"
+    ],
     "docs": [
       "CAPSULE_USAGE_GUIDE.md",
       "SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md"
