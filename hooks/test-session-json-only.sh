@@ -4,7 +4,7 @@
 cat << 'EOF'
 {
   "hookSpecificOutput": {
-    "systemMessage": "🚀 Super Claude Kit v2.0 Active"
+    "systemMessage": "🚀 Claude Capsule Kit v2.0 Active"
   }
 }
 EOF

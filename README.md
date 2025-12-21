@@ -1,9 +1,5 @@
 <p align="center">
-  <h1>Super Claude Kit</h1>
-</p>
-
-<p align="center">
-  <img src="./.github/super_claude_kit.png" alt="Super Claude Kit" width="100%" />
+  <img src="./.github/super_claude_kit.png" alt="Claude Capsule Kit" width="100%" />
 </p>
 
 <p align="center">
@@ -13,7 +9,7 @@
 </p>
 
 <p align="center">
-  <strong>Super Claude Kit</strong> adds persistent memory to Claude Code.
+  <strong>Claude Capsule Kit</strong> adds persistent memory to Claude Code.
   <br/>
   <br/>
   A persistence layer for Claude Code.
@@ -36,14 +32,15 @@
 
 
 <p align="center">
-  <img src="./.github/hero.gif" alt="Super Claude Kit" width="100%" />
+  <img src="./.github/hero.gif" alt="Claude Capsule Kit" width="100%" />
 </p>
+
 
 ---
 
 ## Quickstart
 
-### Installing Super Claude Kit
+### Installing Claude Capsule Kit
 
 Run the one-line installer **from your project root**:
 
@@ -53,7 +50,7 @@ curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/i
 ```
 
 > **Note:** This installs to your project's `.claude/` directory (like `.claude/settings.json`).
-> Install separately in each project where you want Super Claude Kit features.
+> Install separately in each project where you want Claude Capsule Kit features.
 > This is **not** a global installation — it enhances Claude Code per-project.
 
 That's it! Restart Claude Code and you'll see the context capsule on every session.
@@ -96,7 +93,7 @@ The installer will:
 
 ### How it works
 
-Super Claude Kit uses **hooks** (SessionStart, UserPromptSubmit) to:
+Claude Capsule Kit uses **hooks** (SessionStart, UserPromptSubmit) to:
 
 1. **Capture context** as you work (file access, tasks, git state)
 2. **Store in capsule** (`.claude/capsule.json`)
@@ -112,7 +109,7 @@ No configuration needed. It just works.
 
 **Stop wasting tokens on re-reads.**
 
-Vanilla Claude Code re-reads files on every question. Super Claude Kit tracks what's been read and references from memory.
+Vanilla Claude Code re-reads files on every question. Claude Capsule Kit tracks what's been read and references from memory.
 
 
 ---
@@ -153,6 +150,36 @@ Vanilla Claude Code re-reads files on every question. Super Claude Kit tracks wh
 - Time since last session
 
 The capsule uses TOON format for **52% token reduction** compared to JSON.
+
+---
+
+### 🧠 Memory Graph
+
+**Understand relationships, not just files.**
+
+Memory Graph tracks semantic connections between files, functions, decisions, and tasks as you work.
+
+<p align="center">
+  <img src="./.github/hero_memory.png" alt="Claude Capsule Kit" width="100%" />
+</p>
+
+```bash
+# Visualize the graph
+/memory-graph
+```
+
+
+
+**Auto-linking while you work:**
+- Read a file → Creates node
+- Edit imports → Links dependencies
+- Complete task → Updates relationships
+- Make decision → Links to affected files
+
+**Query the graph:**
+- "What depends on this file?" → Instant traversal
+- "Why did we choose X?" → Decision nodes with context
+- "What breaks if I change this?" → Impact via relationships
 
 ---
 
@@ -203,7 +230,7 @@ See the difference when working with large files (187KB React source):
   </video>
 </p>
 
-| Metric | Vanilla Claude Code | Super Claude Kit |
+| Metric | Vanilla Claude Code | Claude Capsule Kit |
 |--------|---------------------|------------------|
 | **Initial Read** | `MaxFileReadTokenExceededError` | Same error |
 | **Recovery** | 8+ Read calls with offset/limit | Uses progressive-reader |
@@ -214,7 +241,7 @@ See the difference when working with large files (187KB React source):
 <summary>🧪 Try it yourself</summary>
 
 ```bash
-# 1. Clone React and install Super Claude Kit
+# 1. Clone React and install Claude Capsule Kit
 git clone https://github.com/facebook/react.git && cd react
 curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install | bash
 
@@ -227,7 +254,7 @@ claude --debug
 
 **What to look for:**
 - Vanilla: 8+ Read operations with arbitrary 800-line chunks
-- Super Claude Kit: `progressive-reader --list` → targeted chunk reads
+- Claude Capsule Kit: `progressive-reader --list` → targeted chunk reads
 
 </details>
 
@@ -354,7 +381,7 @@ bash .claude/scripts/show-stats.sh
 
 Expected output:
 ```
-✅ Super Claude Kit v1.0.0
+✅ Claude Capsule Kit v1.0.0
 ✅ dependency-scanner v1.0.0
 ✅ progressive-reader v1.0.0
 ✅ All hooks configured
@@ -462,7 +489,7 @@ For more issues, see [FAQ](docs/FAQ.md) or [open an issue](https://github.com/ar
 ## Common Questions
 
 **Q: Do I install this globally or per-project?**
-A: **Per-project.** Run the install script from each project where you want Super Claude Kit. It installs to `.claude/` in that directory.
+A: **Per-project.** Run the install script from each project where you want Claude Capsule Kit. It installs to `.claude/` in that directory.
 
 **Q: Does this replace Claude Code?**
 A: **No.** It enhances Claude Code by adding hooks, tools, and persistent context memory. You still use the normal `claude` command.
@@ -547,7 +574,7 @@ Copyright (c) 2025 Arpit Nath
 
 ## Star History
 
-If you found Super Claude Kit useful, please star the repo! ⭐
+If you found Claude Capsule Kit useful, please star the repo! ⭐
 
 <p align="center">
   <a href="https://star-history.com/#arpitnath/super-claude-kit&Date">

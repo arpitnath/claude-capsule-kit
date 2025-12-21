@@ -1,7 +1,7 @@
 {
   "version": "1.2.1",
   "author": "Arpit Nath",
-  "description": "Super Claude Kit - Persistent Context Memory + Dependency Graph for Claude Code",
+  "description": "Claude Capsule Kit - Persistent Context Memory + Dependency Graph for Claude Code",
   "components": {
     "lib": [
       "tool-runner.sh",
@@ -53,7 +53,8 @@
       "find-circular",
       "find-dead-code",
       "progressive-reader",
-      "token-counter"
+      "token-counter",
+      "memory-graph"
     ],
     "skills": [
       "context-saver",
@@ -66,6 +67,9 @@
       "database-navigator.md",
       "github-issue-tracker.md"
     ],
+    "commands": [
+      "memory-graph.md"
+    ],
     "docs": [
       "CAPSULE_USAGE_GUIDE.md",
       "SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md"
@@ -75,7 +79,7 @@
     ]
   },
   "gitignore_entries": [
-    "# Super Claude Kit (generated at runtime)",
+    "# Claude Capsule Kit (generated at runtime)",
     ".claude/**",
     "CLAUDE.md"
   ]

@@ -1,12 +1,12 @@
 #!/bin/bash
-# Super Claude Kit Installation Script
+# Claude Capsule Kit Installation Script
 # Works both locally (for testing) and remotely (curl | bash)
 # Author: Arpit Nath
 
 set -eo pipefail
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🚀 Super Claude Kit Installation"
+echo "🚀 Claude Capsule Kit Installation"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -58,7 +58,7 @@ echo ""
 
 if [ ! -d "$INSTALL_DIR/.git" ]; then
   echo "ℹ️  Git repository not detected"
-  echo "   Super Claude Kit will use file-based change tracking"
+  echo "   Claude Capsule Kit will use file-based change tracking"
   echo "   (Git provides additional context but is not required)"
   echo ""
 fi
@@ -71,7 +71,32 @@ mkdir -p "$INSTALL_DIR/.claude/scripts"
 mkdir -p "$INSTALL_DIR/.claude/docs"
 mkdir -p "$INSTALL_DIR/.claude/lib"
 mkdir -p "$INSTALL_DIR/.claude/tools"
+# Memory graph directories
+mkdir -p "$INSTALL_DIR/.claude/memory/nodes/files"
+mkdir -p "$INSTALL_DIR/.claude/memory/nodes/tasks"
+mkdir -p "$INSTALL_DIR/.claude/memory/nodes/discoveries"
+mkdir -p "$INSTALL_DIR/.claude/memory/nodes/subagents"
+mkdir -p "$INSTALL_DIR/.claude/memory/nodes/errors"
+mkdir -p "$INSTALL_DIR/.claude/memory/nodes/sessions"
 echo "✓ Directories created"
+echo ""
+
+# Initialize memory graph
+if [ ! -f "$INSTALL_DIR/.claude/memory/graph.json" ]; then
+  cat > "$INSTALL_DIR/.claude/memory/graph.json" << 'EOF'
+{
+  "version": "1.0",
+  "node_count": 0,
+  "nodes": {},
+  "types": {},
+  "tags": {},
+  "recent": []
+}
+EOF
+  echo "✓ Memory graph initialized"
+else
+  echo "✓ Memory graph exists"
+fi
 echo ""
 
 echo "Loading manifest..."
@@ -175,6 +200,22 @@ for agent in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(a) for a 
   AGENT_COUNT=$((AGENT_COUNT + 1))
 done
 echo "✓ Installed $AGENT_COUNT sub-agents"
+echo ""
+
+echo "Installing slash commands..."
+mkdir -p "$INSTALL_DIR/.claude/commands"
+CMD_COUNT=0
+for cmd in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(c) for c in json.load(sys.stdin)['components'].get('commands', [])]" 2>/dev/null || echo ""); do
+  if [ -n "$cmd" ]; then
+    install_file "commands/$cmd" ".claude/commands/$cmd"
+    CMD_COUNT=$((CMD_COUNT + 1))
+  fi
+done
+if [ "$CMD_COUNT" -gt 0 ]; then
+  echo "✓ Installed $CMD_COUNT slash commands"
+else
+  echo "✓ No slash commands to install"
+fi
 echo ""
 
 echo "Installing documentation..."
@@ -346,6 +387,10 @@ if [ ! -f "$INSTALL_DIR/.claude/settings.local.json" ]; then
           {
             "type": "command",
             "command": "bash .claude/hooks/stop.sh"
+          },
+          {
+            "type": "prompt",
+            "prompt": "If session sync is enabled (check if .claude/sync-config.json exists and has enabled:true), write a session summary to .claude/session-summary.md. Format: # Session Summary\\n\\n## Current State\\n[What was being worked on]\\n\\n## Completed\\n- [Task 1]\\n\\n## Key Decisions\\n- [Decision]: [Reason]\\n\\n## Files Modified\\n- path/to/file\\n\\n## Next Steps\\n- [ ] [Next action]\\n\\n## Continue Prompt\\n> [Ready-to-use prompt for Claude Web]\\n\\nKeep it concise (~300 words). If sync not enabled or config missing, do nothing and respond with just 'ok'."
           }
         ]
       }
@@ -397,7 +442,10 @@ required_hooks = {
     }],
     "Stop": [{
         "matcher": "*",
-        "hooks": [{"type": "command", "command": make_hook_cmd("stop.sh")}]
+        "hooks": [
+            {"type": "command", "command": make_hook_cmd("stop.sh")},
+            {"type": "prompt", "prompt": "If session sync is enabled (check if .claude/sync-config.json exists and has enabled:true), write a session summary to .claude/session-summary.md. Format: # Session Summary\\n\\n## Current State\\n[What was being worked on]\\n\\n## Completed\\n- [Task 1]\\n\\n## Key Decisions\\n- [Decision]: [Reason]\\n\\n## Files Modified\\n- path/to/file\\n\\n## Next Steps\\n- [ ] [Next action]\\n\\n## Continue Prompt\\n> [Ready-to-use prompt for Claude Web]\\n\\nKeep it concise (~300 words). If sync not enabled or config missing, do nothing and respond with just 'ok'."}
+        ]
     }],
     "SessionEnd": [{
         "matcher": "*",
@@ -428,35 +476,35 @@ echo ""
 
 echo "Updating .gitignore..."
 if [ -f "$INSTALL_DIR/.gitignore" ]; then
-  if ! grep -q "Super Claude Kit" "$INSTALL_DIR/.gitignore" 2>/dev/null; then
+  if ! grep -q "Claude Capsule Kit" "$INSTALL_DIR/.gitignore" 2>/dev/null; then
     echo "" >> "$INSTALL_DIR/.gitignore"
     echo "$MANIFEST" | python3 -c "import sys, json; [print(e) for e in json.load(sys.stdin)['gitignore_entries']]" >> "$INSTALL_DIR/.gitignore"
-    echo "✓ Added Super Claude Kit entries to .gitignore"
+    echo "✓ Added Claude Capsule Kit entries to .gitignore"
   else
-    echo "✓ .gitignore already contains Super Claude Kit entries"
+    echo "✓ .gitignore already contains Claude Capsule Kit entries"
   fi
 else
   echo "$MANIFEST" | python3 -c "import sys, json; [print(e) for e in json.load(sys.stdin)['gitignore_entries']]" > "$INSTALL_DIR/.gitignore"
-  echo "✓ Created .gitignore with Super Claude Kit entries"
+  echo "✓ Created .gitignore with Claude Capsule Kit entries"
 fi
 echo ""
 
 echo "Updating project instructions..."
 if [ -f "$INSTALL_DIR/CLAUDE.md" ]; then
-  if ! grep -q "Super Claude Kit Integration" "$INSTALL_DIR/CLAUDE.md" 2>/dev/null; then
+  if ! grep -q "Claude Capsule Kit Integration" "$INSTALL_DIR/CLAUDE.md" 2>/dev/null; then
     echo "" >> "$INSTALL_DIR/CLAUDE.md"
     echo "---" >> "$INSTALL_DIR/CLAUDE.md"
     echo "" >> "$INSTALL_DIR/CLAUDE.md"
     install_file "CLAUDE_TEMPLATE.md" ".claude/CLAUDE_TEMPLATE.tmp"
     cat "$INSTALL_DIR/.claude/CLAUDE_TEMPLATE.tmp" >> "$INSTALL_DIR/CLAUDE.md"
     rm "$INSTALL_DIR/.claude/CLAUDE_TEMPLATE.tmp"
-    echo "✓ Added Super Claude Kit section to CLAUDE.md"
+    echo "✓ Added Claude Capsule Kit section to CLAUDE.md"
   else
-    echo "✓ CLAUDE.md already has Super Claude Kit integration"
+    echo "✓ CLAUDE.md already has Claude Capsule Kit integration"
   fi
 else
   install_file "CLAUDE_TEMPLATE.md" "CLAUDE.md"
-  echo "✓ Created CLAUDE.md with Super Claude Kit instructions"
+  echo "✓ Created CLAUDE.md with Claude Capsule Kit instructions"
 fi
 echo ""
 
@@ -479,8 +527,30 @@ date +%s > "$INSTALL_DIR/.claude/.super-claude-installed"
 echo "✓ Version $MANIFEST_VERSION tracked"
 echo ""
 
+# Session Sync opt-in
+SYNC_ENABLED="false"
+if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1; then
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "📡 Session Sync Available"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "Session Sync lets you continue Claude Code sessions"
+  echo "in Claude Web/Desktop/Mobile via GitHub."
+  echo ""
+  read -p "Enable session sync? (y/N): " SYNC_ANSWER
+  if [ "$SYNC_ANSWER" = "y" ] || [ "$SYNC_ANSWER" = "Y" ]; then
+    echo ""
+    bash "$INSTALL_DIR/.claude/scripts/enable-sync.sh"
+    SYNC_ENABLED="true"
+  else
+    echo ""
+    echo "Skipped. Enable anytime with: /sync-enable"
+  fi
+  echo ""
+fi
+
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✅ Super Claude Kit Installed Successfully!"
+echo "✅ Claude Capsule Kit Installed Successfully!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "📊 Installed components:"
@@ -491,17 +561,23 @@ if [ "$TOOL_COUNT" -gt 0 ]; then
 fi
 echo "   • $SKILL_COUNT skills"
 echo "   • $AGENT_COUNT sub-agents"
+if [ "$CMD_COUNT" -gt 0 ]; then
+  echo "   • $CMD_COUNT slash commands"
+fi
 if [ -f "$HOME/.claude/bin/dependency-scanner" ] && [ -f "$HOME/.claude/bin/progressive-reader" ]; then
   echo "   • Built tools: dependency-scanner, progressive-reader"
 elif [ -f "$HOME/.claude/bin/dependency-scanner" ] || [ -f "$HOME/.claude/bin/progressive-reader" ]; then
   echo "   • Some built tools (Go tools partially built)"
 fi
 echo "   • Documentation & templates"
+if [ "$SYNC_ENABLED" = "true" ]; then
+  echo "   • Session sync: ENABLED"
+fi
 echo ""
 echo "🚀 Next steps:"
 echo "   1. Run tests: bash .claude/scripts/test-super-claude.sh"
 echo "   2. Start Claude Code in this directory"
-echo "   3. Look for: '🚀 Super Claude Kit ACTIVATED'"
+echo "   3. Look for: '🚀 Claude Capsule Kit ACTIVATED'"
 if [ -f "$HOME/.claude/bin/dependency-scanner" ]; then
   echo "   4. Try dependency tools: .claude/tools/find-circular.sh"
 fi
@@ -512,6 +588,13 @@ echo "   • Project instructions: CLAUDE.md"
 echo "   • View stats: bash .claude/scripts/show-stats.sh"
 if [ -f "$HOME/.claude/bin/dependency-scanner" ]; then
   echo "   • Dependency tools: .claude/tools/"
+fi
+if [ "$CMD_COUNT" -gt 0 ]; then
+  echo ""
+  echo "📡 Slash commands:"
+  echo "   • /sync-enable - Enable session sync"
+  echo "   • /sync - Manual sync to GitHub"
+  echo "   • /sessions - List synced sessions"
 fi
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

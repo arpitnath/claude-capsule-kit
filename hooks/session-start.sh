@@ -1,7 +1,12 @@
 #!/bin/bash
 
-# Super Claude Kit Session Start Hook
+# Claude Capsule Kit Session Start Hook
 # Runs at session start to load context and restore memory
+
+# Defensive check: Ensure CWD exists (can be invalid if directory was deleted)
+if ! cd "$(pwd 2>/dev/null)" 2>/dev/null; then
+  cd "$HOME" 2>/dev/null || exit 0
+fi
 
 # Debug mode - set via environment variable
 DEBUG_MODE="${CLAUDE_DEBUG_HOOKS:-false}"
@@ -27,7 +32,7 @@ fi
 # (Hook systemMessage only works if first character is '{')
 {
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "🚀 Super Claude Kit ACTIVATED - Context Loaded"
+  echo "🚀 Claude Capsule Kit ACTIVATED - Context Loaded"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
 
@@ -78,9 +83,9 @@ fi
     echo ""
   fi
 
-  # 5. Load Exploration Journal (Super Claude Kit MEMORY)
+  # 5. Load Exploration Journal (Claude Capsule Kit MEMORY)
   if [ -d "docs/exploration" ] && [ "$(ls -A docs/exploration 2>/dev/null)" ]; then
-      echo "🧠 Super Claude Kit MEMORY LOADED:"
+      echo "🧠 Claude Capsule Kit MEMORY LOADED:"
       echo "   Previous exploration findings available:"
       for file in docs/exploration/*.md; do
           if [ -f "$file" ]; then
@@ -107,14 +112,14 @@ fi
   if [ -f "README.md" ]; then
       echo "   • Documentation: README.md"
   fi
-  echo "   • Super Claude Kit docs: .claude/docs/"
+  echo "   • Claude Capsule Kit docs: .claude/docs/"
   if [ -f ".claude/dep-graph.toon" ]; then
       echo "   • Dependency tools: .claude/tools/ (query-deps, impact-analysis, find-circular, find-dead-code)"
   fi
   echo ""
 
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "✅ Context loaded successfully! You are now Super Claude Kit."
+  echo "✅ Context loaded successfully! You are now Claude Capsule Kit."
   echo "💡 Tip: All discoveries are persistent across this session."
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
@@ -144,7 +149,7 @@ if [ -f ".claude/.super-claude-version" ]; then
       LATEST_VERSION=$(curl -fsSL --max-time 2 https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/manifest.json 2>/dev/null | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])" 2>/dev/null || echo "$CURRENT_VERSION")
 
       if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ] && [ -n "$LATEST_VERSION" ] && [ "$LATEST_VERSION" != "$CURRENT_VERSION" ]; then
-        echo "📦 Super Claude Kit update available: $CURRENT_VERSION → $LATEST_VERSION"
+        echo "📦 Claude Capsule Kit update available: $CURRENT_VERSION → $LATEST_VERSION"
         echo "   Run: bash .claude/scripts/update-super-claude.sh"
         echo ""
       fi
@@ -162,6 +167,13 @@ else
   ./.claude/hooks/update-capsule.sh 2>/dev/null
 fi
 
+# Inject memory graph context (if available)
+MEMORY_CONTEXT=""
+if [ -f "./.claude/hooks/session-start-memory.sh" ]; then
+  MEMORY_CONTEXT=$(./.claude/hooks/session-start-memory.sh 2>/dev/null || echo "")
+  [ "$DEBUG_MODE" = "true" ] && echo "Memory context loaded: ${#MEMORY_CONTEXT} chars" >> "$DEBUG_LOG"
+fi
+
 # Capture capsule output for JSON (don't send to stdout - breaks JSON parsing)
 CAPSULE_OUTPUT=$(./.claude/hooks/inject-capsule.sh 2>/dev/null)
 
@@ -176,12 +188,20 @@ if [ "$DEBUG_MODE" = "true" ]; then
   echo "DEBUG: Outputting JSON with systemMessage and capsule..." >> "$DEBUG_LOG"
 fi
 
+# Combine capsule and memory context
+FULL_CONTEXT="$CAPSULE_OUTPUT"
+if [ -n "$MEMORY_CONTEXT" ]; then
+  FULL_CONTEXT="$CAPSULE_OUTPUT
+
+$MEMORY_CONTEXT"
+fi
+
 # Output ONLY JSON (first character MUST be '{' for systemMessage to work)
-# Include capsule in additionalContext so Claude receives it
+# Include capsule + memory in additionalContext so Claude receives it
 if command -v jq > /dev/null 2>&1; then
   jq -n \
-    --arg msg "Super Claude Kit - Context and tools loaded" \
-    --arg context "$CAPSULE_OUTPUT" \
+    --arg msg "Claude Capsule Kit - Context and tools loaded" \
+    --arg context "$FULL_CONTEXT" \
     '{
       systemMessage: $msg,
       hookSpecificOutput: {
@@ -193,7 +213,7 @@ else
   # Fallback without jq (less safe but works)
   cat << EOF
 {
-  "systemMessage": "Super Claude Kit - Context and tools loaded",
+  "systemMessage": "Claude Capsule Kit - Context and tools loaded",
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
     "additionalContext": "Session initialized with capsule, git state, and tool access"

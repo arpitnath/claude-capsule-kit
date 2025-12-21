@@ -1,6 +1,6 @@
-# Super Claude Kit Integration
+# Claude Capsule Kit Integration
 
-This project uses **Super Claude Kit** - a persistent context memory system for Claude Code that enables cross-message and cross-session memory.
+This project uses **Claude Capsule Kit** - a persistent context memory system for Claude Code that enables cross-message and cross-session memory.
 
 ## 📋 Requirements
 
@@ -15,7 +15,7 @@ This project uses **Super Claude Kit** - a persistent context memory system for 
 
 ## 🎯 System Overview
 
-Super Claude Kit provides:
+Claude Capsule Kit provides:
 - **Persistent Context**: Remember files accessed, tasks worked on, and discoveries made
 - **Smart Refresh**: Automatic context updates before each prompt
 - **Cross-Session Memory**: Context persists across sessions (24-hour window)
@@ -28,7 +28,7 @@ Super Claude Kit provides:
 
 ## 🔒 Production Safety
 
-Super Claude Kit is designed for safe production use:
+Claude Capsule Kit is designed for safe production use:
 
 **Sub-Agents (Read-Only):**
 All 4 built-in sub-agents (architecture-explorer, database-navigator, agent-developer, github-issue-tracker) are **read-only**. They can analyze and explore code but cannot modify files or execute destructive operations.
@@ -110,7 +110,7 @@ Only discoveries require manual logging - everything else is automatic!
 
 <tool-enforcement-rules priority="critical">
   <description>
-    Super Claude Kit provides specialized tools that are FASTER and MORE ACCURATE than generic exploration.
+    Claude Capsule Kit provides specialized tools that are FASTER and MORE ACCURATE than generic exploration.
     These rules are MANDATORY and enforced by PreToolUse hook.
   </description>
 

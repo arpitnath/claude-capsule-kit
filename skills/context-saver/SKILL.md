@@ -10,7 +10,7 @@ allowed-tools: [Write, Edit, Read, Bash]
 
 # Context Saver Skill
 
-This skill enables Super Claude Kit to save discoveries to persistent storage.
+This skill enables Claude Capsule Kit to save discoveries to persistent storage.
 
 ## Purpose
 
@@ -108,7 +108,7 @@ Use this skill when:
 
 When next Claude session starts:
 1. SessionStart hook detects files in `docs/exploration/`
-2. Prints: "🧠 Super Claude Kit MEMORY LOADED: Previous exploration findings available"
+2. Prints: "🧠 Claude Capsule Kit MEMORY LOADED: Previous exploration findings available"
 3. Lists all saved files
 4. Next Claude reads relevant files to continue work
 

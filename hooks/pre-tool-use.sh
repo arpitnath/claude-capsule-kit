@@ -2,14 +2,24 @@
 
 # Pre-Tool-Use Hook
 # 1. Warns before redundant file reads to encourage using capsule data
-# 2. Enforces Super Claude Kit tools for dependency analysis
+# 2. Enforces Claude Capsule Kit tools for dependency analysis
 # 3. Auto-logs file access to capsule
 # Runs BEFORE each tool call
+# Claude Code passes arguments via stdin as JSON, NOT positional args
 
 set -euo pipefail
 
-TOOL_NAME="${1:-}"
-TOOL_INPUT="${2:-}"
+# Defensive check: Ensure CWD exists (can be invalid if directory was deleted)
+if ! cd "$(pwd 2>/dev/null)" 2>/dev/null; then
+  cd "$HOME" 2>/dev/null || exit 0
+fi
+
+# Read JSON from stdin (Claude Code's hook protocol)
+INPUT_JSON=$(cat)
+
+# Extract fields from JSON using python3
+TOOL_NAME=$(echo "$INPUT_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('tool_name', ''))" 2>/dev/null || echo "")
+TOOL_INPUT=$(echo "$INPUT_JSON" | python3 -c "import sys, json; import json as j; print(j.dumps(json.load(sys.stdin).get('tool_input', {})))" 2>/dev/null || echo "{}")
 
 # Task tool interception - enforce dependency tools
 if [ "$TOOL_NAME" == "Task" ]; then
@@ -65,6 +75,17 @@ if [ -n "$FILE_PATH" ]; then
   fi
 
   if [ -n "$RESOLVED_PATH" ]; then
+    # Skip size check for images and binary files (Claude handles these natively)
+    FILE_EXT="${RESOLVED_PATH##*.}"
+    FILE_EXT_LOWER=$(echo "$FILE_EXT" | tr '[:upper:]' '[:lower:]')
+
+    case "$FILE_EXT_LOWER" in
+      jpg|jpeg|png|gif|webp|svg|bmp|ico|pdf|ipynb)
+        # Allow images, PDFs, notebooks regardless of size
+        exit 0
+        ;;
+    esac
+
     FILE_SIZE=$(stat -f%z "$RESOLVED_PATH" 2>/dev/null || stat -c%s "$RESOLVED_PATH" 2>/dev/null || echo "0")
     FILE_SIZE_KB=$((FILE_SIZE / 1024))
 

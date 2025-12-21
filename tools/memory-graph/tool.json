@@ -1,0 +1,46 @@
+{
+  "name": "memory-graph",
+  "version": "1.0.0",
+  "description": "Obsidian-inspired memory graph for persistent cross-session context",
+  "type": "python",
+  "entry": "lib/visualize.py",
+  "author": "Arpit Nath",
+  "keywords": ["memory", "graph", "context", "obsidian", "nodes"],
+  "usage": {
+    "command": "python3 lib/visualize.py [memory_dir]",
+    "args": {
+      "memory_dir": "Optional: Path to memory directory (default: .claude/memory)"
+    },
+    "examples": [
+      {
+        "description": "Visualize memory graph",
+        "command": "CLAUDE_MEMORY_DIR=.claude/memory python3 lib/visualize.py"
+      }
+    ]
+  },
+  "requires": {
+    "python": ">=3.8"
+  },
+  "permissions": {
+    "read": [".claude/memory/**"],
+    "write": [".claude/memory/**"],
+    "network": false
+  },
+  "autoRun": {
+    "enabled": false,
+    "triggers": [],
+    "condition": "manual"
+  },
+  "components": {
+    "lib": [
+      "capture.py",
+      "graph.py",
+      "visualize.py"
+    ],
+    "scripts": [
+      "init.sh",
+      "create-node.sh",
+      "memory-query.sh"
+    ]
+  }
+}

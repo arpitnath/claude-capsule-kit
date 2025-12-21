@@ -2,10 +2,10 @@
 
 ## Executive Summary
 
-Progressive Reader is a system primitive for Super Claude Kit that enables efficient reading of large files and outputs through semantic chunking. Unlike traditional line-based or byte-offset reading, Progressive Reader uses tree-sitter to parse code into Abstract Syntax Trees (AST) and chunks content at logical boundaries (functions, classes, methods), preserving semantic coherence while managing context window limits.
+Progressive Reader is a system primitive for Claude Capsule Kit that enables efficient reading of large files and outputs through semantic chunking. Unlike traditional line-based or byte-offset reading, Progressive Reader uses tree-sitter to parse code into Abstract Syntax Trees (AST) and chunks content at logical boundaries (functions, classes, methods), preserving semantic coherence while managing context window limits.
 
 **Implementation**: Go-based tool with tree-sitter bindings
-**Status**: Implemented in Super Claude Kit v2.0
+**Status**: Implemented in Claude Capsule Kit v2.0
 **Binary Location**: `~/.claude/bin/progressive-reader`
 
 ---

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Super Claude Kit v2.0.0 - Test Enhanced Hooks System
+# Claude Capsule Kit v2.0.0 - Test Enhanced Hooks System
 # Tests Phase 3: Tool auto-suggestion and keyword triggers
 
 set -euo pipefail
@@ -141,7 +141,7 @@ print_test "7" "Tool auto-suggest returns empty for non-matching prompts"
 
 OUTPUT=$(./hooks/tool-auto-suggest.sh "Hello, how are you?" 2>/dev/null || true)
 
-if [ -z "$OUTPUT" ] || ! echo "$OUTPUT" | grep -q "Super Claude Kit"; then
+if [ -z "$OUTPUT" ] || ! echo "$OUTPUT" | grep -q "Claude Capsule Kit"; then
     pass "No suggestions for non-matching prompt"
 else
     fail "Unexpected suggestions for non-matching prompt"

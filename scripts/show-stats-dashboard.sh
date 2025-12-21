@@ -12,7 +12,7 @@ CYAN='\033[0;36m'
 RESET='\033[0m'
 
 echo ""
-echo -e "${BOLD}Super Claude Kit - Session Stats${RESET}"
+echo -e "${BOLD}Claude Capsule Kit - Session Stats${RESET}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 

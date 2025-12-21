@@ -73,7 +73,7 @@ get_audit_stats() {
         return 1
     fi
 
-    echo "Super Claude Kit - Audit Log Statistics"
+    echo "Claude Capsule Kit - Audit Log Statistics"
     echo ""
 
     local total_entries=$(wc -l < "$AUDIT_LOG")

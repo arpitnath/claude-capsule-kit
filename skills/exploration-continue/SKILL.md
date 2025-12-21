@@ -9,7 +9,7 @@ allowed-tools: [Read, Grep, Glob]
 
 # Exploration Continue Skill
 
-This skill enables Super Claude Kit to resume work from previous sessions.
+This skill enables Claude Capsule Kit to resume work from previous sessions.
 
 ## Purpose
 
@@ -64,7 +64,7 @@ Step 6: Ask user: "Should I continue with [next step]?"
    - `CURRENT_SESSION.md`
    - `PHASE_1_SERVICE_DISCOVERY.md`
 3. Read `CURRENT_SESSION.md`:
-   - Goal: Becoming Super Claude Kit
+   - Goal: Becoming Claude Capsule Kit
    - Status: 60% complete
    - Completed: Hooks, sub-agents, skills
    - Next: Test complete system
@@ -72,7 +72,7 @@ Step 6: Ask user: "Should I continue with [next step]?"
    ```
    📚 Previous Session Summary:
 
-   Goal: Transform into Super Claude Kit
+   Goal: Transform into Claude Capsule Kit
    Progress: 60% complete
 
    ✅ Completed:
@@ -81,11 +81,11 @@ Step 6: Ask user: "Should I continue with [next step]?"
    - 3 reusable skills
 
    🔄 Next Steps:
-   - Test complete Super Claude Kit system
+   - Test complete Claude Capsule Kit system
    - Explore codebase using new capabilities
    - Create unified documentation
 
-   Should I continue with testing Super Claude Kit?
+   Should I continue with testing Claude Capsule Kit?
    ```
 
 ## Reading Priority
@@ -167,4 +167,4 @@ Should I verify findings are still accurate before continuing?"
 
 ---
 
-**Remember**: This skill makes Super Claude Kit feel like a continuous teammate, not a fresh start every time!
+**Remember**: This skill makes Claude Capsule Kit feel like a continuous teammate, not a fresh start every time!

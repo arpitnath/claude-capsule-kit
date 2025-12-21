@@ -6,6 +6,12 @@
 
 set -euo pipefail
 
+# Defensive check: Ensure CWD exists (can be invalid if directory was deleted)
+if ! cd "$(pwd 2>/dev/null)" 2>/dev/null; then
+  # CWD is invalid, try to recover by going to home directory
+  cd "$HOME" 2>/dev/null || exit 0
+fi
+
 # Find .claude directory by searching parent directories
 find_claude_dir() {
   local current_dir="$PWD"

@@ -37,7 +37,7 @@ total_logs=0
 # Warn if no logs after 3 messages
 if [ "$total_logs" -eq 0 ] && [ "$MESSAGE_COUNT" -ge 3 ]; then
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "⚠️  Super Claude Kit: Capsule logging not detected"
+  echo "⚠️  Claude Capsule Kit: Capsule logging not detected"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
   echo "💡 Reminder: Log your actions for better context:"

@@ -2,6 +2,11 @@
 # Pre-task analysis hook - analyzes user prompt and suggests optimal approach
 # Runs before Claude responds to encourage best practices and efficient workflows
 
+# Defensive check: Ensure CWD exists (can be invalid if directory was deleted)
+if ! cd "$(pwd 2>/dev/null)" 2>/dev/null; then
+  cd "$HOME" 2>/dev/null || exit 0
+fi
+
 USER_PROMPT=$(timeout 0.1 cat 2>/dev/null || echo "$1")
 
 MESSAGE_COUNT_FILE=".claude/message_count.txt"
@@ -78,7 +83,7 @@ except:
     capsule = {}
 suggestions = json.loads('''$SUGGESTIONS''')
 output = {
-  'systemMessage': 'Super Claude Kit - Context and tools loaded',
+  'systemMessage': 'Claude Capsule Kit - Context and tools loaded',
   'hookSpecificOutput': {
     'hookEventName': 'UserPromptSubmit',
     'context': capsule,
@@ -86,7 +91,7 @@ output = {
   }
 }
 print(json.dumps(output))
-" 2>/dev/null || echo '{"systemMessage":"Super Claude Kit - Context and tools loaded"}'
+" 2>/dev/null || echo '{"systemMessage":"Claude Capsule Kit - Context and tools loaded"}'
 else
   # Subsequent messages - only if we have content
   if [ "$CAPSULE_JSON" != "{}" ] || [ "$SUGGESTIONS" != "[]" ]; then

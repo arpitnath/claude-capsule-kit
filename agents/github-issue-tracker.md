@@ -239,7 +239,7 @@ gh issue create \
   --label "refactor,technical-debt,priority:low"
 ```
 
-## Integration with Super Claude Kit
+## Integration with Claude Capsule Kit
 
 When creating issues, log them as discoveries:
 ```bash

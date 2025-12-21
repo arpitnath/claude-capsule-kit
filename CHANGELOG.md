@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Super Claude Kit will be documented in this file.
+All notable changes to Claude Capsule Kit will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -202,4 +202,4 @@ bash .claude/scripts/update-super-claude.sh
 
 - [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
-- [Super Claude Kit Repository](https://github.com/arpitnath/super-claude-kit)
+- [Claude Capsule Kit Repository](https://github.com/arpitnath/super-claude-kit)

@@ -6,6 +6,11 @@
 
 set -euo pipefail
 
+# Defensive check: Ensure CWD exists (can be invalid if directory was deleted)
+if ! cd "$(pwd 2>/dev/null)" 2>/dev/null; then
+  cd "$HOME" 2>/dev/null || exit 0
+fi
+
 # Persist current session state
 if [ -f ".claude/hooks/persist-capsule.sh" ]; then
   ./.claude/hooks/persist-capsule.sh 2>/dev/null || true
@@ -42,6 +47,19 @@ if [ -f "$SESSION_START_FILE" ]; then
   echo "State persisted for next session"
   echo ""
 fi
+
+# Persist session to memory graph (if available)
+if [ -f ".claude/hooks/session-end-memory.sh" ]; then
+  ./.claude/hooks/session-end-memory.sh 2>/dev/null &
+fi
+
+# Sync session to GitHub (if enabled)
+if [ -f ".claude/scripts/push-session.sh" ]; then
+  bash ./.claude/scripts/push-session.sh 2>/dev/null &
+fi
+
+# Clear current task tracker (session ended)
+rm -f .claude/memory/.current_task 2>/dev/null || true
 
 # Clean up temporary session files (not logs, just trackers)
 rm -f .claude/recent_reads.log 2>/dev/null || true
