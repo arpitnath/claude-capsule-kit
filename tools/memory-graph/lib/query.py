@@ -7,7 +7,8 @@ import os
 import sys
 import json
 import argparse
-from typing import List, Dict
+from typing import List, Optional
+from datetime import datetime, timedelta, timezone
 
 # Add lib directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -106,6 +107,33 @@ def format_ids(node_ids: List[str], graph: MemoryGraph) -> str:
     """Format as simple list of IDs."""
     return '\n'.join(node_ids)
 
+def parse_date_arg(value: str) -> Optional[datetime]:
+    """Parse the 'since' argument to obtain a minimum timestamp."""
+    # cache time
+    now = datetime.now(timezone.utc)
+    # Defence check for no filtering
+    if value == "all" or value.strip() == "":
+        return None
+    # Parse time range
+    unit = value[-1]
+    accepted_units = ["h", "d", "m", "y"]
+    if unit not in accepted_units:
+        raise ValueError(f"Time range unit must be one of: {accepted_units}.")
+    unit_value = value[:-1]
+    if not unit_value.isdigit():
+        raise ValueError(f"Time range value must be an integer. Got {unit_value}.")
+    if int(unit_value) <= 0:
+        raise ValueError(f"Time range value must be greater than 0. Got {unit_value}.")
+    unit_value = int(unit_value)
+    # Obtain minimum time for search
+    unit_funcs = {
+        "h": lambda n: timedelta(hours=n),
+        "d": lambda n: timedelta(days=n),
+        "m": lambda n: timedelta(days=n*30),
+        "y": lambda n: timedelta(days=n*365)
+    }
+    min_timestamp = now - unit_funcs[unit](unit_value)
+    return min_timestamp
 
 def main():
     parser = argparse.ArgumentParser(description="Query memory graph")
@@ -124,7 +152,12 @@ def main():
     parser.add_argument("--status", default="active",
                         choices=["active", "archived", "all"],
                         help="Filter by status")
-
+    parser.add_argument("--since", default="all",
+                        help=(
+                            "Filter results to a specific time range. "
+                            "Use the format <value><unit> with no spaces. "
+                            "Units: h = hours, d = days, m = months (30 days), y = years. "
+                        ))
     args = parser.parse_args()
 
     # Override memory dir from environment if set
@@ -159,6 +192,32 @@ def main():
         for nid in node_ids:
             node_data = graph.get_node(nid)
             if node_data and node_data.get("status") == args.status:
+                filtered.append(nid)
+        node_ids = filtered
+    
+    # Filter by date
+    if args.since != "all":
+        min_timestamp = parse_date_arg(value=args.since)
+        filtered = []
+        for nid in node_ids:
+            node_data = graph.get_node(nid)
+            updated_str = node_data.get("updated") if node_data else None
+            if not updated_str:
+                continue
+            # convert str to timestamp
+            try:
+                if updated_str.endswith('Z'):
+                    parsed_dt = datetime.strptime(
+                        updated_str, "%Y-%m-%dT%H:%M:%SZ"
+                    ).replace(tzinfo=timezone.utc)
+                else:
+                    parsed_dt = datetime.fromisoformat(updated_str)
+            except Exception:
+                continue # skip if timestamp cant be determined
+            # safely add timezone (if not already included)
+            if parsed_dt.tzinfo is None:
+                parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
+            if parsed_dt >= min_timestamp:
                 filtered.append(nid)
         node_ids = filtered
 
