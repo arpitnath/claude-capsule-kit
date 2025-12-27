@@ -65,8 +65,14 @@
     "agents": [
       "agent-developer.md",
       "architecture-explorer.md",
+      "brainstorm-coordinator.md",
+      "database-architect.md",
       "database-navigator.md",
-      "github-issue-tracker.md"
+      "devops-sre.md",
+      "github-issue-tracker.md",
+      "product-dx-specialist.md",
+      "security-engineer.md",
+      "system-architect.md"
     ],
     "commands": [
       "memory-graph.md"
