@@ -1,5 +1,5 @@
 {
-  "version": "2.1.0",
+  "version": "2.2.0",
   "author": "Arpit Nath",
   "description": "Claude Capsule Kit - Persistent Context Memory + Dependency Graph for Claude Code",
   "components": {
@@ -66,11 +66,17 @@
       "agent-developer.md",
       "architecture-explorer.md",
       "brainstorm-coordinator.md",
+      "code-reviewer.md",
+      "context-manager.md",
       "database-architect.md",
       "database-navigator.md",
+      "debugger.md",
       "devops-sre.md",
+      "error-detective.md",
+      "git-workflow-manager.md",
       "github-issue-tracker.md",
       "product-dx-specialist.md",
+      "refactoring-specialist.md",
       "security-engineer.md",
       "session-summarizer.md",
       "system-architect.md"
