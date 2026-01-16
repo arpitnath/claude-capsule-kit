@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.0] - 2026-01-16
+
+### Added
+
+- **6 New Specialist Agents** for enhanced development workflows:
+  - `debugger` - Systematic debugging specialist (opus)
+  - `error-detective` - Root cause analysis with structured RCA reports (opus)
+  - `code-reviewer` - Code quality gate for pre-commit reviews (sonnet)
+  - `refactoring-specialist` - Safe, incremental code refactoring (opus)
+  - `context-manager` - Context optimization and memory management (sonnet)
+  - `git-workflow-manager` - Git workflow guidance and conflict resolution (sonnet)
+
+### Fixed
+
+- **6 Broken Agent YAML Frontmatter** - Fixed agents that weren't loading in Claude Code:
+  - `brainstorm-coordinator` - YAML parsing fixed
+  - `database-architect` - YAML parsing fixed
+  - `devops-sre` - YAML parsing fixed
+  - `product-dx-specialist` - YAML parsing fixed
+  - `security-engineer` - YAML parsing fixed
+  - `system-architect` - YAML parsing fixed
+- Root cause: `<example>` XML tags in YAML description field broke parsing
+- All agents now use proper `description: |` multiline YAML syntax
+
+### Changed
+
+- Total agents increased from 11 to 17
+- Standardized agent frontmatter format across all agents
+- Updated manifest.json with new agent entries
+
+---
+
 ## [2.1.0] - 2026-01-06
 
 ### Added
