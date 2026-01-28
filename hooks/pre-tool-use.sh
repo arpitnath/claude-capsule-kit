@@ -45,6 +45,35 @@ EOF
 {"type":"tool-suggestion","category":"file-search","useInstead":{"tool":"Glob","reason":"faster-and-direct","pattern":"**/*<filename>*","description":"For finding files by name pattern"}}
 EOF
     fi
+
+    # Context-librarian suggestion for Task spawning (check for past agent findings)
+    SUBAGENT_TYPE=$(echo "$TOOL_INPUT" | python3 -c "import sys, json; print(json.load(sys.stdin).get('subagent_type', ''))" 2>/dev/null || echo "")
+
+    # Skip if already invoking context-librarian
+    if [ "$SUBAGENT_TYPE" != "context-librarian" ] && [ -f ".claude/session_subagents.log" ]; then
+      # Extract keywords from task prompt
+      KEYWORDS=$(echo "$TASK_PROMPT" | grep -oiE "(auth|database|schema|error|bug|architecture|api|routing|payment)" | head -1)
+
+      if [ -n "$KEYWORDS" ] && grep -qi "$KEYWORDS" .claude/session_subagents.log 2>/dev/null; then
+        cat << EOF >&2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 PAST AGENT FINDINGS AVAILABLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Agent: $SUBAGENT_TYPE
+Topic: $KEYWORDS
+
+Past findings exist in subagent logs.
+
+Suggestion: Query context-librarian first:
+  Bash(".claude/tools/context-query/context-query.sh $KEYWORDS")
+
+This checks if similar work was already done (saves 30-60s).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EOF
+      fi
+    fi
   fi
 
   exit 0
@@ -90,8 +119,33 @@ if [ -n "$FILE_PATH" ]; then
     FILE_SIZE_KB=$((FILE_SIZE / 1024))
 
     if [ "$FILE_SIZE" -gt 51200 ]; then  # 50KB threshold
-      echo "{\"decision\": \"block\", \"reason\": \"File ${FILE_SIZE_KB}KB exceeds 50KB. Use progressive-reader instead: .claude/bin/progressive-reader --path $FILE_PATH --list\"}"
+      echo "{\"decision\": \"block\", \"reason\": \"File ${FILE_SIZE_KB}KB exceeds 50KB. Use progressive-reader instead: \$HOME/.claude/bin/progressive-reader --path $FILE_PATH --list\"}"
       exit 0
+    fi
+
+    # Context-librarian suggestion if file is in capsule
+    if [ -f ".claude/capsule.toon" ] && grep -q "$FILE_PATH" .claude/capsule.toon 2>/dev/null; then
+      FILE_AGE=$(grep "$FILE_PATH" .claude/capsule.toon | tail -1 | grep -oE '[0-9]+' | head -1 || echo "0")
+      FILE_AGE_MIN=$((FILE_AGE / 60))
+
+      if [ "$FILE_AGE_MIN" -lt 30 ]; then
+        FILE_BASENAME=$(basename "$FILE_PATH" .ts .js .go .py .tsx .jsx)
+        cat << EOF >&2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 CONTEXT AVAILABLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File: $FILE_PATH
+Status: Already read ${FILE_AGE_MIN}m ago (in capsule)
+
+Suggestion: Query context-librarian first (faster, 90% attention):
+  Bash("context-query $FILE_BASENAME")
+
+This retrieves focused context and avoids re-reading ~12,000 tokens.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EOF
+      fi
     fi
   fi
 fi

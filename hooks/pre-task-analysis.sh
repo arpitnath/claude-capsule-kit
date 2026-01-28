@@ -11,13 +11,11 @@ USER_PROMPT=$(timeout 0.1 cat 2>/dev/null || echo "$1")
 
 MESSAGE_COUNT_FILE=".claude/message_count.txt"
 if [ -f "$MESSAGE_COUNT_FILE" ]; then
-  COUNT=$(cat "$MESSAGE_COUNT_FILE")
-  NEW_COUNT=$((COUNT + 1))
-  echo $NEW_COUNT > "$MESSAGE_COUNT_FILE"
+  NEW_COUNT=$(cat "$MESSAGE_COUNT_FILE")
 else
   NEW_COUNT=1
-  echo "1" > "$MESSAGE_COUNT_FILE"
 fi
+# Note: Counter is now incremented by user-prompt-submit.sh (runs first)
 
 # Refresh capsule if needed
 if ./.claude/hooks/check-refresh-needed.sh 2>/dev/null; then

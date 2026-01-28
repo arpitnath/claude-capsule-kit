@@ -1,0 +1,50 @@
+{
+  "name": "context-query",
+  "version": "1.0.0",
+  "description": "Query all memory layers for relevant context before proceeding with work",
+  "type": "bash",
+  "entry": "context-query.sh",
+  "author": "Arpit Nath",
+  "keywords": ["context", "memory", "retrieval", "attention", "librarian"],
+  "usage": {
+    "command": "./context-query.sh <topic> [--file path] [--recent n]",
+    "args": {
+      "topic": "Topic to search for across memory layers",
+      "file": "Optional: Specific file for dependency analysis",
+      "recent": "Optional: Limit to last N entries (default: 5)"
+    },
+    "examples": [
+      {
+        "description": "Query context about authentication",
+        "command": "./context-query.sh authentication"
+      },
+      {
+        "description": "Query context for specific file",
+        "command": "./context-query.sh auth --file src/auth/auth.service.ts"
+      },
+      {
+        "description": "Query recent error context",
+        "command": "./context-query.sh error --recent 10"
+      }
+    ]
+  },
+  "requires": {
+    "bash": ">=4.0",
+    "python3": ">=3.8"
+  },
+  "permissions": {
+    "read": [
+      ".claude/capsule.toon",
+      ".claude/memory/**",
+      ".claude/session_*.log",
+      ".claude/dep-graph.toon"
+    ],
+    "write": [],
+    "network": false
+  },
+  "autoRun": {
+    "enabled": false,
+    "triggers": [],
+    "condition": "manual"
+  }
+}

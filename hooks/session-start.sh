@@ -196,12 +196,29 @@ if [ -n "$MEMORY_CONTEXT" ]; then
 $MEMORY_CONTEXT"
 fi
 
+# Load pre-prompt if available
+PRE_PROMPT=""
+if [ -f ".claude/pre-prompt.txt" ]; then
+  PRE_PROMPT=$(cat .claude/pre-prompt.txt)
+fi
+
+# Combine pre-prompt with context (both go in additionalContext, hidden from user)
+FULL_CONTEXT_WITH_RULES="$FULL_CONTEXT"
+if [ -n "$PRE_PROMPT" ]; then
+  FULL_CONTEXT_WITH_RULES="$PRE_PROMPT
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+$FULL_CONTEXT"
+fi
+
 # Output ONLY JSON (first character MUST be '{' for systemMessage to work)
-# Include capsule + memory in additionalContext so Claude receives it
+# systemMessage: Clean message for user
+# additionalContext: Pre-prompt + capsule + memory (for Claude only)
 if command -v jq > /dev/null 2>&1; then
   jq -n \
-    --arg msg "Claude Capsule Kit - Context and tools loaded" \
-    --arg context "$FULL_CONTEXT" \
+    --arg msg "Claude Capsule Kit loaded" \
+    --arg context "$FULL_CONTEXT_WITH_RULES" \
     '{
       systemMessage: $msg,
       hookSpecificOutput: {
@@ -213,10 +230,10 @@ else
   # Fallback without jq (less safe but works)
   cat << EOF
 {
-  "systemMessage": "Claude Capsule Kit - Context and tools loaded",
+  "systemMessage": "Claude Capsule Kit loaded",
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "Session initialized with capsule, git state, and tool access"
+    "additionalContext": "$FULL_CONTEXT_WITH_RULES"
   }
 }
 EOF

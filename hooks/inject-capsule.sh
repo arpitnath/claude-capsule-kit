@@ -16,13 +16,32 @@ fi
 # Calculate current capsule hash
 CURRENT_HASH=$(md5 -q "$CAPSULE_FILE" 2>/dev/null || md5sum "$CAPSULE_FILE" 2>/dev/null | cut -d' ' -f1 || echo "unknown")
 
-# Check if capsule changed since last injection
+# Get message counts for periodic refresh
+MESSAGE_COUNT=$(cat ".claude/message_count.txt" 2>/dev/null || echo "0")
+LAST_INJECTION=$(cat ".claude/last_capsule_injection.txt" 2>/dev/null || echo "0")
+MESSAGES_SINCE=$((MESSAGE_COUNT - LAST_INJECTION))
+
+# Decide whether to inject capsule
+SHOULD_INJECT=false
+
+# Condition 1: Hash changed (content updated)
 if [ -f "$HASH_FILE" ]; then
   LAST_HASH=$(cat "$HASH_FILE")
-  if [ "$CURRENT_HASH" = "$LAST_HASH" ]; then
-    # Capsule unchanged, skip injection
-    exit 0
+  if [ "$CURRENT_HASH" != "$LAST_HASH" ]; then
+    SHOULD_INJECT=true
   fi
+else
+  SHOULD_INJECT=true  # First run
+fi
+
+# Condition 2: 20+ messages since last injection (periodic refresh)
+if [ "$MESSAGES_SINCE" -ge 20 ]; then
+  SHOULD_INJECT=true
+fi
+
+# Exit early if neither condition met
+if [ "$SHOULD_INJECT" = false ]; then
+  exit 0
 fi
 
 # Initialize JSON arrays
@@ -154,5 +173,6 @@ echo -n "{\"capsule\":{\"updated\":true"
 [ -n "$META_JSON" ] && echo -n ",\"meta\":$META_JSON"
 echo "},\"reminder\":\"Capsule contains session state - check before redundant operations\"}"
 
-# Save hash for next comparison
+# Save hash and message count for next comparison
 echo "$CURRENT_HASH" > "$HASH_FILE"
+echo "$MESSAGE_COUNT" > ".claude/last_capsule_injection.txt"

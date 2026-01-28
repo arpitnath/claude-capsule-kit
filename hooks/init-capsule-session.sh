@@ -41,4 +41,35 @@ else
   touch "$SNAPSHOT_FILE"
 fi
 
+# Generate pre-prompt with critical workflow rules
+PRE_PROMPT_FILE=".claude/pre-prompt.txt"
+cat > "$PRE_PROMPT_FILE" << 'EOF'
+MANDATORY CAPSULE KIT WORKFLOW RULES
+
+## Context Check Protocol
+BEFORE file operations: Check .claude/capsule.toon FILES section
+BEFORE git operations: Check .claude/capsule.toon GIT section
+BEFORE task questions: Check .claude/capsule.toon TASK section
+
+## Tool Selection Matrix
+Dependency queries → .claude/tools/query-deps/query-deps.sh <file>
+Impact analysis → .claude/tools/impact-analysis/impact-analysis.sh <file>
+Large files (>50KB) → $HOME/.claude/bin/progressive-reader --path <file> --list
+File search → Glob tool with pattern
+Code search → Grep tool with pattern
+
+## Agent Orchestration Rules
+Errors/bugs → error-detective agent (provides RCA)
+Architecture questions → architecture-explorer agent
+Refactoring → refactoring-specialist + impact-analysis
+Pre-commit review → code-reviewer agent
+
+## Post-Operation Logging
+After Read/Edit/Write → ./.claude/hooks/log-file-access.sh <path> <action>
+After Task agent → ./.claude/hooks/log-subagent.sh <type> <summary>
+After discoveries → ./.claude/hooks/log-discovery.sh <category> <insight>
+
+These are REQUIRED workflows, not suggestions. Follow them consistently.
+EOF
+
 echo "✓ Capsule session initialized" >&2

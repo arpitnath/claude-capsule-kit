@@ -1,5 +1,5 @@
 {
-  "version": "2.2.0",
+  "version": "2.3.0",
   "author": "Arpit Nath",
   "description": "Claude Capsule Kit - Persistent Context Memory + Dependency Graph for Claude Code",
   "components": {
@@ -36,6 +36,7 @@
       "sync-todowrite.sh",
       "tool-auto-suggest.sh",
       "update-capsule.sh",
+      "user-prompt-submit.sh",
       "validate-capsule-usage.sh"
     ],
     "scripts": [
@@ -48,25 +49,31 @@
       "fix-hook-errors.sh"
     ],
     "tools": [
+      "context-query",
       "dependency-scanner",
-      "query-deps",
-      "impact-analysis",
       "find-circular",
       "find-dead-code",
+      "impact-analysis",
+      "memory-graph",
       "progressive-reader",
-      "token-counter",
-      "memory-graph"
+      "query-deps",
+      "token-counter"
     ],
     "skills": [
+      "code-review",
       "context-saver",
+      "debug",
+      "deep-context",
       "exploration-continue",
-      "task-router"
+      "task-router",
+      "workflow"
     ],
     "agents": [
       "agent-developer.md",
       "architecture-explorer.md",
       "brainstorm-coordinator.md",
       "code-reviewer.md",
+      "context-librarian.md",
       "context-manager.md",
       "database-architect.md",
       "database-navigator.md",
@@ -85,8 +92,11 @@
       "memory-graph.md"
     ],
     "docs": [
+      "AGENT_ROUTING_GUIDE.md",
+      "BEST_PRACTICES.md",
       "CAPSULE_USAGE_GUIDE.md",
-      "SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md"
+      "SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md",
+      "TOOL_ENFORCEMENT_REFERENCE.md"
     ],
     "templates": [
       "CLAUDE_TEMPLATE.md"
