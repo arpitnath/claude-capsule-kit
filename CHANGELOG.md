@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.1] - 2026-02-01
+
+### Fixed - Hook JSON Validation Errors
+
+**Stop Hook Output Cleanup**:
+- Fixed JSON validation error: "Stop hook error: JSON validation failed"
+- Root cause: Three hooks outputting to stdout instead of stderr:
+  - `hooks/stop.sh` - Quality tips now redirected to stderr
+  - `hooks/session-end.sh` - Session summary now redirected to stderr
+  - `hooks/summarize-session.sh` - Added stderr redirection for safety
+- All informational output now properly separated from JSON stdout
+
+**UserPromptSubmit Hook Security**:
+- Fixed JSON embedding vulnerability in user prompt messages
+- User input now properly escaped before JSON insertion
+- Prevents malformed JSON when prompts contain quotes/special chars
+
+**Files Modified**:
+- `hooks/stop.sh` - Redirect quality tips to stderr
+- `hooks/session-end.sh` - Redirect session summary to stderr
+- `hooks/summarize-session.sh` - Add stderr redirection
+- `hooks/pre-task-analysis.sh` - Improve logging clarity
+- `hooks/persist-capsule.sh` - Improve error messages
+- `.gitignore` - Add CLAUDE.md to ignore list
+
+---
+
 ## [2.3.0] - 2026-01-27
 
 ### Added - Workflow Orchestration & Attention Management System

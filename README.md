@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
   <a href="https://claude.ai"><img src="https://img.shields.io/badge/Claude_Code-Compatible-orange.svg" alt="Claude Code"></a>
-  <a href="https://github.com/arpitnath/super-claude-kit"><img src="https://img.shields.io/badge/version-2.3.0-blue.svg" alt="Version"></a>
+  <a href="https://github.com/arpitnath/super-claude-kit"><img src="https://img.shields.io/badge/version-2.3.1-blue.svg" alt="Version"></a>
 </p>
 
 <p align="center">
