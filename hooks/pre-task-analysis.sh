@@ -7,7 +7,7 @@ if ! cd "$(pwd 2>/dev/null)" 2>/dev/null; then
   cd "$HOME" 2>/dev/null || exit 0
 fi
 
-USER_PROMPT=$(timeout 0.1 cat 2>/dev/null || echo "$1")
+USER_PROMPT=$(cat 2>/dev/null || echo "$1")
 
 MESSAGE_COUNT_FILE=".claude/message_count.txt"
 if [ -f "$MESSAGE_COUNT_FILE" ]; then
@@ -76,10 +76,13 @@ if [ "$NEW_COUNT" -eq 1 ]; then
   python3 -c "
 import json, sys
 try:
-    capsule = json.loads('''$CAPSULE_JSON''') if '''$CAPSULE_JSON'''.strip() else {}
+    capsule = json.loads(sys.argv[1]) if sys.argv[1].strip() else {}
 except:
     capsule = {}
-suggestions = json.loads('''$SUGGESTIONS''')
+try:
+    suggestions = json.loads(sys.argv[2]) if sys.argv[2].strip() else []
+except:
+    suggestions = []
 output = {
   'systemMessage': 'Claude Capsule Kit - Context and tools loaded',
   'hookSpecificOutput': {
@@ -89,17 +92,20 @@ output = {
   }
 }
 print(json.dumps(output))
-" 2>/dev/null || echo '{"systemMessage":"Claude Capsule Kit - Context and tools loaded"}'
+" "$CAPSULE_JSON" "$SUGGESTIONS" 2>/dev/null || echo '{"systemMessage":"Claude Capsule Kit - Context and tools loaded"}'
 else
   # Subsequent messages - only if we have content
   if [ "$CAPSULE_JSON" != "{}" ] || [ "$SUGGESTIONS" != "[]" ]; then
     python3 -c "
 import json, sys
 try:
-    capsule = json.loads('''$CAPSULE_JSON''') if '''$CAPSULE_JSON'''.strip() else {}
+    capsule = json.loads(sys.argv[1]) if sys.argv[1].strip() else {}
 except:
     capsule = {}
-suggestions = json.loads('''$SUGGESTIONS''')
+try:
+    suggestions = json.loads(sys.argv[2]) if sys.argv[2].strip() else []
+except:
+    suggestions = []
 output = {
   'hookSpecificOutput': {
     'hookEventName': 'UserPromptSubmit',
@@ -108,7 +114,7 @@ output = {
   }
 }
 print(json.dumps(output))
-" 2>/dev/null || true
+" "$CAPSULE_JSON" "$SUGGESTIONS" 2>/dev/null || true
   fi
 fi
 

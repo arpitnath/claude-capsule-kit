@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+# Redirect all stdout to stderr to avoid JSON validation errors in command hooks
+exec 1>&2
+
 SESSION_START=$(cat .claude/session_start.txt 2>/dev/null || date +%s)
 CURRENT_TIME=$(date +%s)
 DURATION=$((CURRENT_TIME - SESSION_START))

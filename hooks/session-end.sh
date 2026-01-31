@@ -41,11 +41,11 @@ if [ -f "$SESSION_START_FILE" ]; then
   DISCOVERIES_COUNT=$(wc -l < "$DISCOVERY_LOG" 2>/dev/null | tr -d ' ' || echo "0")
   AGENTS_COUNT=$(wc -l < "$SUBAGENT_LOG" 2>/dev/null | tr -d ' ' || echo "0")
 
-  echo ""
-  echo "[SCK] Session ended | Duration: $DUR_STR"
-  echo "Activity: $FILES_COUNT files, $DISCOVERIES_COUNT discoveries, $AGENTS_COUNT agents"
-  echo "State persisted for next session"
-  echo ""
+  echo "" >&2
+  echo "[SCK] Session ended | Duration: $DUR_STR" >&2
+  echo "Activity: $FILES_COUNT files, $DISCOVERIES_COUNT discoveries, $AGENTS_COUNT agents" >&2
+  echo "State persisted for next session" >&2
+  echo "" >&2
 fi
 
 # Persist session to memory graph (if available)

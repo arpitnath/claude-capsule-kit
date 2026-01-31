@@ -5,8 +5,8 @@
 
 set -euo pipefail
 
-# First, show session summary
-./.claude/hooks/summarize-session.sh 2>/dev/null || true
+# First, show session summary (redirect to stderr to avoid JSON validation error)
+./.claude/hooks/summarize-session.sh 2>/dev/null >&2 || true
 
 PERSIST_FILE=".claude/capsule_persist.json"
 
@@ -99,7 +99,8 @@ except:
 with open(persist_file, "w") as f:
     json.dump(data, f, indent=2)
 
-print(f"Persisted: {len(data['discoveries'])} discoveries, {len(data['key_files'])} files, {len(data['sub_agents'])} agents")
+import sys
+print(f"Persisted: {len(data['discoveries'])} discoveries, {len(data['key_files'])} files, {len(data['sub_agents'])} agents", file=sys.stderr)
 PYTHON
 
 # Also sync discoveries to exploration journal
