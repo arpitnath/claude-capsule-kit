@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.1] - 2026-02-01
+
+### Fixed - Hook JSON Validation Errors
+
+**🐛 Critical Bug Fixes** - All hook JSON validation errors resolved:
+- Fixed `pre-task-analysis.sh` - JSON embedding vulnerability when capsule contains single quotes
+- Fixed `stop.sh` - Quality tip plaintext output redirected to stderr
+- Fixed `session-end.sh` - Session summary banner redirected to stderr
+- Fixed `persist-capsule.sh` - Summarize output and Python print redirected to stderr
+- Fixed `summarize-session.sh` - All output redirected to stderr via `exec 1>&2`
+
+**Root Cause**: Command hooks must output valid JSON or nothing to stdout. Informational messages now go to stderr.
+
+**Impact**: No more "Stop hook error: JSON validation failed" or "UserPromptSubmit hook erro" messages.
+
+---
+
 ## [2.3.0] - 2026-01-27
 
 ### Added - Workflow Orchestration & Attention Management System
