@@ -66,10 +66,10 @@ echo "$CURRENT_FILES,$CURRENT_DISCOVERIES" > "$QUALITY_CHECK_STATE"
 
 # Quality heuristic: If 3+ files accessed but 0 discoveries, suggest logging
 if [ $NEW_FILES -ge 3 ] && [ $NEW_DISCOVERIES -eq 0 ]; then
-  echo ""
-  echo "[QUALITY TIP] Accessed $NEW_FILES files but logged 0 discoveries"
-  echo "Consider: bash $CLAUDE_DIR/hooks/log-discovery.sh \"<category>\" \"<finding>\""
-  echo ""
+  echo "" >&2
+  echo "[QUALITY TIP] Accessed $NEW_FILES files but logged 0 discoveries" >&2
+  echo "Consider: bash $CLAUDE_DIR/hooks/log-discovery.sh \"<category>\" \"<finding>\"" >&2
+  echo "" >&2
 
   # Mark as shown
   echo "stop_quality" >> "$SUGGESTIONS_SHOWN"
