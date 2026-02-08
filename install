@@ -452,10 +452,6 @@ if [ ! -f "$INSTALL_DIR/.claude/settings.local.json" ]; then
           {
             "type": "command",
             "command": "bash .claude/hooks/stop.sh"
-          },
-          {
-            "type": "prompt",
-            "prompt": "If session sync is enabled (check if .claude/sync-config.json exists and has enabled:true), write a session summary to .claude/session-summary.md. Format: # Session Summary\\n\\n## Current State\\n[What was being worked on]\\n\\n## Completed\\n- [Task 1]\\n\\n## Key Decisions\\n- [Decision]: [Reason]\\n\\n## Files Modified\\n- path/to/file\\n\\n## Next Steps\\n- [ ] [Next action]\\n\\n## Continue Prompt\\n> [Ready-to-use prompt for Claude Web]\\n\\nKeep it concise (~300 words). If sync not enabled or config missing, do nothing and respond with just 'ok'."
           }
         ]
       }
@@ -508,8 +504,7 @@ required_hooks = {
     "Stop": [{
         "matcher": "*",
         "hooks": [
-            {"type": "command", "command": make_hook_cmd("stop.sh")},
-            {"type": "prompt", "prompt": "If session sync is enabled (check if .claude/sync-config.json exists and has enabled:true), write a session summary to .claude/session-summary.md. Format: # Session Summary\\n\\n## Current State\\n[What was being worked on]\\n\\n## Completed\\n- [Task 1]\\n\\n## Key Decisions\\n- [Decision]: [Reason]\\n\\n## Files Modified\\n- path/to/file\\n\\n## Next Steps\\n- [ ] [Next action]\\n\\n## Continue Prompt\\n> [Ready-to-use prompt for Claude Web]\\n\\nKeep it concise (~300 words). If sync not enabled or config missing, do nothing and respond with just 'ok'."}
+            {"type": "command", "command": make_hook_cmd("stop.sh")}
         ]
     }],
     "SessionEnd": [{
@@ -592,28 +587,6 @@ date +%s > "$INSTALL_DIR/.claude/.super-claude-installed"
 echo "✓ Version $MANIFEST_VERSION tracked"
 echo ""
 
-# Session Sync opt-in
-SYNC_ENABLED="false"
-if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1; then
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "📡 Session Sync Available"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-  echo "Session Sync lets you continue Claude Code sessions"
-  echo "in Claude Web/Desktop/Mobile via GitHub."
-  echo ""
-  read -p "Enable session sync? (y/N): " SYNC_ANSWER
-  if [ "$SYNC_ANSWER" = "y" ] || [ "$SYNC_ANSWER" = "Y" ]; then
-    echo ""
-    bash "$INSTALL_DIR/.claude/scripts/enable-sync.sh"
-    SYNC_ENABLED="true"
-  else
-    echo ""
-    echo "Skipped. Enable anytime with: /sync-enable"
-  fi
-  echo ""
-fi
-
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ Claude Capsule Kit Installed Successfully!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -635,9 +608,6 @@ elif [ -f "$HOME/.claude/bin/dependency-scanner" ] || [ -f "$HOME/.claude/bin/pr
   echo "   • Some built tools (Go tools partially built)"
 fi
 echo "   • Documentation & templates"
-if [ "$SYNC_ENABLED" = "true" ]; then
-  echo "   • Session sync: ENABLED"
-fi
 echo ""
 echo "🚀 Next steps:"
 echo "   1. Run tests: bash .claude/scripts/test-super-claude.sh"
@@ -656,10 +626,7 @@ if [ -f "$HOME/.claude/bin/dependency-scanner" ]; then
 fi
 if [ "$CMD_COUNT" -gt 0 ]; then
   echo ""
-  echo "📡 Slash commands:"
-  echo "   • /sync-enable - Enable session sync"
-  echo "   • /sync - Manual sync to GitHub"
-  echo "   • /sessions - List synced sessions"
+  echo "📡 Slash commands available"
 fi
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
