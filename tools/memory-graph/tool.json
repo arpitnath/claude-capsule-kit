@@ -35,9 +35,13 @@
     "lib": [
       "capture.py",
       "graph.py",
-      "visualize.py"
+      "visualize.py",
+      "parser.py",
+      "query.py",
+      "summarize.py",
+      "visualize_rich.py"
     ],
-    "scripts": [
+    ".": [
       "init.sh",
       "create-node.sh",
       "memory-query.sh"
