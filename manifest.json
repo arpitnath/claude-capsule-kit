@@ -1,5 +1,5 @@
 {
-  "version": "2.3.1",
+  "version": "2.4.0",
   "author": "Arpit Nath",
   "description": "Claude Capsule Kit - Persistent Context Memory + Dependency Graph for Claude Code",
   "components": {

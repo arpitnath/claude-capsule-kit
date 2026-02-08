@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.0] - 2026-02-09
+
+### Fixed - Remote Installation Tool Delivery
+
+**Tool Installation Bug**:
+- Fixed `dependency-scanner` not installing wrapper script in remote mode (missing `entry` in tool.json)
+- Fixed `memory-graph` scripts downloading to wrong path (components used `scripts/` prefix but files are at root)
+- Fixed `memory-graph` missing 4 Python lib files (`parser.py`, `query.py`, `summarize.py`, `visualize_rich.py`)
+- Fixed install script silently swallowing all download failures (`2>/dev/null || true`)
+- Installer now reports warnings on failed downloads and tracks accurate install counts
+
+### Added
+
+**Uninstall Script** (closes #28):
+- `bash uninstall` to cleanly remove Capsule Kit from any project
+- Removes `.claude/`, `CLAUDE.md`, and `.gitignore` entries
+- Optional removal of global binaries (`~/.claude/bin/`)
+- Confirmation prompts before destructive actions
+
+### Removed
+
+**Session Sync Feature**:
+- Removed GitHub session sync (unused, added unnecessary overhead)
+- Removed Stop prompt hook that fired an LLM call every session end
+- Removed 8 files: `enable-sync.sh`, `push-session.sh`, `sync-config.sh`, 5 slash commands
+- 792 lines of dead code removed
+
+---
+
 ## [2.3.1] - 2026-02-01
 
 ### Fixed - Hook JSON Validation Errors
