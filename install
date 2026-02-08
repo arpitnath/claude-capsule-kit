@@ -157,47 +157,92 @@ echo ""
 
 echo "Installing dependency tools..."
 TOOL_COUNT=0
-for tool in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(t) for t in json.load(sys.stdin)['components'].get('tools', [])]" 2>/dev/null || echo ""); do
+TOOL_FAILURES=0
+TOOLS_LIST=$(echo "$MANIFEST" | python3 -c "import sys, json; [print(t) for t in json.load(sys.stdin)['components'].get('tools', [])]" 2>&1)
+if [ $? -ne 0 ]; then
+  echo "  ⚠️  Failed to parse tools list from manifest: $TOOLS_LIST"
+  TOOLS_LIST=""
+fi
+
+for tool in $TOOLS_LIST; do
   if [ -n "$tool" ]; then
     mkdir -p "$INSTALL_DIR/.claude/tools/$tool"
+    TOOL_OK=true
 
     if [ "$INSTALL_MODE" = "local" ]; then
-      cp -r "$SCRIPT_DIR/tools/$tool/"* "$INSTALL_DIR/.claude/tools/$tool/"
+      if ! cp -r "$SCRIPT_DIR/tools/$tool/"* "$INSTALL_DIR/.claude/tools/$tool/" 2>&1; then
+        echo "  ⚠️  Failed to copy $tool"
+        TOOL_OK=false
+      fi
     else
       # Download tool.json
-      curl -fsSL "$GITHUB_RAW/tools/$tool/tool.json" -o "$INSTALL_DIR/.claude/tools/$tool/tool.json"
+      if ! curl -fsSL "$GITHUB_RAW/tools/$tool/tool.json" -o "$INSTALL_DIR/.claude/tools/$tool/tool.json" 2>&1; then
+        echo "  ⚠️  Failed to download $tool/tool.json"
+        TOOL_OK=false
+      fi
 
-      # Download components (lib/, scripts/, etc.)
-      COMPONENTS=$(cat "$INSTALL_DIR/.claude/tools/$tool/tool.json" | python3 -c "
+      if [ "$TOOL_OK" = true ]; then
+        # Download components (lib/, scripts/, etc.)
+        # Supports "." as key for root-level files
+        COMPONENTS=$(python3 -c "
 import sys, json
-components = json.load(sys.stdin).get('components', {})
+with open('$INSTALL_DIR/.claude/tools/$tool/tool.json') as f:
+    components = json.load(f).get('components', {})
 for dir_name, files in components.items():
     for file in files:
-        print(f'{dir_name}/{file}')
-" 2>/dev/null || echo "")
+        if dir_name in ('.', ''):
+            print(file)
+        else:
+            print(f'{dir_name}/{file}')
+" 2>&1)
 
-      for component in $COMPONENTS; do
-        mkdir -p "$INSTALL_DIR/.claude/tools/$tool/$(dirname $component)"
-        curl -fsSL "$GITHUB_RAW/tools/$tool/$component" -o "$INSTALL_DIR/.claude/tools/$tool/$component" 2>/dev/null || true
-        if [[ "$component" == *.sh ]] || [[ "$component" == *.py ]]; then
-          chmod +x "$INSTALL_DIR/.claude/tools/$tool/$component" 2>/dev/null || true
+        if [ $? -ne 0 ]; then
+          echo "  ⚠️  Failed to parse $tool/tool.json components: $COMPONENTS"
+          COMPONENTS=""
         fi
-      done
 
-      # Also download entry file if specified and not in components
-      ENTRY=$(cat "$INSTALL_DIR/.claude/tools/$tool/tool.json" | python3 -c "import sys, json; print(json.load(sys.stdin).get('entry', ''))" 2>/dev/null || echo "")
-      if [ -n "$ENTRY" ]; then
-        mkdir -p "$INSTALL_DIR/.claude/tools/$tool/$(dirname $ENTRY)"
-        curl -fsSL "$GITHUB_RAW/tools/$tool/$ENTRY" -o "$INSTALL_DIR/.claude/tools/$tool/$ENTRY" 2>/dev/null || true
-        chmod +x "$INSTALL_DIR/.claude/tools/$tool/$ENTRY" 2>/dev/null || true
+        COMP_FAILURES=0
+        for component in $COMPONENTS; do
+          mkdir -p "$INSTALL_DIR/.claude/tools/$tool/$(dirname "$component")"
+          if ! curl -fsSL "$GITHUB_RAW/tools/$tool/$component" -o "$INSTALL_DIR/.claude/tools/$tool/$component" 2>/dev/null; then
+            echo "  ⚠️  Failed to download $tool/$component"
+            COMP_FAILURES=$((COMP_FAILURES + 1))
+          else
+            if [[ "$component" == *.sh ]] || [[ "$component" == *.py ]]; then
+              chmod +x "$INSTALL_DIR/.claude/tools/$tool/$component"
+            fi
+          fi
+        done
+
+        if [ "$COMP_FAILURES" -gt 0 ]; then
+          echo "  ⚠️  $tool: $COMP_FAILURES component(s) failed to download"
+        fi
+
+        # Also download entry file if specified
+        ENTRY=$(python3 -c "import sys, json; print(json.load(open('$INSTALL_DIR/.claude/tools/$tool/tool.json')).get('entry', ''))" 2>/dev/null || echo "")
+        if [ -n "$ENTRY" ]; then
+          mkdir -p "$INSTALL_DIR/.claude/tools/$tool/$(dirname "$ENTRY")"
+          if ! curl -fsSL "$GITHUB_RAW/tools/$tool/$ENTRY" -o "$INSTALL_DIR/.claude/tools/$tool/$ENTRY" 2>/dev/null; then
+            echo "  ⚠️  Failed to download $tool entry: $ENTRY"
+            TOOL_OK=false
+          else
+            chmod +x "$INSTALL_DIR/.claude/tools/$tool/$ENTRY"
+          fi
+        fi
       fi
     fi
 
-    TOOL_COUNT=$((TOOL_COUNT + 1))
+    if [ "$TOOL_OK" = true ]; then
+      TOOL_COUNT=$((TOOL_COUNT + 1))
+    else
+      TOOL_FAILURES=$((TOOL_FAILURES + 1))
+    fi
   fi
 done
-if [ "$TOOL_COUNT" -gt 0 ]; then
+if [ "$TOOL_COUNT" -gt 0 ] && [ "$TOOL_FAILURES" -eq 0 ]; then
   echo "✓ Installed $TOOL_COUNT dependency tools"
+elif [ "$TOOL_COUNT" -gt 0 ]; then
+  echo "⚠️  Installed $TOOL_COUNT dependency tools ($TOOL_FAILURES failed)"
 else
   echo "✓ No tools to install (will be added in updates)"
 fi
@@ -407,10 +452,6 @@ if [ ! -f "$INSTALL_DIR/.claude/settings.local.json" ]; then
           {
             "type": "command",
             "command": "bash .claude/hooks/stop.sh"
-          },
-          {
-            "type": "prompt",
-            "prompt": "If session sync is enabled (check if .claude/sync-config.json exists and has enabled:true), write a session summary to .claude/session-summary.md. Format: # Session Summary\\n\\n## Current State\\n[What was being worked on]\\n\\n## Completed\\n- [Task 1]\\n\\n## Key Decisions\\n- [Decision]: [Reason]\\n\\n## Files Modified\\n- path/to/file\\n\\n## Next Steps\\n- [ ] [Next action]\\n\\n## Continue Prompt\\n> [Ready-to-use prompt for Claude Web]\\n\\nKeep it concise (~300 words). If sync not enabled or config missing, do nothing and respond with just 'ok'."
           }
         ]
       }
@@ -463,8 +504,7 @@ required_hooks = {
     "Stop": [{
         "matcher": "*",
         "hooks": [
-            {"type": "command", "command": make_hook_cmd("stop.sh")},
-            {"type": "prompt", "prompt": "If session sync is enabled (check if .claude/sync-config.json exists and has enabled:true), write a session summary to .claude/session-summary.md. Format: # Session Summary\\n\\n## Current State\\n[What was being worked on]\\n\\n## Completed\\n- [Task 1]\\n\\n## Key Decisions\\n- [Decision]: [Reason]\\n\\n## Files Modified\\n- path/to/file\\n\\n## Next Steps\\n- [ ] [Next action]\\n\\n## Continue Prompt\\n> [Ready-to-use prompt for Claude Web]\\n\\nKeep it concise (~300 words). If sync not enabled or config missing, do nothing and respond with just 'ok'."}
+            {"type": "command", "command": make_hook_cmd("stop.sh")}
         ]
     }],
     "SessionEnd": [{
@@ -547,28 +587,6 @@ date +%s > "$INSTALL_DIR/.claude/.super-claude-installed"
 echo "✓ Version $MANIFEST_VERSION tracked"
 echo ""
 
-# Session Sync opt-in
-SYNC_ENABLED="false"
-if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1; then
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "📡 Session Sync Available"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-  echo "Session Sync lets you continue Claude Code sessions"
-  echo "in Claude Web/Desktop/Mobile via GitHub."
-  echo ""
-  read -p "Enable session sync? (y/N): " SYNC_ANSWER
-  if [ "$SYNC_ANSWER" = "y" ] || [ "$SYNC_ANSWER" = "Y" ]; then
-    echo ""
-    bash "$INSTALL_DIR/.claude/scripts/enable-sync.sh"
-    SYNC_ENABLED="true"
-  else
-    echo ""
-    echo "Skipped. Enable anytime with: /sync-enable"
-  fi
-  echo ""
-fi
-
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ Claude Capsule Kit Installed Successfully!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -590,9 +608,6 @@ elif [ -f "$HOME/.claude/bin/dependency-scanner" ] || [ -f "$HOME/.claude/bin/pr
   echo "   • Some built tools (Go tools partially built)"
 fi
 echo "   • Documentation & templates"
-if [ "$SYNC_ENABLED" = "true" ]; then
-  echo "   • Session sync: ENABLED"
-fi
 echo ""
 echo "🚀 Next steps:"
 echo "   1. Run tests: bash .claude/scripts/test-super-claude.sh"
@@ -611,10 +626,7 @@ if [ -f "$HOME/.claude/bin/dependency-scanner" ]; then
 fi
 if [ "$CMD_COUNT" -gt 0 ]; then
   echo ""
-  echo "📡 Slash commands:"
-  echo "   • /sync-enable - Enable session sync"
-  echo "   • /sync - Manual sync to GitHub"
-  echo "   • /sessions - List synced sessions"
+  echo "📡 Slash commands available"
 fi
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

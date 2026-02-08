@@ -3,5 +3,6 @@
   "description": "Rebuild dependency graph for current project (analyzes imports/exports)",
   "type": "bash",
   "command": "bash .claude/tools/dependency-scanner/dependency-scanner.sh",
+  "entry": "dependency-scanner.sh",
   "when_to_use": "When dependency graph is stale or needs manual refresh"
 }
