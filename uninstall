@@ -1,0 +1,116 @@
+#!/bin/bash
+# Claude Capsule Kit Uninstall Script
+# Removes all installed components from the current project
+# Author: Arpit Nath
+
+set -eo pipefail
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🗑️  Claude Capsule Kit Uninstall"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+INSTALL_DIR="$(pwd)"
+
+# Check if capsule kit is installed
+if [ ! -d "$INSTALL_DIR/.claude" ]; then
+  echo "❌ No Claude Capsule Kit installation found in this directory"
+  exit 1
+fi
+
+if [ ! -f "$INSTALL_DIR/.claude/.super-claude-version" ]; then
+  echo "⚠️  .claude directory exists but no version file found"
+  echo "   This may not be a Capsule Kit installation"
+  read -p "Continue anyway? (y/N): " CONFIRM
+  if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+    echo "Cancelled"
+    exit 0
+  fi
+else
+  VERSION=$(cat "$INSTALL_DIR/.claude/.super-claude-version")
+  echo "Installed version: $VERSION"
+fi
+
+echo ""
+echo "This will remove:"
+echo "  - .claude/ directory (hooks, tools, agents, skills, scripts, docs)"
+echo "  - CLAUDE.md (project instructions)"
+echo "  - Capsule Kit entries from .gitignore"
+echo ""
+echo "This will NOT remove:"
+echo "  - Global binaries (~/.claude/bin/)"
+echo "  - Your source code"
+echo "  - Git history"
+echo ""
+
+read -p "Proceed with uninstall? (y/N): " CONFIRM
+if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+  echo "Cancelled"
+  exit 0
+fi
+
+echo ""
+
+# Remove .claude directory
+if [ -d "$INSTALL_DIR/.claude" ]; then
+  rm -rf "$INSTALL_DIR/.claude"
+  echo "✓ Removed .claude/"
+fi
+
+# Remove CLAUDE.md
+if [ -f "$INSTALL_DIR/CLAUDE.md" ]; then
+  rm -f "$INSTALL_DIR/CLAUDE.md"
+  echo "✓ Removed CLAUDE.md"
+fi
+
+# Clean .gitignore
+if [ -f "$INSTALL_DIR/.gitignore" ]; then
+  # Remove capsule kit entries
+  if grep -q "Claude Capsule Kit" "$INSTALL_DIR/.gitignore" 2>/dev/null; then
+    sed -i '' '/# Claude Capsule Kit/d;/^\.claude\/\*\*/d' "$INSTALL_DIR/.gitignore" 2>/dev/null || \
+    sed -i '/# Claude Capsule Kit/d;/^\.claude\/\*\*/d' "$INSTALL_DIR/.gitignore" 2>/dev/null || true
+    # Remove CLAUDE.md entry if it was added by us
+    sed -i '' '/^CLAUDE\.md$/d' "$INSTALL_DIR/.gitignore" 2>/dev/null || \
+    sed -i '/^CLAUDE\.md$/d' "$INSTALL_DIR/.gitignore" 2>/dev/null || true
+    # Remove trailing blank lines
+    sed -i '' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$INSTALL_DIR/.gitignore" 2>/dev/null || true
+    echo "✓ Cleaned .gitignore"
+  fi
+fi
+
+echo ""
+
+# Offer to remove global binaries
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Global binaries (shared across all projects):"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+BINS_EXIST=false
+for bin in dependency-scanner progressive-reader; do
+  if [ -f "$HOME/.claude/bin/$bin" ]; then
+    SIZE=$(du -h "$HOME/.claude/bin/$bin" | awk '{print $1}')
+    echo "  ~/.claude/bin/$bin ($SIZE)"
+    BINS_EXIST=true
+  fi
+done
+
+if [ "$BINS_EXIST" = true ]; then
+  echo ""
+  read -p "Remove global binaries too? (y/N): " REMOVE_BINS
+  if [[ "$REMOVE_BINS" =~ ^[Yy]$ ]]; then
+    rm -f "$HOME/.claude/bin/dependency-scanner" "$HOME/.claude/bin/progressive-reader"
+    echo "✓ Removed global binaries"
+  else
+    echo "  Kept (other projects may use them)"
+  fi
+else
+  echo "  None found"
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ Claude Capsule Kit Uninstalled"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "To reinstall:"
+echo "  curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install | bash"
+echo ""
