@@ -269,9 +269,6 @@ EOF
 ```bash
 # Verify commit
 git show HEAD
-
-# Log to memory
-bash .claude/hooks/log-discovery.sh "achievement" "Implemented user authentication (code-reviewed, approved)"
 ```
 
 **Deliverable**: Clean commit with reviewed, approved code
@@ -297,12 +294,9 @@ if [[ "$TOOL" == "Bash" && "$COMMAND" =~ "git commit" ]]; then
 fi
 ```
 
-### With Memory Graph
+### With Blink Context
 
-**Log review outcomes**:
-```bash
-bash .claude/hooks/log-discovery.sh "quality" "Code review approved: 3 bugs fixed before commit"
-```
+File operations and sub-agent results are captured automatically by Blink hooks. No manual logging needed.
 
 ---
 

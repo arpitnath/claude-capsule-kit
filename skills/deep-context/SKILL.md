@@ -1,7 +1,7 @@
 ---
 name: deep-context
 description: |
-  Build deep codebase understanding using memory-graph, capsule, progressive-reader, and specialist agents instead of overwhelming main context. Triggers on: don't have context, understand codebase, learn about, need background. Implements 6-layer progressive context building.
+  Build deep codebase understanding using Blink context, progressive-reader, and specialist agents instead of overwhelming main context. Triggers on: don't have context, understand codebase, learn about, need background. Implements progressive context building.
 allowed-tools: [Bash, Read, Task, Grep, Glob]
 ---
 
@@ -13,7 +13,7 @@ You are a **Deep Context Builder** responsible for systematically building compr
 
 **Problem**: Building codebase understanding by reading files sequentially overwhelms context, misses relationships, and doesn't persist knowledge.
 
-**Solution**: 6-layer context building using memory systems, progressive reading, dependency analysis, and specialist agents—each with fresh context.
+**Solution**: Multi-layer context building using Blink (automatic), progressive reading, dependency analysis, and specialist agents—each with fresh context.
 
 ## When to Use This Skill
 
@@ -33,66 +33,29 @@ You are a **Deep Context Builder** responsible for systematically building compr
 
 ---
 
-## The 6-Layer Context Building System
+## The Multi-Layer Context Building System
 
-### Layer 1: MEMORY GRAPH (Past Knowledge)
+### Layer 1: BLINK CONTEXT (Automatic)
 
-**Goal**: Check what we already know from past sessions
+**Goal**: Review what Blink has already provided
 
-**Query memory**:
-```bash
-# Recent discoveries
-bash .claude/tools/memory-graph/memory-query.sh --recent 10
-
-# Topic-specific
-bash .claude/tools/memory-graph/memory-query.sh --search "authentication"
-bash .claude/tools/memory-graph/memory-query.sh --search "database schema"
-bash .claude/tools/memory-graph/memory-query.sh --search "API endpoints"
-```
-
-**What to look for**:
-- Past architectural decisions
-- Discovered patterns
-- Resolved issues (don't repeat mistakes)
-- Design choices and their rationale
-
-**Output**: Historical context, past learnings, known patterns
-
----
-
-### Layer 2: CAPSULE (Current Session Context)
-
-**Goal**: Check what we've already learned THIS session
-
-**Review capsule**:
-```bash
-# Files accessed
-cat .claude/capsule.toon | grep -A 10 "FILES"
-
-# Tasks worked on
-cat .claude/capsule.toon | grep -A 5 "TASK"
-
-# Discoveries made
-cat .claude/capsule.toon | grep -A 10 "DISCOVERY"
-
-# Sub-agents consulted
-cat .claude/capsule.toon | grep -A 5 "SUBAGENT"
-
-# Git state
-cat .claude/capsule.toon | grep -A 3 "GIT"
-```
+At session start, `session-start.js` automatically injects:
+- **Last Session** — Summary of most recent session
+- **Top Discoveries** — Most-accessed architectural insights
+- **Recent Files** — Last 3 files worked on
+- **Team Activity** (crew mode) — What other teammates have been doing
 
 **What to check**:
-- Don't re-read files already in capsule (unless stale)
-- Build on discoveries already made
-- Continue from sub-agent findings
-- Check for related work
+- Review the injected context for past decisions and patterns
+- Don't re-read files already mentioned in injected context
+- Build on discoveries from previous sessions
+- Check for related team work (in crew mode)
 
-**Output**: Current session state, avoid redundant work
+**Output**: Historical + session context, automatically provided
 
 ---
 
-### Layer 3: PROGRESSIVE READER (Large File Navigation)
+### Layer 2: PROGRESSIVE READER (Large Files)
 
 **Goal**: Understand file structure WITHOUT reading entire files
 
@@ -134,7 +97,7 @@ $HOME/.claude/bin/progressive-reader --continue-file /tmp/continue.toon
 
 ---
 
-### Layer 4: DEPENDENCY ANALYSIS (Code Relationships)
+### Layer 3: DEPENDENCY ANALYSIS (Code Relationships)
 
 **Goal**: Map how components connect without reading everything
 
@@ -170,7 +133,7 @@ bash .claude/tools/find-dead-code/find-dead-code.sh
 
 ---
 
-### Layer 5: SPECIALIST AGENTS (Parallel Deep Dives)
+### Layer 4: SPECIALIST AGENTS (Parallel Deep Dives)
 
 **Goal**: Delegate deep understanding to fresh-context specialists
 
@@ -243,16 +206,15 @@ Provide pattern guide for this codebase.
 
 ---
 
-### Layer 6: SYNTHESIS & PERSISTENCE
+### Layer 5: SYNTHESIS
 
 **Goal**: Combine findings and store for future use
 
 **Synthesize findings**:
-1. Memory graph → Historical decisions
-2. Capsule → Current session discoveries
-3. Progressive reader → File structures
-4. Dependency tools → Code relationships
-5. Specialist agents → Deep architectural understanding
+1. Blink context → Historical decisions + recent files
+2. Progressive reader → File structures
+3. Dependency tools → Code relationships
+4. Specialist agents → Deep architectural understanding
 
 **Create coherent mental model**:
 ```
@@ -260,22 +222,12 @@ SYSTEM ARCHITECTURE:
 - Component A handles X (architecture-explorer finding)
 - Uses database table Y (database-navigator finding)
 - Imported by Z files (query-deps finding)
-- Past decision: Chose pattern W because... (memory-graph finding)
+- Past decision: Chose pattern W because... (Blink context)
 ```
 
-**Persist to memory graph**:
-```bash
-# Architectural discovery
-bash .claude/hooks/log-discovery.sh "architecture" "System uses event-driven pattern with message queue for async processing"
+All file operations and sub-agent results are automatically captured by Blink's `post-tool-use.js` hook. No manual persistence needed.
 
-# Pattern discovery
-bash .claude/hooks/log-discovery.sh "pattern" "Controllers use dependency injection pattern throughout"
-
-# Decision context
-bash .claude/hooks/log-discovery.sh "decision" "Monorepo structure chosen for code sharing between services"
-```
-
-**Output**: Comprehensive understanding persisted for future sessions
+**Output**: Comprehensive understanding, automatically captured for future sessions
 
 ---
 
@@ -284,16 +236,14 @@ bash .claude/hooks/log-discovery.sh "decision" "Monorepo structure chosen for co
 ### Quick Flow (Focused Question)
 
 ```
-1. Memory graph query (5 seconds)
+1. Review Blink injected context (instant)
    ↓
-2. Capsule check (2 seconds)
+2. Progressive reader or dependency tool (10 seconds)
    ↓
-3. Progressive reader or dependency tool (10 seconds)
-   ↓
-4. Synthesize answer
+3. Synthesize answer
 ```
 
-**Time**: ~20 seconds
+**Time**: ~15 seconds
 **Context used**: Minimal (<500 tokens)
 
 ---
@@ -301,24 +251,20 @@ bash .claude/hooks/log-discovery.sh "decision" "Monorepo structure chosen for co
 ### Deep Flow (Complete Understanding)
 
 ```
-1. Memory graph query (5 seconds)
+1. Review Blink injected context (instant)
    ↓
-2. Capsule check (2 seconds)
+2. Progressive reader for key files (20 seconds)
    ↓
-3. Progressive reader for key files (20 seconds)
+3. Dependency analysis (10 seconds)
    ↓
-4. Dependency analysis (10 seconds)
+4. Launch 2-3 agents in PARALLEL (60-120 seconds)
    ↓
-5. Launch 2-3 agents in PARALLEL (60-120 seconds)
-   ↓
-6. Synthesize all findings
-   ↓
-7. Persist to memory graph
+5. Synthesize all findings
 ```
 
 **Time**: ~2-3 minutes
 **Context used**: Moderate (agents use their own context)
-**Result**: Comprehensive, persistent understanding
+**Result**: Comprehensive understanding, automatically persisted by Blink
 
 ---
 
@@ -331,15 +277,9 @@ bash .claude/hooks/log-discovery.sh "decision" "Monorepo structure chosen for co
 - **Before /refactor-safely**: Know architecture before refactoring
 - **After installation**: Learn new codebase
 
-### With Memory Graph
+### With Blink Context
 
-**Read**: `bash .claude/tools/memory-graph/memory-query.sh --search "topic"`
-**Write**: `bash .claude/hooks/log-discovery.sh "category" "insight"`
-
-### With Capsule
-
-**Read**: `cat .claude/capsule.toon | grep "FILES\|DISCOVERY"`
-**Write**: Automatic (file access logged by hooks)
+Context from previous sessions is automatically injected by `session-start.js`. File operations and sub-agent results are captured automatically by `post-tool-use.js`. No manual logging needed.
 
 ---
 
@@ -347,19 +287,15 @@ bash .claude/hooks/log-discovery.sh "decision" "Monorepo structure chosen for co
 
 ### Example 1: Understanding Authentication System
 
-**Layer 1: Memory Graph**
-```bash
-bash .claude/tools/memory-graph/memory-query.sh --search "auth"
-# Result: "Decision made 2 weeks ago: JWT over sessions for scalability"
+**Layer 1: Blink Context**
+```
+# Automatically injected at session start:
+# - Last Session: worked on auth module
+# - Top Discoveries: "JWT over sessions for scalability"
+# - Recent Files: auth.service.ts (read 15 min ago)
 ```
 
-**Layer 2: Capsule**
-```bash
-cat .claude/capsule.toon | grep "FILES" | grep "auth"
-# Result: Already read auth.service.ts 15 minutes ago
-```
-
-**Layer 3: Progressive Reader**
+**Layer 2: Progressive Reader**
 ```bash
 $HOME/.claude/bin/progressive-reader --path middleware/auth.middleware.ts --list
 # Result: 4 chunks, need chunk 1 (validation logic)
@@ -368,19 +304,19 @@ $HOME/.claude/bin/progressive-reader --path middleware/auth.middleware.ts --chun
 # Read targeted section only
 ```
 
-**Layer 4: Dependency Analysis**
+**Layer 3: Dependency Analysis**
 ```bash
 bash .claude/tools/query-deps/query-deps.sh src/auth/auth.service.ts
 # Result: Imported by 12 files (login, register, profile, admin...)
 ```
 
-**Layer 5: Specialist Agents**
+**Layer 4: Specialist Agents**
 ```
 Task(subagent_type="architecture-explorer", prompt="Explain auth flow from login to protected route")
 Task(subagent_type="security-engineer", prompt="Review auth implementation for security best practices")
 ```
 
-**Layer 6: Synthesis**
+**Layer 5: Synthesis**
 ```
 AUTHENTICATION SYSTEM UNDERSTANDING:
 
@@ -401,10 +337,7 @@ Files:
 - types/auth.d.ts (type definitions)
 ```
 
-**Persist**:
-```bash
-bash .claude/hooks/log-discovery.sh "architecture" "Auth system: JWT-based, bcrypt hashing, 12 protected routes"
-```
+All file operations and agent results automatically captured by Blink for future sessions.
 
 ---
 
@@ -412,19 +345,13 @@ bash .claude/hooks/log-discovery.sh "architecture" "Auth system: JWT-based, bcry
 
 **User**: "I just cloned this repo, help me understand it"
 
-**Layer 1: Memory Graph**
-```bash
-bash .claude/tools/memory-graph/memory-query.sh --recent 10
-# Result: Empty (first session)
+**Layer 1: Blink Context**
+```
+# First session — no previous context injected
+# Start fresh with code exploration
 ```
 
-**Layer 2: Capsule**
-```bash
-cat .claude/capsule.toon
-# Result: No files accessed yet
-```
-
-**Layer 3: Start with Entry Points**
+**Layer 2: Start with Entry Points**
 ```bash
 # Find entry points
 grep -r "main\|index" . --include="*.ts" --include="*.js" -l
@@ -433,7 +360,7 @@ grep -r "main\|index" . --include="*.ts" --include="*.js" -l
 $HOME/.claude/bin/progressive-reader --path package.json --list
 ```
 
-**Layer 4: Map Structure**
+**Layer 3: Map Structure**
 ```bash
 # Find circular dependencies (architectural smell)
 bash .claude/tools/find-circular/find-circular.sh
@@ -442,7 +369,7 @@ bash .claude/tools/find-circular/find-circular.sh
 bash .claude/tools/find-dead-code/find-dead-code.sh
 ```
 
-**Layer 5: Architecture Deep Dive**
+**Layer 4: Architecture Deep Dive**
 ```
 # Spawn 3 agents in PARALLEL
 Task(subagent_type="architecture-explorer", prompt="Explore codebase structure and explain main components")
@@ -450,7 +377,7 @@ Task(subagent_type="database-navigator", prompt="Analyze database schema and mig
 Task(subagent_type="code-reviewer", prompt="Identify coding patterns and conventions used")
 ```
 
-**Layer 6: Synthesize & Persist**
+**Layer 5: Synthesize**
 ```
 CODEBASE OVERVIEW:
 
@@ -472,12 +399,7 @@ Patterns (code-reviewer):
 - Test structure: unit + e2e
 ```
 
-**Persist**:
-```bash
-bash .claude/hooks/log-discovery.sh "architecture" "NestJS + React monorepo, PostgreSQL, DI pattern"
-bash .claude/hooks/log-discovery.sh "pattern" "Repository pattern for data, DTOs for validation"
-bash .claude/hooks/log-discovery.sh "decision" "Monorepo for code sharing between services"
-```
+All findings automatically captured by Blink for future sessions.
 
 ---
 
@@ -485,12 +407,11 @@ bash .claude/hooks/log-discovery.sh "decision" "Monorepo for code sharing betwee
 
 ### Context Building
 
-✅ Memory graph queried BEFORE re-learning
-✅ Capsule checked BEFORE redundant file reads
+✅ Blink context reviewed before starting (injected automatically)
 ✅ Progressive reader used for large files (not full Read)
 ✅ Dependency tools used for relationships (not Task/Explore)
 ✅ Specialist agents delegated deep dives (not solo exploration)
-✅ Findings persisted to memory graph
+✅ All operations automatically captured by Blink
 
 ### Quality Signals
 
@@ -504,10 +425,9 @@ bash .claude/hooks/log-discovery.sh "decision" "Monorepo for code sharing betwee
 ## Anti-Patterns
 
 ❌ **Reading files sequentially**: Use progressive-reader or agents
-❌ **Ignoring memory-graph**: Past knowledge is free, use it
-❌ **Re-reading capsule files**: Check capsule first, avoid redundancy
+❌ **Ignoring Blink context**: Past knowledge is injected automatically, use it
 ❌ **Solo deep dives**: Agents have fresh context, delegate to them
-❌ **Not persisting findings**: Future you will re-learn everything
+❌ **Redundant file reads**: Check injected context before re-reading
 
 ---
 
@@ -515,13 +435,12 @@ bash .claude/hooks/log-discovery.sh "decision" "Monorepo for code sharing betwee
 
 | Layer | Tokens Used | Alternative (Manual) | Savings |
 |-------|-------------|----------------------|---------|
-| Memory graph query | ~50 | ~500 (re-learning) | 90% |
-| Capsule check | ~100 | ~1,000 (re-reading) | 90% |
+| Blink context (auto) | ~100 | ~1,500 (re-learning) | 93% |
 | Progressive reader | ~500 | ~12,000 (full read) | 96% |
 | Dependency tools | ~200 | ~3,000 (file analysis) | 93% |
 | Agents (3 parallel) | ~0 (their context) | ~10,000 (in your context) | 100% |
-| **Total** | ~850 | ~26,500 | **97%** |
+| **Total** | ~800 | ~26,500 | **97%** |
 
 ---
 
-**Remember**: Your context is LIMITED. Build deep understanding through layers—memory, capsule, progressive tools, agents. Each layer adds understanding without overwhelming your window.
+**Remember**: Your context is LIMITED. Build deep understanding through layers—Blink context, progressive tools, dependency analysis, agents. Each layer adds understanding without overwhelming your window.

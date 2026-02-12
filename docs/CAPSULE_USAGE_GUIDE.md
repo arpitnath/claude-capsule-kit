@@ -1,295 +1,185 @@
-# Context Capsule - Claude Code Usage Guide
+# Capsule Kit v3.0 - Usage Guide
 
 ## For Claude: How to Use This System Effectively
 
-This guide is specifically for Claude Code (me!) on how to leverage the Context Capsule system to maximize efficiency and context awareness.
-
-## 🎯 Core Principle
-
-**Before re-reading files or re-checking status, check the capsule first!**
-
-The capsule injection appears automatically before each prompt. Use it to:
-- Avoid re-reading files I accessed recently
-- Remember current task without TodoWrite lookup
-- Know git state without running git commands
-- Recall sub-agent findings
-- Reference discoveries made earlier in session
-
-## 📋 Auto-Logging (Automatic Context Tracking)
-
-**NEW: File access and sub-agent results are logged automatically!**
-
-The PostToolUse hook automatically logs:
-- Read operations
-- Edit operations
-- Write operations
-- Task tool (sub-agent) completions
-- TodoWrite task updates
-
-**You no longer need to manually call log-file-access.sh or log-subagent.sh!**
-
-### What Gets Logged Automatically:
-
-**File Operations:**
-- Read tool automatically logs to session_files.log
-- Edit tool automatically logs to session_files.log
-- Write tool automatically logs to session_files.log
-
-**Sub-Agent Results:**
-- Task tool automatically logs to session_subagents.log
-- Summary extracted from agent output (first 200 chars)
-
-**Task Updates:**
-- TodoWrite automatically logs in_progress tasks to session_tasks.log
-
-### Manual Logging (Still Supported)
-
-You can still manually log if needed:
-
-```bash
-# Optional: Manual file logging (if PostToolUse hook disabled)
-./.claude/hooks/log-file-access.sh "path/to/file" "read|edit|write"
-
-# Optional: Manual sub-agent logging (if PostToolUse hook disabled)
-./.claude/hooks/log-subagent.sh "Explore" "Found important patterns"
-```
-
-### Required Manual Logging:
-
-**Discoveries (Still Manual):**
-You must manually log discoveries - Claude decides what's important:
-
-```bash
-# Pattern discoveries
-./.claude/hooks/log-discovery.sh "pattern" "All hooks use set -euo pipefail"
-
-# Architectural insights
-./.claude/hooks/log-discovery.sh "architecture" "System uses microservices"
-
-# Important decisions
-./.claude/hooks/log-discovery.sh "decision" "Using JWT for authentication"
-```
-
-**Task Status (If Not Using TodoWrite):**
-```bash
-./.claude/hooks/log-task.sh "in_progress" "Implementing auth system"
-```
-
-### 3. After Key Discoveries
-
-**Log insights, patterns, decisions as I learn:**
-
-```bash
-# Discovered a code pattern
-./.claude/hooks/log-discovery.sh "pattern" "All hooks use 'set -euo pipefail' for safety"
-
-# Had an important realization
-./.claude/hooks/log-discovery.sh "insight" "TOON format reduces tokens by 52% vs JSON"
-
-# Made a design decision
-./.claude/hooks/log-discovery.sh "decision" "Using git diff for change detection over timestamps"
-
-# Found architectural detail
-./.claude/hooks/log-discovery.sh "architecture" "Frontend uses Smart API Client pattern"
-
-# Identified a bug
-./.claude/hooks/log-discovery.sh "bug" "Session hooks not catching sub-agent completions"
-
-# Found optimization opportunity
-./.claude/hooks/log-discovery.sh "optimization" "Parallel tool calls reduce latency by 40%"
-```
-
-**When to log:**
-- ✅ When I understand how something works
-- ✅ When I make an important decision
-- ✅ When I find a pattern worth remembering
-- ✅ When I identify bugs or optimizations
-- ❌ Skip obvious/trivial observations
-
-### 4. After TodoWrite Updates
-
-**Sync tasks with capsule:**
-
-```bash
-# After using TodoWrite tool, log current state
-./.claude/hooks/log-task.sh "in_progress" "Implementing Phase 3 features"
-./.claude/hooks/log-task.sh "pending" "Test cross-session persistence"
-./.claude/hooks/log-task.sh "completed" "Design automatic discovery extraction"
-```
-
-**When to log:**
-- ✅ After marking task as in_progress (so capsule shows current work)
-- ✅ After completing major tasks
-- ❌ Skip for every single todo update (too noisy)
-
-## 🚀 Efficient Workflow Pattern
-
-### Starting a Task
-
-1. **Check capsule** - What's already in context?
-2. **Log current task** - Mark it in_progress
-3. **Work on task** - Read files, make changes
-4. **Log file operations** - Track what I accessed
-5. **Log discoveries** - Capture insights as they occur
-6. **Complete task** - Log as completed
-
-### Using Sub-Agents
-
-1. **Launch sub-agent** via Task tool
-2. **Wait for completion**
-3. **Read sub-agent result**
-4. **Log key findings** with log-subagent.sh
-5. **Continue work** using those findings
-
-### 🔒 Sub-Agent Production Safety
-
-**All sub-agents are read-only for production safety:**
-
-**✅ Sub-agents CAN:**
-- Read files (Read tool)
-- Search code (Grep tool)
-- Find files (Glob tool)
-- Fetch web content (WebFetch - architecture-explorer only)
-
-**❌ Sub-agents CANNOT:**
-- Execute bash commands (Bash tool removed)
-- Modify files (no Edit/Write tools)
-- Delete files
-- Run destructive operations
-
-**Why?** Sub-agents analyze and explore code but should never modify it. This prevents accidental file modifications in production environments.
-
-### Example Session Flow
-
-```
-[Session starts - capsule initializes]
-
-User: "Implement authentication system"
-
-Me:
-1. Check capsule → See I'm on epic/auth branch, 5 dirty files
-2. Log task → "in_progress|Implementing authentication system"
-3. Launch Explore agent to find existing auth code
-4. Agent completes → Log: "Explore|Found auth in server/src/auth/"
-5. Read auth files → Log file access for each
-6. Make discovery → Log: "architecture|Uses JWT + Redis session store"
-7. Implement feature → Log edits
-8. Complete → Log: "completed|Implementing authentication system"
-
-[Next prompt - capsule shows all this context!]
-```
-
-## 💡 Reading the Capsule
-
-When I see the capsule, I should:
-
-**🌿 Git State:**
-- Check branch to ensure I'm on correct one
-- Note dirty file count (indicates uncommitted work)
-- Check ahead/behind to know sync status
-
-**📁 Files in Context:**
-- AVOID re-reading files shown here (unless >10m old)
-- Use this to build mental model of codebase
-- Reference these files when explaining to user
-
-**✅ Current Tasks:**
-- Always acknowledge the in_progress task
-- Prioritize current task over new work
-- Reference completed tasks when explaining progress
-
-**🤖 Sub-Agent Results:**
-- Recall findings instead of re-exploring
-- Build on previous discoveries
-- Avoid duplicate sub-agent calls
-
-**💡 Session Discoveries:**
-- Reference these insights in my responses
-- Build on patterns discovered
-- Maintain consistency with decisions made
-
-**⏱️ Session Info:**
-- Note message count (high count = long session)
-- Consider session duration for context freshness
-
-## 🎨 Best Practices
-
-### DO ✅
-- Log after every major tool use (Read/Edit/Write)
-- Capture sub-agent results immediately
-- Note architectural discoveries as I learn
-- Sync TodoWrite status when changing tasks
-- Check capsule before redundant operations
-- Log decisions so I remember rationale
-
-### DON'T ❌
-- Log trivial operations (quick bash commands)
-- Over-log discoveries (keep signal-to-noise high)
-- Ignore capsule (defeats the purpose!)
-- Re-read files shown in capsule
-- Launch duplicate sub-agents
-- Forget to log current task status
-
-## 🔄 Self-Correction Pattern
-
-If I realize I should have logged something:
-
-```bash
-# Retroactively log file access
-./.claude/hooks/log-file-access.sh "path/to/file" "read"
-
-# Capture late discovery
-./.claude/hooks/log-discovery.sh "insight" "What I just realized"
-
-# Update task status
-./.claude/hooks/log-task.sh "in_progress" "Current task"
-```
-
-## 📊 Measuring Success
-
-Good capsule usage means:
-- **Fewer redundant file reads** - If capsule shows I read it 2m ago, don't read again
-- **Better task continuity** - Always see current work without asking
-- **Richer context** - User sees my discoveries in capsule
-- **Faster responses** - Less time re-gathering context
-- **Better memory** - Sub-agent findings persist across messages
-
-## 🎯 Quick Reference
-
-```bash
-# File access
-./.claude/hooks/log-file-access.sh "<path>" "read|edit|write"
-
-# Sub-agent
-./.claude/hooks/log-subagent.sh "<type>" "<summary>"
-
-# Discovery
-./.claude/hooks/log-discovery.sh "<category>" "<content>"
-# Categories: pattern, insight, decision, architecture, bug, optimization
-
-# Task
-./.claude/hooks/log-task.sh "<status>" "<content>"
-# Status: in_progress, pending, completed
-```
-
-## 🚦 When NOT to Use Capsule
-
-- **Very first message** - Capsule might be empty
-- **User asks to ignore context** - Respect explicit requests
-- **Cross-session work** - Capsule resets each session (until Phase 3)
-- **Simple queries** - Quick answers don't need heavy context
-
-## 🎓 Learning from Usage
-
-After each session, reflect:
-- Did I avoid redundant file reads?
-- Did I remember sub-agent findings?
-- Did I maintain task awareness?
-- Did I capture key discoveries?
-- Did capsule help or was it noise?
-
-Use this reflection to improve logging patterns.
+Capsule Kit v3.0 uses **Blink** (SQLite) for automatic context tracking. No manual logging needed — JS hooks capture everything.
 
 ---
 
-**Remember**: The capsule is my external memory. Trust it, use it, maintain it!
+## Core Principle
+
+**Context is automatic.** The Blink hooks handle all logging:
+
+| Hook | When | What It Captures |
+|------|------|-----------------|
+| `session-start.js` | Session begins | Injects last session summary, recent files, team activity |
+| `post-tool-use.js` | After Read/Write/Edit/Task | File operations (META), sub-agent invocations (SUMMARY) |
+| `session-end.js` | Session ends | Session summary with file count, agent count |
+
+**You don't need to call any logging scripts.** Just work normally.
+
+---
+
+## What Gets Tracked Automatically
+
+### File Operations
+Every Read/Write/Edit is captured as a META record with:
+- File path and action type
+- Timestamp
+- Session ID
+- Crew teammate name (in crew mode)
+
+### Sub-Agent Results
+Every Task tool invocation is captured as a SUMMARY record with:
+- Agent type (e.g., `error-detective`, `architecture-explorer`)
+- Prompt summary (first 200 chars)
+- Timestamp
+
+### Session Summaries
+At session end, a META record captures:
+- Total files accessed
+- Total sub-agents used
+- Session duration
+
+---
+
+## Blink Record Types
+
+Records have a `type` field that tells you how to consume them:
+
+| Type | Meaning | How to Use |
+|------|---------|-----------|
+| `SUMMARY` | Read the summary directly — you have what you need | Sub-agent findings, discoveries |
+| `META` | Structured data in JSON `content` field | File operations, session metadata |
+| `COLLECTION` | Browse children, pick what's relevant | Groups of related records |
+| `SOURCE` | Summary here, fetch source if you need depth | External references |
+| `ALIAS` | Follow the redirect to the target record | Pointers |
+
+---
+
+## Blink Namespaces
+
+### Solo Mode
+```
+session/{session_id}/files       -- File operation records (META)
+session/{session_id}/subagents   -- Sub-agent invocation records (SUMMARY)
+session                          -- Session summary records (META)
+discoveries                      -- Architectural discoveries
+```
+
+### Crew Mode (Agent Teams with worktrees)
+```
+crew/{teammate_name}/session/{session_id}/files       -- Teammate file ops
+crew/{teammate_name}/session/{session_id}/subagents   -- Teammate sub-agents
+crew/{teammate_name}/session                          -- Teammate session summaries
+crew/_shared/discoveries                              -- Shared team discoveries
+```
+
+All teammates share the same `blink.db` in the main project root. Crew identity is detected automatically via worktree registry.
+
+---
+
+## Context at Session Start
+
+When a session starts, `session-start.js` injects context automatically:
+
+1. **Last Session** — Summary of the most recent session
+2. **Top Discoveries** — Most-accessed architectural insights
+3. **Recent Files** — Last 3 files worked on
+4. **Team Activity** (crew mode) — What other teammates have been doing
+
+This context appears in your prompt without any action needed.
+
+---
+
+## Sub-Agent Production Safety
+
+All sub-agents are **read-only** for production safety:
+
+**Sub-agents CAN:**
+- Read files (Read tool)
+- Search code (Grep tool)
+- Find files (Glob tool)
+- Fetch web content (WebFetch — select agents only)
+
+**Sub-agents CANNOT:**
+- Execute bash commands
+- Modify files (no Edit/Write tools)
+- Delete files or run destructive operations
+
+---
+
+## Efficient Workflow Patterns
+
+### Pattern 1: Just Work
+
+With Blink, the workflow is simple:
+
+```
+1. Session starts → context injected automatically
+2. Work normally → hooks capture everything
+3. Session ends → summary saved automatically
+```
+
+No manual check/log/persist cycle needed.
+
+### Pattern 2: Parallel Agent Spawning
+
+```
+# DON'T (sequential):
+Message 1: Task(subagent_type="agent-1", ...)
+Message 2: Task(subagent_type="agent-2", ...)
+
+# DO (parallel, single message):
+Task(subagent_type="agent-1", ...)
+Task(subagent_type="agent-2", ...)
+Task(subagent_type="agent-3", ...)
+# All run simultaneously
+```
+
+### Pattern 3: Progressive File Reading
+
+```bash
+# Large file (>50KB) — DON'T:
+Read(file_path="large-file.ts")  # Might fail or waste tokens
+
+# DO:
+$HOME/.claude/bin/progressive-reader --path large-file.ts --list   # Structure
+$HOME/.claude/bin/progressive-reader --path large-file.ts --chunk 2  # Specific chunk
+# 75-97% token savings
+```
+
+### Pattern 4: Tool Selection Hierarchy
+
+```
+Dependency question?  → query-deps / impact-analysis (NOT Task/Explore)
+Large file (>50KB)?   → progressive-reader (NOT Read)
+File/code search?     → Glob / Grep (NOT Task/Explore)
+Complex analysis?     → Task with specialist agent
+```
+
+---
+
+## Integration with Skills
+
+Skills automate best practices:
+
+| Skill | Purpose |
+|-------|---------|
+| `/workflow` | Systematic multi-step task orchestration |
+| `/debug` | RCA-first debugging with error-detective |
+| `/code-review` | Pre-commit quality gate |
+| `/deep-context` | Build codebase understanding |
+
+---
+
+## Quick Checklist
+
+Before starting any task:
+
+- [ ] Review injected context (appears automatically at session start)
+- [ ] Use specialized tools (not Task/Explore) for deps/search
+- [ ] Launch agents for deep work (parallel when possible)
+- [ ] Use progressive-reader for large files
+
+**That's it.** No manual logging, no capsule management, no memory-graph commands. Blink handles persistence automatically.
