@@ -32,13 +32,13 @@ async function main() {
     const sessionId = input.session_id || 'default';
 
     // Initialize Blink (shared DB in crew mode, local otherwise)
+    // Pass file path hint for worktree-based crew identity detection
+    const filePath = toolInput.file_path || toolInput.path || '';
     const blink = new Blink({ dbPath: getBlinkDbPath() });
-    const crewId = getCrewIdentity();
+    const crewId = getCrewIdentity({ filePath });
 
     // Capture file operations
     if (['Read', 'Write', 'Edit'].includes(toolName)) {
-      const filePath = toolInput.file_path;
-
       if (filePath && !filePath.includes('node_modules') && !filePath.includes('.git/')) {
         const fileName = basename(filePath);
         const action = toolName.toLowerCase();

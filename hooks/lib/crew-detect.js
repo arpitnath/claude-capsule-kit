@@ -4,10 +4,15 @@
  * Detects whether hooks are running inside a Claude Crew worktree
  * and resolves the correct shared blink.db path.
  *
- * In a crew worktree:
- *   .claude/hooks → symlink → main-project/.claude/hooks (SHARED)
- *   .claude/crew-identity.json → local file (ISOLATED)
- *   blink.db → should point to main-project/.claude/blink.db (SHARED)
+ * KEY CHALLENGE: When Agent Teams spawns teammates via the Task tool,
+ * child processes inherit the PARENT's CWD (main project root).
+ * Teammates use absolute paths to operate in their worktrees, but
+ * process.cwd() returns the main project path. So we can't rely
+ * on CWD to find crew-identity.json — we need alternate strategies:
+ *
+ * 1. CREW_WORKTREE_PATH env var (if set by spawn infrastructure)
+ * 2. Worktree registry scan + file path matching from tool_input
+ * 3. Direct CWD lookup (only works if CWD = worktree)
  *
  * Outside crew: everything resolves to ./.claude/blink.db as normal.
  */
@@ -19,16 +24,16 @@ import { existsSync, readFileSync, lstatSync, readlinkSync } from 'fs';
  * Resolve the path to the canonical blink.db.
  *
  * Strategy (in priority order):
- * 1. If crew-identity.json exists → use its project_root/.claude/blink.db
- * 2. If .claude/hooks is a symlink → follow it to find the main .claude/
- * 3. Default → ./.claude/blink.db
- *
- * In a normal (non-crew) session, returns ./.claude/blink.db.
+ * 1. CWD crew-identity.json → use its project_root/.claude/blink.db
+ * 2. CREW_WORKTREE_PATH env → worktree's crew-identity.json → project_root
+ * 3. Worktree registry scan → any crew-identity.json → project_root
+ * 4. .claude/hooks symlink → follow to main project
+ * 5. Default → ./.claude/blink.db
  */
 export function getBlinkDbPath() {
   const cwdClaudeDir = resolve(process.cwd(), '.claude');
 
-  // Strategy 1: Use crew-identity.json (most reliable)
+  // Strategy 1: Direct CWD lookup
   try {
     const identityFile = resolve(cwdClaudeDir, 'crew-identity.json');
     if (existsSync(identityFile)) {
@@ -37,53 +42,131 @@ export function getBlinkDbPath() {
         return resolve(identity.project_root, '.claude', 'blink.db');
       }
     }
-  } catch {
-    // Fall through to symlink detection
+  } catch { /* fall through */ }
+
+  // Strategy 2: Environment variable
+  const envWorktree = process.env.CREW_WORKTREE_PATH;
+  if (envWorktree) {
+    try {
+      const envIdentity = resolve(envWorktree, '.claude', 'crew-identity.json');
+      if (existsSync(envIdentity)) {
+        const identity = JSON.parse(readFileSync(envIdentity, 'utf-8'));
+        if (identity.project_root) {
+          return resolve(identity.project_root, '.claude', 'blink.db');
+        }
+      }
+    } catch { /* fall through */ }
   }
 
-  // Strategy 2: Follow .claude/hooks symlink
+  // Strategy 3: Worktree registry — any identity gives us project_root
+  try {
+    const registryPath = resolve(cwdClaudeDir, 'crew', 'worktrees.json');
+    if (existsSync(registryPath)) {
+      const registry = JSON.parse(readFileSync(registryPath, 'utf-8'));
+      const worktrees = registry.worktrees || [];
+      for (const wt of worktrees) {
+        const wtIdentity = resolve(wt.path, '.claude', 'crew-identity.json');
+        try {
+          if (existsSync(wtIdentity)) {
+            const identity = JSON.parse(readFileSync(wtIdentity, 'utf-8'));
+            if (identity.project_root) {
+              return resolve(identity.project_root, '.claude', 'blink.db');
+            }
+          }
+        } catch { /* skip this worktree */ }
+      }
+    }
+  } catch { /* no registry */ }
+
+  // Strategy 4: Follow .claude/hooks symlink
   try {
     const hooksDir = resolve(cwdClaudeDir, 'hooks');
     const stats = lstatSync(hooksDir);
     if (stats.isSymbolicLink()) {
       const realHooksDir = readlinkSync(hooksDir);
-      // Symlink could point to:
-      //   /project/.claude/hooks  → dirname gives /project/.claude
-      //   /project/hooks          → dirname gives /project
-      // We need to find the .claude/ dir in either case
       const parent = dirname(realHooksDir);
       if (parent.endsWith('.claude')) {
         return resolve(parent, 'blink.db');
       }
-      // Parent is the project root itself
       return resolve(parent, '.claude', 'blink.db');
     }
-  } catch {
-    // Not a symlink or doesn't exist
-  }
+  } catch { /* not a symlink */ }
 
-  // Strategy 3: Default local path
+  // Strategy 5: Default local path
   return resolve(cwdClaudeDir, 'blink.db');
 }
 
 /**
- * Detect crew identity from the worktree's crew-identity.json.
+ * Detect crew identity for the current teammate.
  *
- * This file is written by worktree-manager.sh during `crew setup`.
- * It's LOCAL to each worktree (not symlinked), so each teammate
- * gets their own identity.
+ * Since teammates inherit the main project's CWD (not their worktree),
+ * we use multiple strategies to find the right crew-identity.json:
  *
+ * 1. Direct CWD lookup (works if CWD = worktree)
+ * 2. CREW_WORKTREE_PATH env var
+ * 3. Worktree registry + file path hint matching (for PostToolUse)
+ * 4. Worktree registry + single-worktree fallback (for SessionStart/End)
+ *
+ * @param {object} [hints] - Optional hints for disambiguation
+ * @param {string} [hints.filePath] - File path from tool_input to match against worktrees
  * @returns {{ teammate_name: string, project_root: string, branch: string } | null}
  */
-export function getCrewIdentity() {
-  const identityFile = resolve(process.cwd(), '.claude', 'crew-identity.json');
+export function getCrewIdentity(hints = {}) {
+  // Strategy 1: Direct CWD lookup (original approach — works if CWD = worktree)
+  const cwdIdentity = resolve(process.cwd(), '.claude', 'crew-identity.json');
   try {
-    if (existsSync(identityFile)) {
-      return JSON.parse(readFileSync(identityFile, 'utf-8'));
+    if (existsSync(cwdIdentity)) {
+      return JSON.parse(readFileSync(cwdIdentity, 'utf-8'));
     }
-  } catch {
-    // Corrupted or unreadable — not in crew mode
+  } catch { /* fall through */ }
+
+  // Strategy 2: Environment variable override
+  const envWorktree = process.env.CREW_WORKTREE_PATH;
+  if (envWorktree) {
+    try {
+      const envIdentityFile = resolve(envWorktree, '.claude', 'crew-identity.json');
+      if (existsSync(envIdentityFile)) {
+        return JSON.parse(readFileSync(envIdentityFile, 'utf-8'));
+      }
+    } catch { /* fall through */ }
   }
+
+  // Strategy 3 & 4: Worktree registry scan
+  const registryPath = resolve(process.cwd(), '.claude', 'crew', 'worktrees.json');
+  try {
+    if (!existsSync(registryPath)) return null;
+
+    const registry = JSON.parse(readFileSync(registryPath, 'utf-8'));
+    const worktrees = registry.worktrees || [];
+    if (worktrees.length === 0) return null;
+
+    // Strategy 3a: Match file path hint against worktree paths
+    if (hints.filePath) {
+      for (const wt of worktrees) {
+        if (hints.filePath.startsWith(wt.path)) {
+          const wtIdentity = resolve(wt.path, '.claude', 'crew-identity.json');
+          try {
+            if (existsSync(wtIdentity)) {
+              return JSON.parse(readFileSync(wtIdentity, 'utf-8'));
+            }
+          } catch { /* skip */ }
+        }
+      }
+    }
+
+    // Strategy 3b: Single worktree fallback (unambiguous)
+    if (worktrees.length === 1) {
+      const wtIdentity = resolve(worktrees[0].path, '.claude', 'crew-identity.json');
+      try {
+        if (existsSync(wtIdentity)) {
+          return JSON.parse(readFileSync(wtIdentity, 'utf-8'));
+        }
+      } catch { /* fall through */ }
+    }
+
+    // Multiple worktrees + no file path hint = can't disambiguate
+  } catch { /* no registry or parse error */ }
+
   return null;
 }
 
