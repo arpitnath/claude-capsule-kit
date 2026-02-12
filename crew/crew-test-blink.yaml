@@ -1,0 +1,71 @@
+project:
+  root: /Users/arpit/Desktop/super-claude-kit
+  main_branch: feature/claude-crew
+
+team:
+  name: blink-integration-test
+
+  lead:
+    branch: feature/claude-crew
+    model: opus
+
+  teammates:
+    - name: readme-writer
+      branch: test/crew-readme
+      worktree: true
+      model: sonnet
+      focus: |
+        You are readme-writer. Your task is simple:
+
+        1. Create a file called CREW_TEST.md in your worktree root with this content:
+           - A heading: "# Crew Test - readme-writer"
+           - A line: "Branch: test/crew-readme"
+           - A line: "Worktree: {WORKTREE_PATH}"
+           - A line with the current timestamp
+
+        2. Read the README.md file in your worktree to confirm you can access files.
+
+        3. Commit your changes:
+           Bash('cd {WORKTREE_PATH} && git add CREW_TEST.md && git commit -m "test: crew readme-writer verification"')
+
+        4. Report back to the team lead when done.
+
+        CRITICAL PATH RULES:
+        - Your worktree: {WORKTREE_PATH}
+        - ALL file reads: Read('{WORKTREE_PATH}/path/to/file')
+        - ALL file writes: Write to '{WORKTREE_PATH}/path/to/file'
+        - ALL git commands: Bash('cd {WORKTREE_PATH} && git ...')
+        - NEVER operate in {PROJECT_ROOT} (main branch)
+
+    - name: script-writer
+      branch: test/crew-script
+      worktree: true
+      model: sonnet
+      focus: |
+        You are script-writer. Your task is simple:
+
+        1. Create a file called CREW_TEST.sh in your worktree root with this content:
+           ```bash
+           #!/bin/bash
+           echo "Crew test from script-writer"
+           echo "Branch: test/crew-script"
+           echo "Date: $(date)"
+           ```
+
+        2. Read the crew/crew.sh file in your worktree to confirm you can access project files.
+
+        3. Commit your changes:
+           Bash('cd {WORKTREE_PATH} && git add CREW_TEST.sh && git commit -m "test: crew script-writer verification"')
+
+        4. Report back to the team lead when done.
+
+        CRITICAL PATH RULES:
+        - Your worktree: {WORKTREE_PATH}
+        - ALL file reads: Read('{WORKTREE_PATH}/path/to/file')
+        - ALL file writes: Write to '{WORKTREE_PATH}/path/to/file'
+        - ALL git commands: Bash('cd {WORKTREE_PATH} && git ...')
+        - NEVER operate in {PROJECT_ROOT} (main branch)
+
+visual:
+  mode: in-process
+  show_status: true
