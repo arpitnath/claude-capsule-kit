@@ -143,6 +143,10 @@ function setup() {
 
   console.log('');
   console.log(`CCK v${VERSION} setup complete!`);
+  console.log('');
+  console.log('Crew Mode (Agent Teams):');
+  console.log('  To use /crew for parallel multi-branch teams, enable Agent Teams in Claude Code.');
+  console.log('  Setup guide: https://code.claude.com/docs/en/agent-teams');
 }
 
 function teardown() {
