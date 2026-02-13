@@ -12,6 +12,18 @@ import { getCapsuleDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDis
 import { existsSync, readFileSync, rmSync, unlinkSync } from 'fs';
 import { resolve } from 'path';
 import { homedir } from 'os';
+import { execSync } from 'child_process';
+
+function getCurrentBranch() {
+  try {
+    return execSync('git rev-parse --abbrev-ref HEAD', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    }).trim();
+  } catch {
+    return null;
+  }
+}
 
 function cleanupV2Artifacts() {
   const localClaude = resolve(process.cwd(), '.claude');
@@ -55,11 +67,49 @@ async function main() {
     } catch { /* don't block session start if prune fails */ }
 
     const sessionNs = crewNamespace('session', crewId, projectHash);
-    const recentSessions = blink.list(sessionNs, 'recent').slice(0, 1);
+    const currentBranch = getCurrentBranch();
 
-    if (recentSessions.length > 0) {
-      const session = recentSessions[0];
-      contextParts.push(`## Last Session\n${session.summary || session.title}`);
+    // Branch-aware session context: prioritize sessions from the current branch
+    const recentSessions = blink.list(sessionNs, 'recent').slice(0, 10);
+
+    let branchSession = null;
+    let fallbackSession = null;
+
+    if (currentBranch) {
+      // Find the most recent session on the current branch
+      for (const session of recentSessions) {
+        try {
+          const content = typeof session.content === 'string'
+            ? JSON.parse(session.content)
+            : session.content;
+
+          if (content?.branch === currentBranch) {
+            branchSession = session;
+            break;
+          }
+
+          // Keep first session as fallback
+          if (!fallbackSession) {
+            fallbackSession = session;
+          }
+        } catch {
+          // If content parsing fails, use as fallback
+          if (!fallbackSession) {
+            fallbackSession = session;
+          }
+        }
+      }
+    } else {
+      // No git branch detected, use most recent session
+      fallbackSession = recentSessions[0];
+    }
+
+    const sessionToShow = branchSession || fallbackSession;
+    if (sessionToShow) {
+      const header = branchSession && currentBranch
+        ? `## Branch Context (${currentBranch})`
+        : `## Last Session`;
+      contextParts.push(`${header}\n${sessionToShow.summary || sessionToShow.title}`);
     }
 
     const discoveryNs = crewId
