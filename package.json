@@ -1,1 +1,29 @@
-{"type":"module"}
+{
+  "name": "@cck",
+  "version": "3.0.0",
+  "type": "module",
+  "description": "Claude Capsule Kit - Context memory for Claude Code",
+  "bin": {
+    "cck": "./bin/cck.js"
+  },
+  "files": [
+    "bin/",
+    "hooks/",
+    "tools/",
+    "lib/",
+    "agents/",
+    "skills/",
+    "scripts/",
+    "docs/",
+    "templates/"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "blink-query": "latest"
+  },
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js"
+  }
+}

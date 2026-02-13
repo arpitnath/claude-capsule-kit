@@ -1,0 +1,194 @@
+#!/usr/bin/env node
+
+import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, rmSync, statSync } from 'fs';
+import { join, dirname } from 'path';
+import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const PKG_ROOT = join(__dirname, '..');
+const CLAUDE_DIR = join(process.env.HOME, '.claude');
+const CCK_DIR = join(CLAUDE_DIR, 'cck');
+const SETTINGS_PATH = join(CLAUDE_DIR, 'settings.json');
+const CLAUDE_MD_PATH = join(CLAUDE_DIR, 'CLAUDE.md');
+const BLINK_DB_PATH = join(CLAUDE_DIR, 'blink.db');
+const BIN_DIR = join(CLAUDE_DIR, 'bin');
+
+const pkg = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf8'));
+const VERSION = pkg.version;
+
+const command = process.argv[2];
+
+const commands = { setup, teardown, status, version };
+
+if (!command || !commands[command]) {
+  console.log(`cck v${VERSION} - Claude Capsule Kit`);
+  console.log('');
+  console.log('Commands:');
+  console.log('  cck setup      Install hooks, tools, and context system');
+  console.log('  cck teardown   Remove CCK (keeps blink.db user data)');
+  console.log('  cck status     Show installation status');
+  console.log('  cck version    Print version');
+  process.exit(command ? 1 : 0);
+}
+
+try {
+  commands[command]();
+} catch (err) {
+  console.error(`Error running '${command}': ${err.message}`);
+  process.exit(1);
+}
+
+function setup() {
+  console.log(`Setting up CCK v${VERSION}...`);
+
+  // 1. Create CCK directory and copy assets
+  mkdirSync(CCK_DIR, { recursive: true });
+
+  const assetDirs = ['hooks', 'tools', 'lib'];
+  for (const dir of assetDirs) {
+    const src = join(PKG_ROOT, dir);
+    const dest = join(CCK_DIR, dir);
+    if (existsSync(src)) {
+      cpSync(src, dest, { recursive: true });
+      console.log(`  Copied ${dir}/`);
+    }
+  }
+
+  // 2. Create package.json for ESM support in CCK dir
+  writeFileSync(join(CCK_DIR, 'package.json'), JSON.stringify({ type: 'module' }, null, 2) + '\n');
+
+  // 3. Install blink-query
+  console.log('  Installing blink-query...');
+  try {
+    execSync('npm install blink-query', { cwd: CCK_DIR, stdio: 'pipe' });
+    console.log('  blink-query installed');
+  } catch (err) {
+    console.warn('  Warning: Failed to install blink-query. Run manually: cd ~/.claude/cck && npm install blink-query');
+  }
+
+  // 4. Merge hooks into settings.json
+  const hooksTemplate = JSON.parse(readFileSync(join(PKG_ROOT, 'templates', 'settings-hooks.json'), 'utf8'));
+  let settings = {};
+  if (existsSync(SETTINGS_PATH)) {
+    try {
+      settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
+    } catch {
+      // Start fresh if settings.json is malformed
+    }
+  }
+  settings.hooks = hooksTemplate;
+  mkdirSync(dirname(SETTINGS_PATH), { recursive: true });
+  writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n');
+  console.log('  Hooks registered in settings.json');
+
+  // 5. Copy CLAUDE.md template
+  const claudeMdSrc = join(PKG_ROOT, 'templates', 'CLAUDE.md');
+  if (existsSync(claudeMdSrc)) {
+    cpSync(claudeMdSrc, CLAUDE_MD_PATH);
+    console.log('  CLAUDE.md installed');
+  }
+
+  // 6. Try to build Go binaries
+  mkdirSync(BIN_DIR, { recursive: true });
+  try {
+    execSync('go version', { stdio: 'pipe' });
+    console.log('  Go detected, building binaries...');
+
+    const goBinaries = [
+      { name: 'dependency-scanner', src: join(PKG_ROOT, 'tools', 'dependency-scanner') },
+      { name: 'progressive-reader', src: join(PKG_ROOT, 'tools', 'progressive-reader') },
+    ];
+
+    for (const bin of goBinaries) {
+      if (existsSync(bin.src)) {
+        try {
+          execSync(`go build -o ${join(BIN_DIR, bin.name)} .`, { cwd: bin.src, stdio: 'pipe' });
+          console.log(`  Built ${bin.name}`);
+        } catch {
+          console.warn(`  Warning: Failed to build ${bin.name}`);
+        }
+      }
+    }
+  } catch {
+    console.log('  Go not found, skipping binary builds (optional)');
+  }
+
+  console.log('');
+  console.log(`CCK v${VERSION} setup complete!`);
+}
+
+function teardown() {
+  console.log('Tearing down CCK...');
+
+  // 1. Remove CCK directory
+  if (existsSync(CCK_DIR)) {
+    rmSync(CCK_DIR, { recursive: true, force: true });
+    console.log('  Removed ~/.claude/cck/');
+  }
+
+  // 2. Remove hooks from settings.json
+  if (existsSync(SETTINGS_PATH)) {
+    try {
+      const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
+      delete settings.hooks;
+      writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n');
+      console.log('  Removed hooks from settings.json');
+    } catch {
+      console.warn('  Warning: Could not update settings.json');
+    }
+  }
+
+  // 3. Remove CLAUDE.md
+  if (existsSync(CLAUDE_MD_PATH)) {
+    rmSync(CLAUDE_MD_PATH);
+    console.log('  Removed ~/.claude/CLAUDE.md');
+  }
+
+  // Note: blink.db is intentionally preserved
+  if (existsSync(BLINK_DB_PATH)) {
+    console.log('  Kept ~/.claude/blink.db (user data preserved)');
+  }
+
+  console.log('');
+  console.log('CCK teardown complete.');
+}
+
+function status() {
+  console.log(`CCK v${VERSION} Status`);
+  console.log('─'.repeat(40));
+
+  // Hooks directory
+  const hooksDir = join(CCK_DIR, 'hooks');
+  console.log(`  Hooks directory:  ${existsSync(hooksDir) ? 'installed' : 'not found'}`);
+
+  // Settings hooks
+  let hooksRegistered = false;
+  if (existsSync(SETTINGS_PATH)) {
+    try {
+      const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
+      hooksRegistered = !!settings.hooks && Object.keys(settings.hooks).length > 0;
+    } catch {}
+  }
+  console.log(`  Hooks registered: ${hooksRegistered ? 'yes' : 'no'}`);
+
+  // Blink database
+  if (existsSync(BLINK_DB_PATH)) {
+    const stats = statSync(BLINK_DB_PATH);
+    const sizeKB = (stats.size / 1024).toFixed(1);
+    console.log(`  Blink database:   ${sizeKB} KB`);
+  } else {
+    console.log('  Blink database:   not created yet');
+  }
+
+  // Go binaries
+  const depScanner = join(BIN_DIR, 'dependency-scanner');
+  const progReader = join(BIN_DIR, 'progressive-reader');
+  console.log(`  dep-scanner:      ${existsSync(depScanner) ? 'installed' : 'not found'}`);
+  console.log(`  progressive-reader: ${existsSync(progReader) ? 'installed' : 'not found'}`);
+}
+
+function version() {
+  console.log(`cck v${VERSION}`);
+}
