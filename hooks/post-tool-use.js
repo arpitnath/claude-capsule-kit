@@ -14,7 +14,7 @@
 import { Blink } from 'blink-query';
 import { createInterface } from 'readline';
 import { basename } from 'path';
-import { getBlinkDbPath, getCrewIdentity, crewNamespace } from './lib/crew-detect.js';
+import { getBlinkDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
 
 async function main() {
   try {
@@ -27,6 +27,8 @@ async function main() {
     }
 
     const input = JSON.parse(inputJson);
+    if (isDisabled()) process.exit(0);
+    const projectHash = getProjectHash();
     const toolName = input.tool_name;
     const toolInput = input.tool_input || {};
     const sessionId = input.session_id || 'default';
@@ -45,7 +47,7 @@ async function main() {
 
         // Save file operation metadata (META = structured operation data)
         blink.save({
-          namespace: crewNamespace(`session/${sessionId}/files`, crewId),
+          namespace: crewNamespace(`session/${sessionId}/files`, crewId, projectHash),
           title: fileName,
           summary: `${action}: ${filePath}`,
           type: 'META',
@@ -67,7 +69,7 @@ async function main() {
       if (agentType && prompt) {
         // Save sub-agent invocation (SUMMARY = read directly, no fetching needed)
         blink.save({
-          namespace: crewNamespace(`session/${sessionId}/subagents`, crewId),
+          namespace: crewNamespace(`session/${sessionId}/subagents`, crewId, projectHash),
           title: `${agentType} - ${new Date().toISOString()}`,
           summary: prompt.slice(0, 200),
           type: 'SUMMARY',

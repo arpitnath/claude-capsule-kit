@@ -19,6 +19,9 @@
 
 import { resolve, dirname } from 'path';
 import { existsSync, readFileSync, lstatSync, readlinkSync } from 'fs';
+import { createHash } from 'crypto';
+import { execSync } from 'child_process';
+import { homedir } from 'os';
 
 /**
  * Resolve the path to the canonical blink.db.
@@ -31,6 +34,10 @@ import { existsSync, readFileSync, lstatSync, readlinkSync } from 'fs';
  * 5. Default → ./.claude/blink.db
  */
 export function getBlinkDbPath() {
+  // Strategy 0: Global installation path (highest priority for global CCK)
+  const globalDbPath = resolve(homedir(), '.claude', 'blink.db');
+  if (existsSync(globalDbPath)) return globalDbPath;
+
   const cwdClaudeDir = resolve(process.cwd(), '.claude');
 
   // Strategy 1: Direct CWD lookup
@@ -180,6 +187,26 @@ export function getCrewIdentity(hints = {}) {
  * @param {{ teammate_name: string } | null} crewId - Crew identity or null
  * @returns {string}
  */
-export function crewNamespace(base, crewId) {
-  return crewId ? `crew/${crewId.teammate_name}/${base}` : base;
+export function crewNamespace(base, crewId, projectHash = null) {
+  const projPrefix = projectHash ? `proj/${projectHash}/` : '';
+  return crewId ? `${projPrefix}crew/${crewId.teammate_name}/${base}` : `${projPrefix}${base}`;
+}
+
+export function getProjectHash() {
+  let identifier;
+  try {
+    identifier = execSync('git remote get-url origin', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  } catch {
+    identifier = process.cwd();
+  }
+  return createHash('sha256').update(identifier).digest('hex').slice(0, 12);
+}
+
+export function isDisabled() {
+  let dir = process.cwd();
+  while (dir !== '/') {
+    if (existsSync(resolve(dir, '.cck-disable'))) return true;
+    dir = dirname(dir);
+  }
+  return false;
 }

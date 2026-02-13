@@ -14,6 +14,9 @@ if ! cd "$(pwd 2>/dev/null)" 2>/dev/null; then
   cd "$HOME" 2>/dev/null || exit 0
 fi
 
+# CCK opt-out check
+[ -f "$PWD/.cck-disable" ] && exit 0
+
 # Read JSON from stdin (Claude Code's hook protocol)
 INPUT_JSON=$(cat)
 
@@ -34,7 +37,7 @@ if [ "$TOOL_NAME" == "Task" ]; then
     if echo "$PROMPT_LOWER" | grep -qE '(depend|import|require|module.*load|circular.*depend|who.*use|what.*import|find.*import)'; then
       # Output JSON enforcement message (to stderr for informational display)
       cat << 'EOF' >&2
-{"type":"tool-enforcement","category":"dependency-analysis","warning":"Query appears to be about code dependencies","dontUse":{"tool":"Task","reason":"inefficient","issues":["Slower: Scans files one-by-one","Limited: Cannot detect circular dependencies","Expensive: High token usage"]},"useInstead":[{"name":"query-deps","useCase":"what imports X, who uses X","command":"bash .claude/tools/query-deps/query-deps.sh <file-path>"},{"name":"impact-analysis","useCase":"what would break if I change X","command":"bash .claude/tools/impact-analysis/impact-analysis.sh <file-path>"},{"name":"find-circular","useCase":"circular dependencies","command":"bash .claude/tools/find-circular/find-circular.sh"}],"benefit":"These tools are instant and read pre-built dependency graph"}
+{"type":"tool-enforcement","category":"dependency-analysis","warning":"Query appears to be about code dependencies","dontUse":{"tool":"Task","reason":"inefficient","issues":["Slower: Scans files one-by-one","Limited: Cannot detect circular dependencies","Expensive: High token usage"]},"useInstead":[{"name":"query-deps","useCase":"what imports X, who uses X","command":"bash $HOME/.claude/cck/tools/query-deps/query-deps.sh <file-path>"},{"name":"impact-analysis","useCase":"what would break if I change X","command":"bash $HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh <file-path>"},{"name":"find-circular","useCase":"circular dependencies","command":"bash $HOME/.claude/cck/tools/find-circular/find-circular.sh"}],"benefit":"These tools are instant and read pre-built dependency graph"}
 EOF
     fi
 
@@ -50,11 +53,11 @@ EOF
     SUBAGENT_TYPE=$(echo "$TOOL_INPUT" | python3 -c "import sys, json; print(json.load(sys.stdin).get('subagent_type', ''))" 2>/dev/null || echo "")
 
     # Skip if already invoking context-librarian
-    if [ "$SUBAGENT_TYPE" != "context-librarian" ] && [ -f ".claude/session_subagents.log" ]; then
+    if [ "$SUBAGENT_TYPE" != "context-librarian" ] && [ -f "$HOME/.claude/cck/state/session_subagents.log" ]; then
       # Extract keywords from task prompt
       KEYWORDS=$(echo "$TASK_PROMPT" | grep -oiE "(auth|database|schema|error|bug|architecture|api|routing|payment)" | head -1)
 
-      if [ -n "$KEYWORDS" ] && grep -qi "$KEYWORDS" .claude/session_subagents.log 2>/dev/null; then
+      if [ -n "$KEYWORDS" ] && grep -qi "$KEYWORDS" "$HOME/.claude/cck/state/session_subagents.log" 2>/dev/null; then
         cat << EOF >&2
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💡 PAST AGENT FINDINGS AVAILABLE
@@ -66,7 +69,7 @@ Topic: $KEYWORDS
 Past findings exist in subagent logs.
 
 Suggestion: Query context-librarian first:
-  Bash(".claude/tools/context-query/context-query.sh $KEYWORDS")
+  Bash("$HOME/.claude/cck/tools/context-query/context-query.sh search $KEYWORDS")
 
 This checks if similar work was already done (saves 30-60s).
 
@@ -86,9 +89,12 @@ fi
 
 FILE_PATH=$(echo "$TOOL_INPUT" | python3 -c "import sys, json; print(json.load(sys.stdin).get('file_path', ''))" 2>/dev/null || echo "")
 
-# Get project root from script location (.claude/hooks/ -> project root)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+# Find project root via git
+PROJECT_ROOT="$PWD"
+while [ "$PROJECT_ROOT" != "/" ] && [ ! -d "$PROJECT_ROOT/.git" ]; do
+  PROJECT_ROOT=$(dirname "$PROJECT_ROOT")
+done
+[ "$PROJECT_ROOT" = "/" ] && PROJECT_ROOT="$PWD"
 
 # Check file size and block Read for large files (force progressive-reader)
 if [ -n "$FILE_PATH" ]; then
@@ -124,8 +130,8 @@ if [ -n "$FILE_PATH" ]; then
     fi
 
     # Context-librarian suggestion if file is in capsule
-    if [ -f ".claude/capsule.toon" ] && grep -q "$FILE_PATH" .claude/capsule.toon 2>/dev/null; then
-      FILE_AGE=$(grep "$FILE_PATH" .claude/capsule.toon | tail -1 | grep -oE '[0-9]+' | head -1 || echo "0")
+    if [ -f "$HOME/.claude/cck/state/capsule.toon" ] && grep -q "$FILE_PATH" "$HOME/.claude/cck/state/capsule.toon" 2>/dev/null; then
+      FILE_AGE=$(grep "$FILE_PATH" "$HOME/.claude/cck/state/capsule.toon" | tail -1 | grep -oE '[0-9]+' | head -1 || echo "0")
       FILE_AGE_MIN=$((FILE_AGE / 60))
 
       if [ "$FILE_AGE_MIN" -lt 30 ]; then
@@ -139,7 +145,7 @@ File: $FILE_PATH
 Status: Already read ${FILE_AGE_MIN}m ago (in capsule)
 
 Suggestion: Query context-librarian first (faster, 90% attention):
-  Bash("context-query $FILE_BASENAME")
+  Bash("$HOME/.claude/cck/tools/context-query/context-query.sh search $FILE_BASENAME")
 
 This retrieves focused context and avoids re-reading ~12,000 tokens.
 
@@ -155,11 +161,12 @@ if [ -z "$FILE_PATH" ]; then
 fi
 
 # Tracking files
-RECENT_READS_LOG=".claude/recent_reads.log"
-WARNINGS_SHOWN=".claude/read_warnings_shown.log"
+CCK_STATE_DIR="$HOME/.claude/cck/state"
+mkdir -p "$CCK_STATE_DIR"
+RECENT_READS_LOG="$CCK_STATE_DIR/recent_reads.log"
+WARNINGS_SHOWN="$CCK_STATE_DIR/read_warnings_shown.log"
 
 # Create logs if they don't exist
-mkdir -p .claude
 touch "$RECENT_READS_LOG"
 touch "$WARNINGS_SHOWN"
 
@@ -197,9 +204,9 @@ fi
 echo "$FILE_PATH,$CURRENT_TIME" >> "$RECENT_READS_LOG"
 
 # Auto-log file access to capsule
-if [ -x ".claude/hooks/log-file-access.sh" ]; then
+if [ -x "$HOME/.claude/cck/hooks/log-file-access.sh" ] && [ -x "$HOME/.claude/cck/hooks/log-file-access.sh" ]; then
   # Auto-log this read operation (suppress output to avoid noise)
-  .claude/hooks/log-file-access.sh "$FILE_PATH" "read" > /dev/null 2>&1 || true
+  "$HOME/.claude/cck/hooks/log-file-access.sh" "$FILE_PATH" "read" > /dev/null 2>&1 || true
 fi
 
 exit 0

@@ -6,36 +6,24 @@
 
 set -euo pipefail
 
+# CCK opt-out check
+[ -f "$PWD/.cck-disable" ] && exit 0
+
 # Defensive check: Ensure CWD exists (can be invalid if directory was deleted)
 if ! cd "$(pwd 2>/dev/null)" 2>/dev/null; then
   # CWD is invalid, try to recover by going to home directory
   cd "$HOME" 2>/dev/null || exit 0
 fi
 
-# Find .claude directory by searching parent directories
-find_claude_dir() {
-  local current_dir="$PWD"
-  while [ "$current_dir" != "/" ]; do
-    if [ -d "$current_dir/.claude" ]; then
-      echo "$current_dir/.claude"
-      return 0
-    fi
-    current_dir=$(dirname "$current_dir")
-  done
-  echo ".claude"
-  return 1
-}
-
-CLAUDE_DIR=$(find_claude_dir)
+# Use global CCK state directory
+CCK_STATE_DIR="$HOME/.claude/cck/state"
+mkdir -p "$CCK_STATE_DIR"
 
 # Tracking files
-QUALITY_CHECK_STATE="$CLAUDE_DIR/quality_check_state.txt"
-SUGGESTIONS_SHOWN="$CLAUDE_DIR/quality_suggestions_shown.log"
-FILE_LOG="$CLAUDE_DIR/session_files.log"
-DISCOVERY_LOG="$CLAUDE_DIR/session_discoveries.log"
-
-# Create files if needed
-mkdir -p "$CLAUDE_DIR"
+QUALITY_CHECK_STATE="$CCK_STATE_DIR/quality_check_state.txt"
+SUGGESTIONS_SHOWN="$CCK_STATE_DIR/quality_suggestions_shown.log"
+FILE_LOG="$CCK_STATE_DIR/session_files.log"
+DISCOVERY_LOG="$CCK_STATE_DIR/session_discoveries.log"
 touch "$QUALITY_CHECK_STATE"
 touch "$SUGGESTIONS_SHOWN"
 
@@ -68,7 +56,7 @@ echo "$CURRENT_FILES,$CURRENT_DISCOVERIES" > "$QUALITY_CHECK_STATE"
 if [ $NEW_FILES -ge 3 ] && [ $NEW_DISCOVERIES -eq 0 ]; then
   echo "" >&2
   echo "[QUALITY TIP] Accessed $NEW_FILES files but logged 0 discoveries" >&2
-  echo "Consider: bash $CLAUDE_DIR/hooks/log-discovery.sh \"<category>\" \"<finding>\"" >&2
+  echo "Consider: bash $HOME/.claude/cck/hooks/log-discovery.sh \"<category>\" \"<finding>\"" >&2
   echo "" >&2
 
   # Mark as shown
