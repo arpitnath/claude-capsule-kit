@@ -10,11 +10,11 @@
  * process.cwd() returns the main project path. So we can't rely
  * on CWD to find crew-identity.json — we need alternate strategies:
  *
- * 1. CREW_WORKTREE_PATH env var (if set by spawn infrastructure)
- * 2. Worktree registry scan + file path matching from tool_input
- * 3. Direct CWD lookup (only works if CWD = worktree)
+ * 1. CWD lookup (crew-identity.json in worktree root or .claude/)
+ * 2. CREW_WORKTREE_PATH env var (if set by spawn infrastructure)
+ * 3. Worktree registry (global ~/.claude/crew/ or project-local .claude/crew/)
  *
- * Outside crew: everything resolves to ./.claude/capsule.db as normal.
+ * Global mode: capsule.db lives at ~/.claude/capsule.db always.
  */
 
 import { resolve, dirname } from 'path';
@@ -120,60 +120,82 @@ export function getCapsuleDbPath() {
  * @returns {{ teammate_name: string, project_root: string, branch: string } | null}
  */
 export function getCrewIdentity(hints = {}) {
-  // Strategy 1: Direct CWD lookup (original approach — works if CWD = worktree)
-  const cwdIdentity = resolve(process.cwd(), '.claude', 'crew-identity.json');
-  try {
-    if (existsSync(cwdIdentity)) {
-      return JSON.parse(readFileSync(cwdIdentity, 'utf-8'));
-    }
-  } catch { /* fall through */ }
+  const cwd = process.cwd();
 
-  // Strategy 2: Environment variable override
-  const envWorktree = process.env.CREW_WORKTREE_PATH;
-  if (envWorktree) {
+  // Strategy 1: Direct CWD lookup (worktree root or .claude/)
+  for (const candidate of [
+    resolve(cwd, 'crew-identity.json'),
+    resolve(cwd, '.claude', 'crew-identity.json'),
+  ]) {
     try {
-      const envIdentityFile = resolve(envWorktree, '.claude', 'crew-identity.json');
-      if (existsSync(envIdentityFile)) {
-        return JSON.parse(readFileSync(envIdentityFile, 'utf-8'));
+      if (existsSync(candidate)) {
+        return JSON.parse(readFileSync(candidate, 'utf-8'));
       }
     } catch { /* fall through */ }
   }
 
-  // Strategy 3 & 4: Worktree registry scan
-  const registryPath = resolve(process.cwd(), '.claude', 'crew', 'worktrees.json');
-  try {
-    if (!existsSync(registryPath)) return null;
-
-    const registry = JSON.parse(readFileSync(registryPath, 'utf-8'));
-    const worktrees = registry.worktrees || [];
-    if (worktrees.length === 0) return null;
-
-    // Strategy 3a: Match file path hint against worktree paths
-    if (hints.filePath) {
-      for (const wt of worktrees) {
-        if (hints.filePath.startsWith(wt.path)) {
-          const wtIdentity = resolve(wt.path, '.claude', 'crew-identity.json');
-          try {
-            if (existsSync(wtIdentity)) {
-              return JSON.parse(readFileSync(wtIdentity, 'utf-8'));
-            }
-          } catch { /* skip */ }
-        }
-      }
-    }
-
-    // Strategy 3b: Single worktree fallback (unambiguous)
-    if (worktrees.length === 1) {
-      const wtIdentity = resolve(worktrees[0].path, '.claude', 'crew-identity.json');
+  // Strategy 2: Environment variable override
+  const envWorktree = process.env.CREW_WORKTREE_PATH;
+  if (envWorktree) {
+    for (const candidate of [
+      resolve(envWorktree, 'crew-identity.json'),
+      resolve(envWorktree, '.claude', 'crew-identity.json'),
+    ]) {
       try {
-        if (existsSync(wtIdentity)) {
-          return JSON.parse(readFileSync(wtIdentity, 'utf-8'));
+        if (existsSync(candidate)) {
+          return JSON.parse(readFileSync(candidate, 'utf-8'));
         }
       } catch { /* fall through */ }
     }
+  }
 
-    // Multiple worktrees + no file path hint = can't disambiguate
-  } catch { /* no registry or parse error */ }
+  // Strategy 3 & 4: Worktree registry scan (global or project-local)
+  const registryCandidates = [
+    resolve(homedir(), '.claude', 'crew', 'worktrees.json'),
+    resolve(cwd, '.claude', 'crew', 'worktrees.json'),
+  ];
+
+  for (const registryPath of registryCandidates) {
+    try {
+      if (!existsSync(registryPath)) continue;
+
+      const registry = JSON.parse(readFileSync(registryPath, 'utf-8'));
+      const worktrees = registry.worktrees || [];
+      if (worktrees.length === 0) continue;
+
+      // Strategy 3a: Match file path hint against worktree paths
+      if (hints.filePath) {
+        for (const wt of worktrees) {
+          if (hints.filePath.startsWith(wt.path)) {
+            for (const candidate of [
+              resolve(wt.path, 'crew-identity.json'),
+              resolve(wt.path, '.claude', 'crew-identity.json'),
+            ]) {
+              try {
+                if (existsSync(candidate)) {
+                  return JSON.parse(readFileSync(candidate, 'utf-8'));
+                }
+              } catch { /* skip */ }
+            }
+          }
+        }
+      }
+
+      // Strategy 3b: Single worktree fallback (unambiguous)
+      if (worktrees.length === 1) {
+        for (const candidate of [
+          resolve(worktrees[0].path, 'crew-identity.json'),
+          resolve(worktrees[0].path, '.claude', 'crew-identity.json'),
+        ]) {
+          try {
+            if (existsSync(candidate)) {
+              return JSON.parse(readFileSync(candidate, 'utf-8'));
+            }
+          } catch { /* fall through */ }
+        }
+      }
+    } catch { /* no registry or parse error */ }
+  }
 
   return null;
 }
