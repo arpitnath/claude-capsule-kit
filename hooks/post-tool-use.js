@@ -21,7 +21,14 @@ import { getCapsuleDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDis
  */
 function tryResolveNamespace(blink, namespace) {
   try {
-    return blink.resolve(namespace) || [];
+    const result = blink.resolve(namespace);
+    // blink.resolve returns {status, record} — content has child records
+    if (result?.record?.content && Array.isArray(result.record.content)) {
+      return result.record.content;
+    } else if (result?.record) {
+      return [result.record];
+    }
+    return [];
   } catch {
     return [];
   }

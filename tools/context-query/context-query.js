@@ -228,9 +228,12 @@ try {
 
       namespaces.forEach(ns => {
         try {
-          const records = blink.resolve(ns);
-          if (Array.isArray(records)) {
-            allDiscoveries = allDiscoveries.concat(records);
+          const result = blink.resolve(ns);
+          // blink.resolve returns {status, record} — content has child records
+          if (result?.record?.content && Array.isArray(result.record.content)) {
+            allDiscoveries = allDiscoveries.concat(result.record.content);
+          } else if (result?.record) {
+            allDiscoveries.push(result.record);
           }
         } catch {
           // Namespace doesn't exist, skip
