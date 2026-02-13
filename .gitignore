@@ -7,7 +7,7 @@ __notepad__/*
 docs/*
 
 # Runtime data
-blink.db
+capsule.db
 node_modules/
 
 # Crew mode

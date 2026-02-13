@@ -1,11 +1,11 @@
 # Capsule Kit v3.0
 
-Context memory for Claude Code. Blink (SQLite) stores session state automatically via JS hooks. No manual logging needed.
+Context memory for Claude Code. Capsule (SQLite) stores session state automatically via JS hooks. No manual logging needed.
 
 ## Requirements
 
 - **Git**: Required for session tracking
-- **Node.js**: Required for Blink hooks (`blink-query` npm package)
+- **Node.js**: Required for Capsule hooks (`blink-query` npm package)
 - **Go 1.20+** (optional): For building dependency analysis tools (`query-deps`, `impact-analysis`, `progressive-reader`)
 
 ## RULES
@@ -18,7 +18,7 @@ Context memory for Claude Code. Blink (SQLite) stores session state automaticall
    - Dead code: `bash $HOME/.claude/cck/tools/find-dead-code/find-dead-code.sh`
    - File search: `Glob` -- Code search: `Grep`
    - Large files (>50KB): `$HOME/.claude/bin/progressive-reader --path <file> --list`
-   - Blink context: `bash $HOME/.claude/cck/tools/context-query/context-query.sh <command> [args]`
+   - Capsule context: `bash $HOME/.claude/cck/tools/context-query/context-query.sh <command> [args]`
      - Read: `search <term>`, `files`, `agents`, `sessions`, `recent`, `stats`
      - Write: `save <ns> <title> <summary> [type]`, `update <search> <new-summary>`
    - NEVER use Task/Explore for dependency queries, file search, or code search.
@@ -31,7 +31,7 @@ Context memory for Claude Code. Blink (SQLite) stores session state automaticall
 4. **Skills**: `/workflow` (complex tasks), `/debug` (errors/bugs), `/deep-context` (understand codebase), `/code-review` (pre-commit). Auto-activate on keywords.
 5. **Production safety**: All sub-agents are read-only (Read, Grep, Glob only). No Edit/Write/Bash.
 
-## Context System (Blink)
+## Context System (Capsule)
 
 Context is handled **fully automatically**. The JS hooks capture everything:
 
@@ -43,7 +43,7 @@ Context is handled **fully automatically**. The JS hooks capture everything:
 | `pre-tool-use.sh` | Before tool calls | Tool enforcement warnings, large file blocking |
 | `stop.sh` | After responses | Quality check |
 
-### Blink Record Types
+### Capsule Record Types
 
 | Type | Meaning | Consumption Instruction |
 |------|---------|------------------------|
@@ -53,7 +53,7 @@ Context is handled **fully automatically**. The JS hooks capture everything:
 | `SOURCE` | Summary here, fetch source if you need depth | External references |
 | `ALIAS` | Follow the redirect to the target record | Pointers |
 
-### Blink Namespace Reference
+### Capsule Namespace Reference
 
 **Solo mode:**
 ```
@@ -63,7 +63,7 @@ session                          -- Session summary records (META)
 discoveries                      -- Architectural discoveries
 ```
 
-**Crew mode** (Agent Teams with worktrees, shared `blink.db`):
+**Crew mode** (Agent Teams with worktrees, shared `capsule.db`):
 ```
 crew/{teammate_name}/session/{session_id}/files       -- Teammate file ops
 crew/{teammate_name}/session/{session_id}/subagents   -- Teammate sub-agents
@@ -84,7 +84,7 @@ crew/_shared/discoveries                              -- Shared team discoveries
 
 NEVER use Task/Explore for dependency queries. These tools use a pre-built graph — instant vs sequential scanning.
 
-### Blink Context Query (mid-session access)
+### Capsule Context Query (mid-session access)
 
 | Question | Command |
 |----------|---------|

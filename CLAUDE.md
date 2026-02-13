@@ -33,7 +33,7 @@ Context is handled automatically. Hooks capture everything:
 - **pre-tool-use.sh**: Tool enforcement warnings, large file blocking
 - **stop.sh**: Quality check after responses
 
-Crew mode: Blink is crew-aware. Shared `blink.db` with teammate-scoped namespaces. See `docs/AGENT_TEAMS_WORKTREE_MODE.md`.
+Crew mode: Capsule is crew-aware. Shared `capsule.db` with teammate-scoped namespaces. See `docs/AGENT_TEAMS_WORKTREE_MODE.md`.
 
 ## Docs
 

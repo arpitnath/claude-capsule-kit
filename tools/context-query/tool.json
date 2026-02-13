@@ -1,11 +1,11 @@
 {
   "name": "context-query",
   "version": "3.0.0",
-  "description": "Query Blink context database for session history, file operations, and sub-agent results",
+  "description": "Query Capsule context database for session history, file operations, and sub-agent results",
   "type": "node",
   "entry": "context-query.js",
   "author": "Arpit Nath",
-  "keywords": ["context", "blink", "retrieval", "session", "history"],
+  "keywords": ["context", "capsule", "retrieval", "session", "history"],
   "usage": {
     "command": "bash .claude/tools/context-query/context-query.sh <command> [args]",
     "args": {
@@ -35,7 +35,7 @@
     "sqlite3": "any"
   },
   "permissions": {
-    "read": [".claude/blink.db"],
+    "read": [".claude/capsule.db"],
     "write": [],
     "network": false
   }

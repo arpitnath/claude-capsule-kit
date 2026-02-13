@@ -12,7 +12,7 @@ const CLAUDE_DIR = join(process.env.HOME, '.claude');
 const CCK_DIR = join(CLAUDE_DIR, 'cck');
 const SETTINGS_PATH = join(CLAUDE_DIR, 'settings.json');
 const CLAUDE_MD_PATH = join(CLAUDE_DIR, 'CLAUDE.md');
-const BLINK_DB_PATH = join(CLAUDE_DIR, 'blink.db');
+const CAPSULE_DB_PATH = join(CLAUDE_DIR, 'capsule.db');
 const BIN_DIR = join(CLAUDE_DIR, 'bin');
 
 const pkg = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf8'));
@@ -27,7 +27,7 @@ if (!command || !commands[command]) {
   console.log('');
   console.log('Commands:');
   console.log('  cck setup      Install hooks, tools, and context system');
-  console.log('  cck teardown   Remove CCK (keeps blink.db user data)');
+  console.log('  cck teardown   Remove CCK (keeps capsule.db user data)');
   console.log('  cck status     Show installation status');
   console.log('  cck version    Print version');
   process.exit(command ? 1 : 0);
@@ -143,9 +143,9 @@ function teardown() {
     console.log('  Removed ~/.claude/CLAUDE.md');
   }
 
-  // Note: blink.db is intentionally preserved
-  if (existsSync(BLINK_DB_PATH)) {
-    console.log('  Kept ~/.claude/blink.db (user data preserved)');
+  // Note: capsule.db is intentionally preserved
+  if (existsSync(CAPSULE_DB_PATH)) {
+    console.log('  Kept ~/.claude/capsule.db (user data preserved)');
   }
 
   console.log('');
@@ -168,12 +168,12 @@ function status() {
   }
   console.log(`  Hooks registered: ${hooksRegistered ? 'yes' : 'no'}`);
 
-  if (existsSync(BLINK_DB_PATH)) {
-    const stats = statSync(BLINK_DB_PATH);
+  if (existsSync(CAPSULE_DB_PATH)) {
+    const stats = statSync(CAPSULE_DB_PATH);
     const sizeKB = (stats.size / 1024).toFixed(1);
-    console.log(`  Blink database:   ${sizeKB} KB`);
+    console.log(`  Capsule database: ${sizeKB} KB`);
   } else {
-    console.log('  Blink database:   not created yet');
+    console.log('  Capsule database: not created yet');
   }
 
   const depScanner = join(BIN_DIR, 'dependency-scanner');

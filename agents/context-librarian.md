@@ -2,7 +2,7 @@
 name: context-librarian
 description: |
   PROACTIVELY use when main Claude needs context before proceeding. Context retrieval
-  specialist that searches Blink records, dependency graph, and codebase patterns to
+  specialist that searches Capsule records, dependency graph, and codebase patterns to
   return focused synthesized context packages.
   Use when: uncertain about context, before reading files, before spawning specialists,
   when user mentions "don't have context" or "understand X".
@@ -27,14 +27,14 @@ When invoked with a query topic, perform SYSTEMATIC search and return FOCUSED co
 
 Execute these searches IN ORDER and combine findings:
 
-### Layer 1: Blink Context (Session History, 1-2s)
+### Layer 1: Capsule Context (Session History, 1-2s)
 
-**Search command** (if blink.db exists):
+**Search command** (if capsule.db exists):
 ```bash
 node -e "
 const { Blink } = require('blink-query');
 try {
-  const b = new Blink({ dbPath: 'blink.db' });
+  const b = new Blink({ dbPath: 'capsule.db' });
   const sessions = b.list('session', 'recent').slice(0, 3);
   const discoveries = b.query('discoveries order by hit_count desc limit 5');
   const files = b.search('file', undefined, 5);
@@ -45,7 +45,7 @@ try {
   console.log('=== Recent Files ===');
   files.forEach(f => console.log('-', f.title, ':', f.summary?.slice(0, 80)));
   b.close();
-} catch(e) { console.log('Blink not available:', e.message); }
+} catch(e) { console.log('Capsule not available:', e.message); }
 "
 ```
 
@@ -55,7 +55,7 @@ try {
 - **Recent Files**: Which files were accessed and when
 - **Crew Activity** (if crew mode): What other teammates have been doing
 
-**If empty/unavailable**: Note "No Blink history" and continue.
+**If empty/unavailable**: Note "No Capsule history" and continue.
 
 ---
 
@@ -133,14 +133,14 @@ Combine findings from all layers into **focused context package**:
 ```markdown
 ## Context Retrieved: {query_topic}
 
-### From Blink (Past Sessions)
+### From Capsule (Past Sessions)
 {If found:}
 - **Decision**: [past decision with rationale]
 - **Pattern**: [discovered pattern]
 - **Recent Work**: [what was done in recent sessions]
 
 {If not found:}
-- No past session knowledge found
+- No past session context found
 
 ### Code Relationships (dependency-graph)
 {If file provided:}
@@ -190,7 +190,7 @@ Combine findings from all layers into **focused context package**:
 
 | Layer | Operation | Latency (p50) |
 |-------|-----------|---------------|
-| Blink query | Node script | 1s |
+| Capsule query | Node script | 1s |
 | Dependency graph | Query + impact | 1.5s |
 | Codebase search | Grep + Glob | 1s |
 | Synthesis | In-agent | 1s |

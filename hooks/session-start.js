@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * SessionStart Hook - Blink Integration
+ * SessionStart Hook - Capsule Integration
  *
- * Queries Blink for recent context and injects it into the Claude Code session.
- * Crew-aware: shared blink.db with personal + team context in worktree mode.
+ * Queries Capsule for recent context and injects it into the Claude Code session.
+ * Crew-aware: shared capsule.db with personal + team context in worktree mode.
  */
 
 import { Blink } from 'blink-query';
 import { createInterface } from 'readline';
-import { getBlinkDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
+import { getCapsuleDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
 import { existsSync, rmSync, unlinkSync } from 'fs';
 import { resolve } from 'path';
 
@@ -40,7 +40,7 @@ async function main() {
     const projectHash = getProjectHash();
     const sessionId = input.session_id || 'default';
 
-    const blink = new Blink({ dbPath: getBlinkDbPath() });
+    const blink = new Blink({ dbPath: getCapsuleDbPath() });
     const crewId = getCrewIdentity();
 
     const contextParts = [];

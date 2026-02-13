@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * PostToolUse Hook - Blink Integration
+ * PostToolUse Hook - Capsule Integration
  *
- * Captures tool operations and saves them to Blink for future context.
- * Crew-aware: when running in a worktree, uses the shared blink.db
+ * Captures tool operations and saves them to Capsule for future context.
+ * Crew-aware: when running in a worktree, uses the shared capsule.db
  * and scopes namespaces to the teammate.
  *
  * Captures:
@@ -14,7 +14,7 @@
 import { Blink } from 'blink-query';
 import { createInterface } from 'readline';
 import { basename } from 'path';
-import { getBlinkDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
+import { getCapsuleDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
 
 async function main() {
   try {
@@ -36,7 +36,7 @@ async function main() {
     // Initialize Blink (shared DB in crew mode, local otherwise)
     // Pass file path hint for worktree-based crew identity detection
     const filePath = toolInput.file_path || toolInput.path || '';
-    const blink = new Blink({ dbPath: getBlinkDbPath() });
+    const blink = new Blink({ dbPath: getCapsuleDbPath() });
     const crewId = getCrewIdentity({ filePath });
 
     // Capture file operations

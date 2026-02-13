@@ -5,19 +5,19 @@
 
 set -eo pipefail
 
-# Find blink.db - walk up from CWD
+# Find capsule.db - walk up from CWD
 DB=""
 DIR="$PWD"
 while [ "$DIR" != "/" ]; do
-  if [ -f "$DIR/.claude/blink.db" ]; then
-    DB="$DIR/.claude/blink.db"
+  if [ -f "$DIR/.claude/capsule.db" ]; then
+    DB="$DIR/.claude/capsule.db"
     break
   fi
   DIR=$(dirname "$DIR")
 done
 
 if [ -z "$DB" ] || [ ! -f "$DB" ]; then
-  echo "No blink.db found. Start a Claude Code session first to initialize Blink."
+  echo "No capsule.db found. Start a Claude Code session first to initialize Capsule."
   exit 1
 fi
 
@@ -26,7 +26,7 @@ CMD="${1:-summary}"
 case "$CMD" in
   summary)
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  Blink Context Dashboard"
+    echo "  Capsule Context Dashboard"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     TOTAL=$(sqlite3 "$DB" "SELECT COUNT(*) FROM records;")

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Context-Query Tool v3.0 - Query Blink context database
+ * Context-Query Tool v3.0 - Query Capsule context database
  * Uses blink-query for namespace/type-aware querying
  */
 
@@ -11,12 +11,12 @@ import { homedir } from 'os';
 import { createHash } from 'crypto';
 import { execSync } from 'child_process';
 
-function findBlinkDb() {
-  const globalDb = join(homedir(), '.claude', 'blink.db');
+function findCapsuleDb() {
+  const globalDb = join(homedir(), '.claude', 'capsule.db');
   if (existsSync(globalDb)) return globalDb;
   let dir = process.cwd();
   while (dir !== '/') {
-    const dbPath = join(dir, '.claude', 'blink.db');
+    const dbPath = join(dir, '.claude', 'capsule.db');
     if (existsSync(dbPath)) return dbPath;
     dir = dirname(dir);
   }
@@ -46,9 +46,9 @@ function getAllRecords(blink) {
   return [...projRecords, ...projCrew, ...solo, ...crew];
 }
 
-const dbPath = findBlinkDb();
+const dbPath = findCapsuleDb();
 if (!dbPath) {
-  console.log('No blink.db found. Context will be available after your first session.');
+  console.log('No capsule.db found. Context will be available after your first session.');
   process.exit(0);
 }
 
@@ -63,7 +63,7 @@ try {
         process.exit(1);
       }
       const results = blink.search(arg, undefined, parseInt(limitArg) || 10);
-      console.log(`## Blink Search: ${arg}\n`);
+      console.log(`## Capsule Search: ${arg}\n`);
       if (results.length === 0) {
         console.log(`No results found for '${arg}'`);
       } else {
@@ -226,7 +226,7 @@ try {
         const match = r.namespace?.match(/session\/([^/]+)/);
         if (match) sessions.add(match[1]);
       });
-      console.log(`## Blink Stats\n`);
+      console.log(`## Capsule Stats\n`);
       console.log(`- Total records: ${all.length}`);
       console.log(`- Files tracked: ${files}`);
       console.log(`- Sub-agents: ${agents}`);
@@ -236,7 +236,7 @@ try {
     }
 
     default:
-      console.log(`## Blink Context Query\n`);
+      console.log(`## Capsule Context Query\n`);
       console.log(`Usage: bash $HOME/.claude/cck/tools/context-query/context-query.sh <command> [args]\n`);
       console.log(`Read:`);
       console.log(`  search <term>      Search records by keyword`);
@@ -244,7 +244,7 @@ try {
       console.log(`  agents [limit]     Sub-agent invocation history (default: 10)`);
       console.log(`  sessions [limit]   Session summaries (default: 5)`);
       console.log(`  recent [limit]     All recent activity (default: 15)`);
-      console.log(`  ns <namespace>     Query specific Blink namespace`);
+      console.log(`  ns <namespace>     Query specific Capsule namespace`);
       console.log(`  stats              Database statistics`);
       console.log(``);
       console.log(`Write:`);

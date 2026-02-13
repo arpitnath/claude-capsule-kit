@@ -1,8 +1,8 @@
 /**
- * Crew Detection Utilities for Blink Hooks
+ * Crew Detection Utilities for Capsule Hooks
  *
  * Detects whether hooks are running inside a Claude Crew worktree
- * and resolves the correct shared blink.db path.
+ * and resolves the correct shared capsule.db path.
  *
  * KEY CHALLENGE: When Agent Teams spawns teammates via the Task tool,
  * child processes inherit the PARENT's CWD (main project root).
@@ -14,7 +14,7 @@
  * 2. Worktree registry scan + file path matching from tool_input
  * 3. Direct CWD lookup (only works if CWD = worktree)
  *
- * Outside crew: everything resolves to ./.claude/blink.db as normal.
+ * Outside crew: everything resolves to ./.claude/capsule.db as normal.
  */
 
 import { resolve, dirname } from 'path';
@@ -24,18 +24,18 @@ import { execSync } from 'child_process';
 import { homedir } from 'os';
 
 /**
- * Resolve the path to the canonical blink.db.
+ * Resolve the path to the canonical capsule.db.
  *
  * Strategy (in priority order):
- * 1. CWD crew-identity.json → use its project_root/.claude/blink.db
+ * 1. CWD crew-identity.json → use its project_root/.claude/capsule.db
  * 2. CREW_WORKTREE_PATH env → worktree's crew-identity.json → project_root
  * 3. Worktree registry scan → any crew-identity.json → project_root
  * 4. .claude/hooks symlink → follow to main project
- * 5. Default → ./.claude/blink.db
+ * 5. Default → ./.claude/capsule.db
  */
-export function getBlinkDbPath() {
+export function getCapsuleDbPath() {
   // Strategy 0: Global installation path (highest priority for global CCK)
-  const globalDbPath = resolve(homedir(), '.claude', 'blink.db');
+  const globalDbPath = resolve(homedir(), '.claude', 'capsule.db');
   if (existsSync(globalDbPath)) return globalDbPath;
 
   const cwdClaudeDir = resolve(process.cwd(), '.claude');
@@ -46,7 +46,7 @@ export function getBlinkDbPath() {
     if (existsSync(identityFile)) {
       const identity = JSON.parse(readFileSync(identityFile, 'utf-8'));
       if (identity.project_root) {
-        return resolve(identity.project_root, '.claude', 'blink.db');
+        return resolve(identity.project_root, '.claude', 'capsule.db');
       }
     }
   } catch { /* fall through */ }
@@ -59,7 +59,7 @@ export function getBlinkDbPath() {
       if (existsSync(envIdentity)) {
         const identity = JSON.parse(readFileSync(envIdentity, 'utf-8'));
         if (identity.project_root) {
-          return resolve(identity.project_root, '.claude', 'blink.db');
+          return resolve(identity.project_root, '.claude', 'capsule.db');
         }
       }
     } catch { /* fall through */ }
@@ -77,7 +77,7 @@ export function getBlinkDbPath() {
           if (existsSync(wtIdentity)) {
             const identity = JSON.parse(readFileSync(wtIdentity, 'utf-8'));
             if (identity.project_root) {
-              return resolve(identity.project_root, '.claude', 'blink.db');
+              return resolve(identity.project_root, '.claude', 'capsule.db');
             }
           }
         } catch { /* skip this worktree */ }
@@ -93,14 +93,14 @@ export function getBlinkDbPath() {
       const realHooksDir = readlinkSync(hooksDir);
       const parent = dirname(realHooksDir);
       if (parent.endsWith('.claude')) {
-        return resolve(parent, 'blink.db');
+        return resolve(parent, 'capsule.db');
       }
-      return resolve(parent, '.claude', 'blink.db');
+      return resolve(parent, '.claude', 'capsule.db');
     }
   } catch { /* not a symlink */ }
 
   // Strategy 5: Default local path
-  return resolve(cwdClaudeDir, 'blink.db');
+  return resolve(cwdClaudeDir, 'capsule.db');
 }
 
 /**

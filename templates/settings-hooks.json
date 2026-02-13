@@ -5,7 +5,8 @@
       "hooks": [
         {
           "type": "command",
-          "command": "node $HOME/.claude/cck/hooks/session-start.js"
+          "command": "node $HOME/.claude/cck/hooks/session-start.js",
+          "timeout": 15
         }
       ]
     }
@@ -16,7 +17,8 @@
       "hooks": [
         {
           "type": "command",
-          "command": "node $HOME/.claude/cck/hooks/post-tool-use.js"
+          "command": "node $HOME/.claude/cck/hooks/post-tool-use.js",
+          "timeout": 10
         }
       ]
     }
@@ -27,7 +29,8 @@
       "hooks": [
         {
           "type": "command",
-          "command": "bash $HOME/.claude/cck/hooks/pre-tool-use.sh"
+          "command": "bash $HOME/.claude/cck/hooks/pre-tool-use.sh",
+          "timeout": 10
         }
       ]
     }
@@ -38,7 +41,8 @@
       "hooks": [
         {
           "type": "command",
-          "command": "bash $HOME/.claude/cck/hooks/stop.sh"
+          "command": "bash $HOME/.claude/cck/hooks/stop.sh",
+          "timeout": 10
         }
       ]
     }
@@ -49,7 +53,8 @@
       "hooks": [
         {
           "type": "command",
-          "command": "node $HOME/.claude/cck/hooks/session-end.js"
+          "command": "node $HOME/.claude/cck/hooks/session-end.js",
+          "timeout": 15
         }
       ]
     }

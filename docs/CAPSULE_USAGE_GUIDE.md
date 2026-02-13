@@ -75,7 +75,7 @@ crew/{teammate_name}/session                          -- Teammate session summar
 crew/_shared/discoveries                              -- Shared team discoveries
 ```
 
-All teammates share the same `blink.db` in the main project root. Crew identity is detected automatically via worktree registry.
+All teammates share the same `capsule.db` in the main project root. Crew identity is detected automatically via worktree registry.
 
 ---
 

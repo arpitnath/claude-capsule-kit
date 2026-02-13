@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * SessionEnd Hook - Blink Integration
+ * SessionEnd Hook - Capsule Integration
  *
  * Finalizes the session by creating a session summary record in Blink.
  * Crew-aware: scopes to teammate namespace and writes to shared DB.
@@ -8,7 +8,7 @@
 
 import { Blink } from 'blink-query';
 import { createInterface } from 'readline';
-import { getBlinkDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
+import { getCapsuleDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
 
 async function main() {
   try {
@@ -26,7 +26,7 @@ async function main() {
     const projectHash = getProjectHash();
 
     // Initialize Blink (shared DB in crew mode, local otherwise)
-    const blink = new Blink({ dbPath: getBlinkDbPath() });
+    const blink = new Blink({ dbPath: getCapsuleDbPath() });
     const crewId = getCrewIdentity();
 
     // Query session activity (from this teammate's namespace)
