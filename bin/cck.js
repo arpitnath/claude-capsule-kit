@@ -399,7 +399,11 @@ async function crewStart() {
   const configHash = hashConfig(config);
   const existingState = loadTeamState(projectHash, profileName);
 
-  // 4. Resume decision
+  // 4. Determine staleness threshold (profile > top-level > default 4h)
+  const staleAfterHours = profile.stale_after_hours ?? config.stale_after_hours ?? 4;
+  const staleAfterMs = staleAfterHours * 3600000;
+
+  // 5. Resume decision
   let shouldResume = false;
   if (fresh) {
     console.log('--fresh flag: starting fresh team session.');
@@ -408,17 +412,17 @@ async function crewStart() {
       console.log('Config changed since last session. Starting fresh.');
     } else {
       const anyActive = existingState.teammates &&
-        Object.values(existingState.teammates).some(t => !isTeammateStale(t));
+        Object.values(existingState.teammates).some(t => !isTeammateStale(t, staleAfterMs));
       if (anyActive) {
         shouldResume = true;
         console.log('Resumable team session found.');
       } else {
-        console.log('Previous session is stale (>4h). Starting fresh.');
+        console.log(`Previous session is stale (>${staleAfterHours}h). Starting fresh.`);
       }
     }
   }
 
-  // 5. Setup worktrees
+  // 6. Setup worktrees
   const worktreePaths = { _projectRoot: projectRoot };
 
   for (const mate of team.teammates) {
@@ -460,7 +464,7 @@ async function crewStart() {
     writeFileSync(resolve(wtPath, 'crew-identity.json'), JSON.stringify(identity, null, 2) + '\n');
   }
 
-  // 6. Write worktrees.json
+  // 7. Write worktrees.json
   const crewDir = resolve(homedir(), '.claude', 'crew', projectHash);
   mkdirSync(crewDir, { recursive: true });
   const worktreeEntries = team.teammates
@@ -475,11 +479,11 @@ async function crewStart() {
     JSON.stringify({ worktrees: worktreeEntries }, null, 2) + '\n'
   );
 
-  // 7. Generate lead prompt (pass resolved team directly)
+  // 8. Generate lead prompt (pass resolved team and staleness threshold)
   const teamState = shouldResume ? existingState : null;
-  const prompt = generateLeadPrompt(team, teamState, worktreePaths, configHash);
+  const prompt = generateLeadPrompt(team, teamState, worktreePaths, configHash, staleAfterMs);
 
-  // 8. Save state
+  // 9. Save state
   const newState = {
     team_name: team.name,
     profile_name: profileName,
@@ -503,7 +507,7 @@ async function crewStart() {
 
   saveTeamState(projectHash, newState, profileName);
 
-  // 9. Output prompt
+  // 10. Output prompt
   const promptPath = resolve(crewDir, profileName, 'lead-prompt.md');
   mkdirSync(resolve(crewDir, profileName), { recursive: true });
   writeFileSync(promptPath, prompt + '\n');
