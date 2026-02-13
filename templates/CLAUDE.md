@@ -28,8 +28,24 @@ Context memory for Claude Code. Capsule (SQLite) stores session state automatica
    - Security: `security-engineer` | Database: `database-navigator` | Git: `git-workflow-manager`
    - Production: `devops-sre` | Design: `brainstorm-coordinator`
    - 17 agents total available.
-4. **Skills**: `/workflow` (complex tasks), `/debug` (errors/bugs), `/deep-context` (understand codebase), `/code-review` (pre-commit). Auto-activate on keywords.
+4. **Skills**: `/workflow` (complex tasks), `/debug` (errors/bugs), `/deep-context` (understand codebase), `/code-review` (pre-commit), `/crew` (parallel multi-branch teams). Auto-activate on keywords.
 5. **Production safety**: All sub-agents are read-only (Read, Grep, Glob only). No Edit/Write/Bash.
+
+## Crew Mode (Agent Teams)
+
+For parallel multi-branch work, use the `/crew` skill. It handles team setup, worktree creation, and teammate spawning automatically.
+
+**When to use crews** (not regular sub-agents):
+- 2+ independent workstreams that benefit from separate git branches
+- Work that should happen in parallel on isolated worktrees
+- Tasks where teammates need their own branch to commit on
+
+**Config**: `.crew-config.json` in project root defines team profiles, teammates, roles, and branches.
+**CLI**: `cck crew init|start|stop|status` for manual control.
+**Roles**: `developer`, `reviewer`, `tester`, `architect` — set defaults for model, mode, and focus.
+**Staleness**: Configurable via `stale_after_hours` (default 4h). Teammates resume if still active.
+
+Key rule: Only crew teammates use git worktrees. Regular sub-agents (Task tool) work in the main project directory.
 
 ## Context System (Capsule)
 
