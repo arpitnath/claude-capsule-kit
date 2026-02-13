@@ -6,7 +6,7 @@ description: |
   coordinate work, worktree. Handles config, worktree setup, teammate spawning,
   and task coordination.
 allowed-tools: [Task, Bash, Read, Grep, Glob]
-context: fork
+context: inject
 ---
 
 # Crew Orchestrator
