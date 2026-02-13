@@ -1,8 +1,9 @@
 #!/bin/bash
-# Visual Capsule Display
+# Visual Capsule Display (v3 - uses capsule.db)
 # Shows current session state with colors and formatting
 
-CAPSULE_FILE=".claude/capsule.toon"
+# In v3, capsule.db is always at the global location
+CAPSULE_FILE="$HOME/.claude/capsule.db"
 
 if [ ! -f "$CAPSULE_FILE" ]; then
   echo "No capsule found"

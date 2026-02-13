@@ -1,7 +1,8 @@
 #!/bin/bash
-# Stats Dashboard with Visual Progress Bars
+# Stats Dashboard with Visual Progress Bars (v3 - uses capsule.db)
 
-CAPSULE=".claude/capsule.toon"
+# In v3, capsule.db is always at the global location
+CAPSULE="$HOME/.claude/capsule.db"
 
 # Colors
 BOLD='\033[1m'

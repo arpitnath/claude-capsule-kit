@@ -5,19 +5,11 @@
 
 set -eo pipefail
 
-# Find capsule.db - walk up from CWD
-DB=""
-DIR="$PWD"
-while [ "$DIR" != "/" ]; do
-  if [ -f "$DIR/.claude/capsule.db" ]; then
-    DB="$DIR/.claude/capsule.db"
-    break
-  fi
-  DIR=$(dirname "$DIR")
-done
+# In v3, capsule.db is always at the global location
+DB="$HOME/.claude/capsule.db"
 
-if [ -z "$DB" ] || [ ! -f "$DB" ]; then
-  echo "No capsule.db found. Start a Claude Code session first to initialize Capsule."
+if [ ! -f "$DB" ]; then
+  echo "No capsule.db found at $DB. Start a Claude Code session first to initialize Capsule."
   exit 1
 fi
 
