@@ -1,0 +1,22 @@
+{
+  "team": {
+    "name": "my-team",
+    "lead": {
+      "model": "sonnet"
+    },
+    "teammates": [
+      {
+        "name": "teammate-1",
+        "branch": "feature/my-feature",
+        "worktree": true,
+        "model": "sonnet",
+        "subagent_type": "general-purpose",
+        "mode": "bypassPermissions",
+        "focus": "Describe what this teammate should work on."
+      }
+    ]
+  },
+  "project": {
+    "main_branch": "main"
+  }
+}

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, rmSync, statSync, symlinkSync, lstatSync, readlinkSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import { homedir } from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,7 +21,7 @@ const VERSION = pkg.version;
 
 const command = process.argv[2];
 
-const commands = { setup, teardown, status, version, prune };
+const commands = { setup, teardown, status, version, prune, crew };
 
 if (!command || !commands[command]) {
   console.log(`cck v${VERSION} - Claude Capsule Kit`);
@@ -31,6 +32,7 @@ if (!command || !commands[command]) {
   console.log('  cck status     Show installation status');
   console.log('  cck version    Print version');
   console.log('  cck prune [days]  Remove old records (default: 30 days)');
+  console.log('  cck crew <sub> Manage team profiles (init|start|stop|status)');
   process.exit(command ? 1 : 0);
 }
 
@@ -225,6 +227,300 @@ function status() {
 
 function version() {
   console.log(`cck v${VERSION}`);
+}
+
+async function crew() {
+  const sub = process.argv[3];
+  const subs = { init: crewInit, start: crewStart, stop: crewStop, status: crewStatus };
+
+  if (!sub || !subs[sub]) {
+    console.log('Usage: cck crew <command>');
+    console.log('');
+    console.log('Commands:');
+    console.log('  cck crew init       Create .crew-config.json in current directory');
+    console.log('  cck crew start      Launch team (setup worktrees, generate lead prompt)');
+    console.log('  cck crew stop       Stop team and update state');
+    console.log('  cck crew status     Show team state');
+    process.exit(sub ? 1 : 0);
+  }
+
+  await subs[sub]();
+}
+
+async function crewInit() {
+  const dest = resolve(process.cwd(), '.crew-config.json');
+  if (existsSync(dest)) {
+    console.log('.crew-config.json already exists. Edit it directly.');
+    return;
+  }
+
+  const template = JSON.parse(readFileSync(join(PKG_ROOT, 'templates', 'crew-config.json'), 'utf8'));
+
+  // Auto-detect main branch
+  let mainBranch = 'main';
+  try {
+    mainBranch = execSync('git symbolic-ref refs/remotes/origin/HEAD', {
+      encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']
+    }).trim().replace('refs/remotes/origin/', '');
+  } catch {
+    try {
+      // Fallback: check if 'main' or 'master' exists
+      execSync('git rev-parse --verify main', { stdio: 'pipe' });
+      mainBranch = 'main';
+    } catch {
+      try {
+        execSync('git rev-parse --verify master', { stdio: 'pipe' });
+        mainBranch = 'master';
+      } catch {
+        mainBranch = 'main';
+      }
+    }
+  }
+
+  template.project.main_branch = mainBranch;
+  writeFileSync(dest, JSON.stringify(template, null, 2) + '\n');
+
+  console.log('Created .crew-config.json');
+  console.log('');
+  console.log('Next steps:');
+  console.log('  1. Edit .crew-config.json — set team name, add teammates');
+  console.log('  2. Run: cck crew start');
+}
+
+async function crewStart() {
+  const { loadCrewConfig, hashConfig, validateConfig, resolveWorktreePath } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'crew-config-reader.js')
+  );
+  const { loadTeamState, saveTeamState, isStale: isTeammateStale, isConfigChanged } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'team-state-manager.js')
+  );
+  const { generateLeadPrompt } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'prompt-generator.js')
+  );
+  const { getProjectHash } = await import(
+    join(PKG_ROOT, 'hooks', 'lib', 'crew-detect.js')
+  );
+
+  const projectRoot = process.cwd();
+  const fresh = process.argv.includes('--fresh');
+
+  // 1. Load and validate config
+  let config;
+  try {
+    config = loadCrewConfig(projectRoot);
+  } catch (err) {
+    console.error('Failed to load .crew-config.json:', err.message);
+    console.error('Run "cck crew init" first.');
+    process.exit(1);
+  }
+
+  const errors = validateConfig(config);
+  if (errors.length > 0) {
+    console.error('Invalid .crew-config.json:');
+    for (const e of errors) console.error(`  - ${e}`);
+    process.exit(1);
+  }
+
+  // 2. Compute hashes and load state
+  const projectHash = getProjectHash();
+  const configHash = hashConfig(config);
+  const existingState = loadTeamState(projectHash);
+
+  // 3. Resume decision
+  let shouldResume = false;
+  if (fresh) {
+    console.log('--fresh flag: starting fresh team session.');
+  } else if (existingState) {
+    if (isConfigChanged(configHash, existingState.config_hash)) {
+      console.log('Config changed since last session. Starting fresh.');
+    } else {
+      const anyActive = existingState.teammates &&
+        Object.values(existingState.teammates).some(t => !isTeammateStale(t));
+      if (anyActive) {
+        shouldResume = true;
+        console.log('Resumable team session found.');
+      } else {
+        console.log('Previous session is stale (>4h). Starting fresh.');
+      }
+    }
+  }
+
+  // 4. Setup worktrees
+  const worktreePaths = { _projectRoot: projectRoot };
+
+  for (const mate of config.team.teammates) {
+    if (!mate.worktree) continue;
+
+    const wtPath = resolveWorktreePath(projectRoot, mate.branch);
+    worktreePaths[mate.name] = wtPath;
+
+    if (existsSync(wtPath)) {
+      console.log(`  Worktree exists: ${wtPath}`);
+    } else {
+      console.log(`  Creating worktree: ${wtPath} (branch: ${mate.branch})`);
+      try {
+        // Try to create from existing branch
+        execSync(`git worktree add "${wtPath}" "${mate.branch}"`, {
+          cwd: projectRoot, stdio: 'pipe'
+        });
+      } catch {
+        // Branch doesn't exist — create it
+        try {
+          const mainBranch = config.project?.main_branch || 'main';
+          execSync(`git worktree add -b "${mate.branch}" "${wtPath}" "${mainBranch}"`, {
+            cwd: projectRoot, stdio: 'pipe'
+          });
+        } catch (err) {
+          console.error(`  Failed to create worktree for ${mate.name}: ${err.message}`);
+          continue;
+        }
+      }
+    }
+
+    // Write crew-identity.json in worktree root
+    const identity = {
+      teammate_name: mate.name,
+      project_root: projectRoot,
+      branch: mate.branch,
+      team_name: config.team.name,
+      created_at: new Date().toISOString()
+    };
+    writeFileSync(resolve(wtPath, 'crew-identity.json'), JSON.stringify(identity, null, 2) + '\n');
+  }
+
+  // 5. Write worktrees.json
+  const crewDir = resolve(homedir(), '.claude', 'crew', projectHash);
+  mkdirSync(crewDir, { recursive: true });
+  const worktreeEntries = config.team.teammates
+    .filter(m => m.worktree && worktreePaths[m.name])
+    .map(m => ({
+      name: m.name,
+      branch: m.branch,
+      path: worktreePaths[m.name]
+    }));
+  writeFileSync(
+    resolve(crewDir, 'worktrees.json'),
+    JSON.stringify({ worktrees: worktreeEntries }, null, 2) + '\n'
+  );
+
+  // 6. Generate lead prompt
+  const teamState = shouldResume ? existingState : null;
+  const prompt = generateLeadPrompt(config, teamState, worktreePaths);
+
+  // 7. Save state
+  const newState = {
+    team_name: config.team.name,
+    config_hash: configHash,
+    status: 'active',
+    started_at: shouldResume ? (existingState.started_at || new Date().toISOString()) : new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    teammates: {}
+  };
+
+  for (const mate of config.team.teammates) {
+    const prev = existingState?.teammates?.[mate.name];
+    newState.teammates[mate.name] = {
+      branch: mate.branch,
+      worktree_path: worktreePaths[mate.name] || null,
+      status: shouldResume && prev ? prev.status : 'pending',
+      agent_id: shouldResume && prev ? prev.agent_id : null,
+      last_active: shouldResume && prev ? prev.last_active : null
+    };
+  }
+
+  saveTeamState(projectHash, newState);
+
+  // 8. Output prompt
+  const promptPath = resolve(crewDir, 'lead-prompt.md');
+  writeFileSync(promptPath, prompt + '\n');
+
+  console.log('');
+  console.log(`Team "${config.team.name}" ready.`);
+  console.log(`Lead prompt saved to: ${promptPath}`);
+  console.log('');
+  console.log('Copy the prompt below and paste it into Claude Code to launch the team:');
+  console.log('─'.repeat(60));
+  console.log(prompt);
+}
+
+async function crewStop() {
+  const { loadCrewConfig, hashConfig } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'crew-config-reader.js')
+  );
+  const { loadTeamState, saveTeamState } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'team-state-manager.js')
+  );
+  const { getProjectHash } = await import(
+    join(PKG_ROOT, 'hooks', 'lib', 'crew-detect.js')
+  );
+
+  const projectRoot = process.cwd();
+  const projectHash = getProjectHash();
+  const cleanup = process.argv.includes('--cleanup');
+
+  const state = loadTeamState(projectHash);
+  if (!state) {
+    console.log('No active team session found.');
+    return;
+  }
+
+  // Mark all teammates as stopped
+  for (const name of Object.keys(state.teammates || {})) {
+    state.teammates[name].status = 'stopped';
+  }
+  state.status = 'stopped';
+  saveTeamState(projectHash, state);
+  console.log(`Team "${state.team_name}" stopped.`);
+
+  // Optionally remove worktrees
+  if (cleanup) {
+    for (const [name, mate] of Object.entries(state.teammates || {})) {
+      if (mate.worktree_path && existsSync(mate.worktree_path)) {
+        console.log(`  Removing worktree: ${mate.worktree_path}`);
+        try {
+          execSync(`git worktree remove "${mate.worktree_path}" --force`, {
+            cwd: projectRoot, stdio: 'pipe'
+          });
+        } catch (err) {
+          console.warn(`  Warning: Could not remove worktree for ${name}: ${err.message}`);
+        }
+      }
+    }
+    console.log('Worktrees cleaned up.');
+  }
+}
+
+async function crewStatus() {
+  const { loadTeamState } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'team-state-manager.js')
+  );
+  const { getProjectHash } = await import(
+    join(PKG_ROOT, 'hooks', 'lib', 'crew-detect.js')
+  );
+
+  const projectHash = getProjectHash();
+  const state = loadTeamState(projectHash);
+
+  if (!state) {
+    console.log('No team state found. Run "cck crew start" first.');
+    return;
+  }
+
+  const ageHours = Math.round((Date.now() - new Date(state.updated_at).getTime()) / 3600000);
+
+  console.log(`Team: ${state.team_name}`);
+  console.log(`Status: ${state.status} (updated ${ageHours}h ago)`);
+  console.log(`Config hash: ${state.config_hash}`);
+  console.log('─'.repeat(60));
+  console.log('  Name'.padEnd(22) + 'Status'.padEnd(12) + 'Branch'.padEnd(30) + 'Agent ID');
+  console.log('─'.repeat(60));
+
+  for (const [name, mate] of Object.entries(state.teammates || {})) {
+    const agentId = mate.agent_id ? mate.agent_id.slice(0, 12) + '...' : 'none';
+    console.log(
+      `  ${name.padEnd(20)}${(mate.status || 'unknown').padEnd(12)}${(mate.branch || '').padEnd(30)}${agentId}`
+    );
+  }
 }
 
 async function prune() {
