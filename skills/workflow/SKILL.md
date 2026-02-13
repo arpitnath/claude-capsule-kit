@@ -223,7 +223,7 @@ Task(subagent_type="architecture-explorer", prompt="Understand flow Z")
 
 4. **Impact Analysis**
    ```bash
-   bash .claude/tools/impact-analysis/impact-analysis.sh <changed-file>
+   bash $HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh <changed-file>
    ```
    - Check affected files
    - Verify risk assessment

@@ -87,8 +87,8 @@ description: Build deep codebase understanding using memory-graph, capsule, prog
 **Workflow:**
 1. Check memory-graph for existing knowledge
    ```bash
-   bash .claude/tools/memory-graph/memory-query.sh --recent 10
-   bash .claude/tools/memory-graph/memory-query.sh --search "topic"
+   bash $HOME/.claude/cck/tools/memory-graph/memory-query.sh --recent 10
+   bash $HOME/.claude/cck/tools/memory-graph/memory-query.sh --search "topic"
    ```
 
 2. Check capsule state (recent session context)
@@ -105,13 +105,13 @@ description: Build deep codebase understanding using memory-graph, capsule, prog
 
 5. Build dependency map
    ```bash
-   bash .claude/tools/query-deps/query-deps.sh src/
-   bash .claude/tools/impact-analysis/impact-analysis.sh key-file.ts
+   bash $HOME/.claude/cck/tools/query-deps/query-deps.sh src/
+   bash $HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh key-file.ts
    ```
 
 6. Store discoveries in memory-graph
    ```bash
-   bash .claude/tools/memory-graph/create-node.sh --type discovery
+   bash $HOME/.claude/cck/tools/memory-graph/create-node.sh --type discovery
    ```
 
 **Key principle**: Don't hold entire codebase in context. Use agents (fresh context) + memory-graph (persistence).
@@ -159,7 +159,7 @@ description: Plan and execute safe refactoring with refactoring-specialist and i
 **Workflow:**
 1. Run impact analysis first
    ```bash
-   bash .claude/tools/impact-analysis/impact-analysis.sh <file>
+   bash $HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh <file>
    ```
 
 2. Launch `refactoring-specialist` for step-by-step plan
@@ -213,7 +213,7 @@ disable-model-invocation: true
 **Workflow:**
 ```bash
 # Query memory for similar discoveries
-bash .claude/tools/memory-graph/memory-query.sh --search "topic"
+bash $HOME/.claude/cck/tools/memory-graph/memory-query.sh --search "topic"
 
 # Check capsule for recent context
 cat .claude/capsule.toon | grep -A 5 "topic"
@@ -245,8 +245,8 @@ disable-model-invocation: true
 2. Extract key insights
 3. Create memory nodes:
    ```bash
-   bash .claude/tools/memory-graph/create-node.sh --type discovery --title "Finding"
-   bash .claude/tools/memory-graph/create-node.sh --type decision --title "Decision"
+   bash $HOME/.claude/cck/tools/memory-graph/create-node.sh --type discovery --title "Finding"
+   bash $HOME/.claude/cck/tools/memory-graph/create-node.sh --type decision --title "Decision"
    ```
 4. Log to capsule discoveries
 

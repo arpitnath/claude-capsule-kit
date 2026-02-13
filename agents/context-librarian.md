@@ -65,10 +65,10 @@ try {
 
 ```bash
 # Query dependencies
-bash .claude/tools/query-deps/query-deps.sh "$FILE_PATH" 2>/dev/null || echo "Dependency graph not available"
+bash $HOME/.claude/cck/tools/query-deps/query-deps.sh "$FILE_PATH" 2>/dev/null || echo "Dependency graph not available"
 
 # Query impact
-bash .claude/tools/impact-analysis/impact-analysis.sh "$FILE_PATH" 2>/dev/null || echo "Impact analysis not available"
+bash $HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh "$FILE_PATH" 2>/dev/null || echo "Impact analysis not available"
 ```
 
 **What to extract**:

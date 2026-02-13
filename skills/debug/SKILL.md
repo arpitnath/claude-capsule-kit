@@ -245,7 +245,7 @@ Provide verdict: APPROVE or REQUEST_CHANGES
 
 4. **Impact Analysis**
    ```bash
-   bash .claude/tools/impact-analysis/impact-analysis.sh <fixed-file>
+   bash $HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh <fixed-file>
    ```
 
 **Deliverable**: Verified fix with no regressions

@@ -314,16 +314,16 @@ Built-in dependency scanner analyzes your codebase:
 
 ```bash
 # Query what files import this file
-.claude/tools/query-deps/query-deps.sh src/auth.ts
+$HOME/.claude/cck/tools/query-deps/query-deps.sh src/auth.ts
 
 # Analyze impact of changing a file
-.claude/tools/impact-analysis/impact-analysis.sh src/database.ts
+$HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh src/database.ts
 
 # Find circular dependencies
-.claude/tools/find-circular/find-circular.sh
+$HOME/.claude/cck/tools/find-circular/find-circular.sh
 
 # Identify unused files
-.claude/tools/find-dead-code/find-dead-code.sh
+$HOME/.claude/cck/tools/find-dead-code/find-dead-code.sh
 ```
 
 #### Performance

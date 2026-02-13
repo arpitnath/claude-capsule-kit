@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TOOL_RUNNER_PATH="$HOME/.claude/lib/tool-runner.sh"
+TOOL_RUNNER_PATH="$HOME/.claude/cck/lib/tool-runner.sh"
 
 if [ ! -f "$TOOL_RUNNER_PATH" ]; then
     exit 0

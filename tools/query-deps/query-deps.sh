@@ -4,7 +4,7 @@
 set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LIB_DIR="$(cd "$SCRIPT_DIR/../../lib" && pwd)"
+LIB_DIR="${CCK_LIB_DIR:-$(cd "$SCRIPT_DIR/../../lib" && pwd 2>/dev/null || echo "$HOME/.claude/cck/lib")}"
 
 source "$LIB_DIR/toon-parser.sh"
 

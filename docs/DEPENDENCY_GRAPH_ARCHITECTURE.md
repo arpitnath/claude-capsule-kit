@@ -137,7 +137,7 @@ fi
 
 ### Tool 1: Query Dependencies
 
-**.claude/tools/query-deps/query-deps.sh:**
+**$HOME/.claude/cck/tools/query-deps/query-deps.sh:**
 
 Shows who imports a file and what it imports:
 
@@ -183,7 +183,7 @@ fi
 
 ### Tool 2: Impact Analysis
 
-**.claude/tools/impact-analysis/impact-analysis.sh:**
+**$HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh:**
 
 Shows what would break if file changes:
 
@@ -228,7 +228,7 @@ fi
 
 ### Tool 3: Find Circular Dependencies
 
-**.claude/tools/find-circular/find-circular.sh:**
+**$HOME/.claude/cck/tools/find-circular/find-circular.sh:**
 
 Detects import cycles:
 
@@ -257,7 +257,7 @@ echo "💡 Suggestion: Extract shared code to break cycles"
 
 ### Tool 4: Find Dead Code
 
-**.claude/tools/find-dead-code/find-dead-code.sh:**
+**$HOME/.claude/cck/tools/find-dead-code/find-dead-code.sh:**
 
 Lists files not imported by anyone:
 
