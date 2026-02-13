@@ -1,5 +1,23 @@
 #!/bin/bash
-# Claude Capsule Kit Installation Script
+# ============================================================================
+# DEPRECATION NOTICE - This is the v2 installation script
+# ============================================================================
+# This installation script is DEPRECATED and should NOT be used.
+#
+# For v3.0 (Capsule Kit), use the npm-based installation instead:
+#
+#   npm install -g claude-capsule-kit
+#   cck setup
+#
+# The v3 system uses a global installation at ~/.claude/cck/ with a shared
+# capsule.db database at ~/.claude/capsule.db. This v2 script installs files
+# into per-project .claude/ directories, which is no longer the supported
+# installation method.
+#
+# If you need to use this v2 script for legacy purposes, proceed with caution.
+# ============================================================================
+#
+# Claude Capsule Kit Installation Script (v2 - LEGACY)
 # Works both locally (for testing) and remotely (curl | bash)
 # Author: Arpit Nath
 

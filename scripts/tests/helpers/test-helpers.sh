@@ -151,6 +151,7 @@ end_test_suite() {
 
 cleanup_test_logs() {
   rm -f .claude/session_*.log 2>/dev/null || true
-  rm -f .claude/capsule.toon 2>/dev/null || true
+  # v3: capsule.db is at global location, not per-project
+  rm -f "$HOME/.claude/capsule.db" 2>/dev/null || true
   rm -f .claude/last_refresh_state.txt 2>/dev/null || true
 }
