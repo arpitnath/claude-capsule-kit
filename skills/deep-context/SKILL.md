@@ -1,7 +1,7 @@
 ---
 name: deep-context
 description: |
-  Build deep codebase understanding using Blink context, progressive-reader, and specialist agents instead of overwhelming main context. Triggers on: don't have context, understand codebase, learn about, need background. Implements progressive context building.
+  Build deep codebase understanding using Capsule context, progressive-reader, and specialist agents instead of overwhelming main context. Triggers on: don't have context, understand codebase, learn about, need background. Implements progressive context building.
 allowed-tools: [Bash, Read, Task, Grep, Glob]
 ---
 
@@ -13,7 +13,7 @@ You are a **Deep Context Builder** responsible for systematically building compr
 
 **Problem**: Building codebase understanding by reading files sequentially overwhelms context, misses relationships, and doesn't persist knowledge.
 
-**Solution**: Multi-layer context building using Blink (automatic), progressive reading, dependency analysis, and specialist agents—each with fresh context.
+**Solution**: Multi-layer context building using Capsule (automatic), progressive reading, dependency analysis, and specialist agents—each with fresh context.
 
 ## When to Use This Skill
 
@@ -35,9 +35,9 @@ You are a **Deep Context Builder** responsible for systematically building compr
 
 ## The Multi-Layer Context Building System
 
-### Layer 1: BLINK CONTEXT (Automatic)
+### Layer 1: CAPSULE CONTEXT (Automatic)
 
-**Goal**: Review what Blink has already provided
+**Goal**: Review what Capsule has already provided
 
 At session start, `session-start.js` automatically injects:
 - **Last Session** — Summary of most recent session
@@ -211,7 +211,7 @@ Provide pattern guide for this codebase.
 **Goal**: Combine findings and store for future use
 
 **Synthesize findings**:
-1. Blink context → Historical decisions + recent files
+1. Capsule context → Historical decisions + recent files
 2. Progressive reader → File structures
 3. Dependency tools → Code relationships
 4. Specialist agents → Deep architectural understanding
@@ -222,10 +222,10 @@ SYSTEM ARCHITECTURE:
 - Component A handles X (architecture-explorer finding)
 - Uses database table Y (database-navigator finding)
 - Imported by Z files (query-deps finding)
-- Past decision: Chose pattern W because... (Blink context)
+- Past decision: Chose pattern W because... (Capsule context)
 ```
 
-All file operations and sub-agent results are automatically captured by Blink's `post-tool-use.js` hook. No manual persistence needed.
+All file operations and sub-agent results are automatically captured by Capsule's `post-tool-use.js` hook. No manual persistence needed.
 
 **Output**: Comprehensive understanding, automatically captured for future sessions
 
@@ -236,7 +236,7 @@ All file operations and sub-agent results are automatically captured by Blink's 
 ### Quick Flow (Focused Question)
 
 ```
-1. Review Blink injected context (instant)
+1. Review Capsule injected context (instant)
    ↓
 2. Progressive reader or dependency tool (10 seconds)
    ↓
@@ -251,7 +251,7 @@ All file operations and sub-agent results are automatically captured by Blink's 
 ### Deep Flow (Complete Understanding)
 
 ```
-1. Review Blink injected context (instant)
+1. Review Capsule injected context (instant)
    ↓
 2. Progressive reader for key files (20 seconds)
    ↓
@@ -264,7 +264,7 @@ All file operations and sub-agent results are automatically captured by Blink's 
 
 **Time**: ~2-3 minutes
 **Context used**: Moderate (agents use their own context)
-**Result**: Comprehensive understanding, automatically persisted by Blink
+**Result**: Comprehensive understanding, automatically persisted by Capsule
 
 ---
 
@@ -277,7 +277,7 @@ All file operations and sub-agent results are automatically captured by Blink's 
 - **Before /refactor-safely**: Know architecture before refactoring
 - **After installation**: Learn new codebase
 
-### With Blink Context
+### With Capsule Context
 
 Context from previous sessions is automatically injected by `session-start.js`. File operations and sub-agent results are captured automatically by `post-tool-use.js`. No manual logging needed.
 
@@ -287,7 +287,7 @@ Context from previous sessions is automatically injected by `session-start.js`. 
 
 ### Example 1: Understanding Authentication System
 
-**Layer 1: Blink Context**
+**Layer 1: Capsule Context**
 ```
 # Automatically injected at session start:
 # - Last Session: worked on auth module
@@ -337,7 +337,7 @@ Files:
 - types/auth.d.ts (type definitions)
 ```
 
-All file operations and agent results automatically captured by Blink for future sessions.
+All file operations and agent results automatically captured by Capsule for future sessions.
 
 ---
 
@@ -345,7 +345,7 @@ All file operations and agent results automatically captured by Blink for future
 
 **User**: "I just cloned this repo, help me understand it"
 
-**Layer 1: Blink Context**
+**Layer 1: Capsule Context**
 ```
 # First session — no previous context injected
 # Start fresh with code exploration
@@ -399,7 +399,7 @@ Patterns (code-reviewer):
 - Test structure: unit + e2e
 ```
 
-All findings automatically captured by Blink for future sessions.
+All findings automatically captured by Capsule for future sessions.
 
 ---
 
@@ -407,11 +407,11 @@ All findings automatically captured by Blink for future sessions.
 
 ### Context Building
 
-✅ Blink context reviewed before starting (injected automatically)
+✅ Capsule context reviewed before starting (injected automatically)
 ✅ Progressive reader used for large files (not full Read)
 ✅ Dependency tools used for relationships (not Task/Explore)
 ✅ Specialist agents delegated deep dives (not solo exploration)
-✅ All operations automatically captured by Blink
+✅ All operations automatically captured by Capsule
 
 ### Quality Signals
 
@@ -425,7 +425,7 @@ All findings automatically captured by Blink for future sessions.
 ## Anti-Patterns
 
 ❌ **Reading files sequentially**: Use progressive-reader or agents
-❌ **Ignoring Blink context**: Past knowledge is injected automatically, use it
+❌ **Ignoring Capsule context**: Past knowledge is injected automatically, use it
 ❌ **Solo deep dives**: Agents have fresh context, delegate to them
 ❌ **Redundant file reads**: Check injected context before re-reading
 
@@ -435,7 +435,7 @@ All findings automatically captured by Blink for future sessions.
 
 | Layer | Tokens Used | Alternative (Manual) | Savings |
 |-------|-------------|----------------------|---------|
-| Blink context (auto) | ~100 | ~1,500 (re-learning) | 93% |
+| Capsule context (auto) | ~100 | ~1,500 (re-learning) | 93% |
 | Progressive reader | ~500 | ~12,000 (full read) | 96% |
 | Dependency tools | ~200 | ~3,000 (file analysis) | 93% |
 | Agents (3 parallel) | ~0 (their context) | ~10,000 (in your context) | 100% |
@@ -443,4 +443,4 @@ All findings automatically captured by Blink for future sessions.
 
 ---
 
-**Remember**: Your context is LIMITED. Build deep understanding through layers—Blink context, progressive tools, dependency analysis, agents. Each layer adds understanding without overwhelming your window.
+**Remember**: Your context is LIMITED. Build deep understanding through layers—Capsule context, progressive tools, dependency analysis, agents. Each layer adds understanding without overwhelming your window.

@@ -106,7 +106,7 @@ Combine findings from all layers into **focused context package**:
 ### Prioritization
 
 **Priority 1 (Always include)**:
-- Recent session context from Blink (avoid redundant work)
+- Recent session context from Capsule (avoid redundant work)
 - Past discoveries (decisions, patterns, insights)
 - Dependency relationships (if code-related)
 

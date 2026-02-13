@@ -41,7 +41,7 @@ You are a **Workflow Orchestrator** responsible for guiding systematic execution
 
 **Steps**:
 1. **Review Injected Context**
-   Context from previous sessions is automatically injected at session start by Blink's `session-start.js` hook. Review it for:
+   Context from previous sessions is automatically injected at session start by Capsule's `session-start.js` hook. Review it for:
    - Past decisions and discoveries
    - Recently accessed files
    - Team activity (in crew mode)
@@ -242,7 +242,7 @@ Task(subagent_type="architecture-explorer", prompt="Understand flow Z")
 - **With /debug**: Workflow orchestrates debugging process
 - **Before /refactor-safely**: Use workflow to plan refactoring
 
-### With Blink Context
+### With Capsule Context
 
 Context from previous sessions is automatically injected by `session-start.js`. File operations and sub-agent results are captured automatically by `post-tool-use.js`. No manual logging needed.
 
@@ -332,7 +332,7 @@ Context from previous sessions is automatically injected by `session-start.js`. 
 ### Workflow Execution
 
 ✅ All 5 phases completed (not skipped)
-✅ Context checked before work (Blink injection + files)
+✅ Context checked before work (Capsule injection + files)
 ✅ Strategy documented (tools + agents + approach)
 ✅ Plan created with TodoWrite
 ✅ Verification performed (tests + review)
