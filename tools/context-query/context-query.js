@@ -214,6 +214,52 @@ try {
       break;
     }
 
+    case 'discoveries': {
+      const limit = parseInt(arg) || 50;
+      const hash = getProjectHash();
+      let allDiscoveries = [];
+
+      // Query all possible discovery namespaces
+      const namespaces = [
+        'discoveries',                            // legacy global
+        `proj/${hash}/discoveries`,              // project-scoped
+        `proj/${hash}/crew/_shared/discoveries`, // crew shared
+      ];
+
+      namespaces.forEach(ns => {
+        try {
+          const records = blink.resolve(ns);
+          if (Array.isArray(records)) {
+            allDiscoveries = allDiscoveries.concat(records);
+          }
+        } catch {
+          // Namespace doesn't exist, skip
+        }
+      });
+
+      // Sort by timestamp descending
+      allDiscoveries.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+      const discoveries = allDiscoveries.slice(0, limit);
+
+      console.log(`## Discoveries (${discoveries.length})\n`);
+      if (discoveries.length === 0) {
+        console.log('No discoveries saved yet.');
+        console.log('');
+        console.log('Save a discovery:');
+        console.log('  context-query save discoveries "Finding title" "Summary of the discovery"');
+      } else {
+        discoveries.forEach(r => {
+          const date = r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : 'unknown';
+          console.log(`- **${r.title}** (${date})`);
+          if (r.summary) {
+            console.log(`  ${r.summary.replace(/\n/g, ' ')}`);
+          }
+          console.log('');
+        });
+      }
+      break;
+    }
+
     case 'stats': {
       const all = getAllRecords(blink);
       const byType = {};
@@ -244,6 +290,7 @@ try {
       console.log(`  agents [limit]     Sub-agent invocation history (default: 10)`);
       console.log(`  sessions [limit]   Session summaries (default: 5)`);
       console.log(`  recent [limit]     All recent activity (default: 15)`);
+      console.log(`  discoveries [limit] All saved discoveries (default: 50)`);
       console.log(`  ns <namespace>     Query specific Capsule namespace`);
       console.log(`  stats              Database statistics`);
       console.log(``);

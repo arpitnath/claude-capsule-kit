@@ -16,6 +16,17 @@ import { createInterface } from 'readline';
 import { basename } from 'path';
 import { getCapsuleDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
 
+/**
+ * Safely resolve a namespace, returning empty array if not found
+ */
+function tryResolveNamespace(blink, namespace) {
+  try {
+    return blink.resolve(namespace) || [];
+  } catch {
+    return [];
+  }
+}
+
 async function main() {
   try {
     // Read hook input from stdin
@@ -83,9 +94,46 @@ async function main() {
       }
     }
 
+    // Discovery surfacing: when Read tool is used, show related discoveries
+    let discoveryOutput = '';
+    if (toolName === 'Read' && filePath) {
+      try {
+        const fileName = basename(filePath);
+
+        // Query all discovery records (across all possible namespaces)
+        const discoveriesGlobal = tryResolveNamespace(blink, 'discoveries');
+        const discoveriesCrewShared = tryResolveNamespace(blink, crewNamespace('_shared/discoveries', crewId, projectHash));
+        const discoveriesProj = tryResolveNamespace(blink, crewNamespace('discoveries', null, projectHash));
+
+        const allDiscoveries = [...discoveriesGlobal, ...discoveriesCrewShared, ...discoveriesProj];
+
+        // Filter discoveries that mention this file (path or basename)
+        const relatedDiscoveries = allDiscoveries.filter(record => {
+          const summaryMatches = record.summary?.includes(filePath) || record.summary?.includes(fileName);
+          const contentMatches = typeof record.content === 'string'
+            ? (record.content.includes(filePath) || record.content.includes(fileName))
+            : false;
+          return summaryMatches || contentMatches;
+        });
+
+        if (relatedDiscoveries.length > 0) {
+          discoveryOutput = '\n## Related Discoveries\n';
+          relatedDiscoveries.forEach(d => {
+            discoveryOutput += `- **${d.title}**: ${d.summary}\n`;
+          });
+        }
+      } catch (err) {
+        // Graceful degradation - discovery surfacing is non-critical
+      }
+    }
+
     blink.close();
 
-    // No output needed for PostToolUse (unless blocking/warning)
+    // Output discoveries if found (PostToolUse can inject context)
+    if (discoveryOutput) {
+      console.log(discoveryOutput);
+    }
+
     process.exit(0);
 
   } catch (error) {
