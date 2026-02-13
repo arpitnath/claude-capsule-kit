@@ -1,6 +1,6 @@
 #!/bin/bash
-# show-blink.sh - View Blink context records
-# Usage: bash .claude/scripts/show-blink.sh [command]
+# show-capsule.sh - View Capsule context records
+# Usage: bash .claude/scripts/show-capsule.sh [command]
 # Commands: summary (default), files, agents, sessions, all, search <term>
 
 set -eo pipefail
@@ -94,7 +94,7 @@ case "$CMD" in
   search)
     TERM="${2:-}"
     if [ -z "$TERM" ]; then
-      echo "Usage: show-blink.sh search <term>"
+      echo "Usage: show-capsule.sh search <term>"
       exit 1
     fi
     echo "Search results for '$TERM':"
@@ -108,7 +108,7 @@ case "$CMD" in
     ;;
 
   *)
-    echo "Usage: bash .claude/scripts/show-blink.sh [command]"
+    echo "Usage: bash .claude/scripts/show-capsule.sh [command]"
     echo ""
     echo "Commands:"
     echo "  summary   Dashboard overview (default)"

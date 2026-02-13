@@ -125,7 +125,7 @@ The installer will:
 **After installation, Claude Code will:**
 - 🚀 **Work systematically** - Guided workflows for complex tasks
 - 🔍 **Check context first** - 90% attention via context-librarian
-- 🧠 **Remember everything** - Blink (SQLite) automatic persistence
+- 🧠 **Remember everything** - Capsule (SQLite) automatic persistence
 - 🤖 **Use specialists** - 18 agents for deep work
 - 🔗 **Understand dependencies** - Pre-computed dependency graph
 - ✅ **Track progress** - Tasks and discoveries logged automatically
@@ -157,7 +157,7 @@ Triggers: "complex task", "multi-step", "coordinate"
 ```
 
 Guides through 5 phases:
-1. **Understand** - Build context (Blink session history + agents)
+1. **Understand** - Build context (Capsule session history + agents)
 2. **Strategy** - Choose approach (tools vs agents, parallel vs sequential)
 3. **Plan** - Break into steps with TodoWrite tracking
 4. **Execute** - Systematic implementation with coordination
@@ -281,7 +281,7 @@ Memory Graph tracks semantic connections between files, functions, decisions, an
   <img src="./.github/hero_memory.png" alt="Claude Capsule Kit" width="100%" />
 </p>
 
-Context memory is powered by **Blink** (SQLite) — automatic, zero-config, crew-aware.
+Context memory is powered by **Capsule** (SQLite) — automatic, zero-config, crew-aware.
 
 
 
