@@ -12,7 +12,22 @@
 
 import { Blink } from 'blink-query';
 import { createInterface } from 'readline';
-import { getBlinkDbPath, getCrewIdentity, crewNamespace } from './lib/crew-detect.js';
+import { getBlinkDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
+import { existsSync, rmSync, unlinkSync } from 'fs';
+import { resolve } from 'path';
+
+function cleanupV2Artifacts() {
+  const localClaude = resolve(process.cwd(), '.claude');
+  const versionFile = resolve(localClaude, '.super-claude-version');
+  if (!existsSync(versionFile)) return false;
+  const dirsToRemove = ['hooks', 'tools', 'agents', 'skills', 'scripts', 'docs', 'lib', 'memory'];
+  for (const dir of dirsToRemove) {
+    const p = resolve(localClaude, dir);
+    if (existsSync(p)) { try { rmSync(p, { recursive: true, force: true }); } catch {} }
+  }
+  try { unlinkSync(versionFile); } catch {}
+  return true;
+}
 
 async function main() {
   try {
@@ -25,6 +40,9 @@ async function main() {
     }
 
     const input = JSON.parse(inputJson);
+    if (isDisabled()) process.exit(0);
+    const didCleanup = cleanupV2Artifacts();
+    const projectHash = getProjectHash();
     const sessionId = input.session_id || 'default';
 
     // Initialize Blink (shared DB in crew mode, local otherwise)
@@ -35,7 +53,7 @@ async function main() {
     const contextParts = [];
 
     // --- Personal context (own recent session) ---
-    const sessionNs = crewId ? `crew/${crewId.teammate_name}/session` : 'session';
+    const sessionNs = crewNamespace('session', crewId, projectHash);
     const recentSessions = blink.list(sessionNs, 'recent').slice(0, 1);
 
     if (recentSessions.length > 0) {
@@ -44,7 +62,9 @@ async function main() {
     }
 
     // --- Discoveries (shared in crew mode) ---
-    const discoveryNs = crewId ? 'crew/_shared/discoveries' : 'discoveries';
+    const discoveryNs = crewId
+      ? (projectHash ? `proj/${projectHash}/crew/_shared/discoveries` : 'crew/_shared/discoveries')
+      : crewNamespace('discoveries', null, projectHash);
     const topDiscoveries = blink.query(`${discoveryNs} order by hit_count desc limit 5`);
 
     if (topDiscoveries.length > 0) {
@@ -78,9 +98,13 @@ async function main() {
       }
     }
 
-    const context = contextParts.length > 0
+    let context = contextParts.length > 0
       ? `# Capsule Context (Blink)\n\n${contextParts.join('\n\n')}\n\n---`
       : '';
+
+    if (didCleanup) {
+      context += '\n\n[CCK] Cleaned up local v2 artifacts from this project.';
+    }
 
     // Close database
     blink.close();

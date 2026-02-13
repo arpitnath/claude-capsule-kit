@@ -8,7 +8,7 @@
 
 import { Blink } from 'blink-query';
 import { createInterface } from 'readline';
-import { getBlinkDbPath, getCrewIdentity, crewNamespace } from './lib/crew-detect.js';
+import { getBlinkDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
 
 async function main() {
   try {
@@ -22,14 +22,16 @@ async function main() {
 
     const input = JSON.parse(inputJson);
     const sessionId = input.session_id || 'default';
+    if (isDisabled()) process.exit(0);
+    const projectHash = getProjectHash();
 
     // Initialize Blink (shared DB in crew mode, local otherwise)
     const blink = new Blink({ dbPath: getBlinkDbPath() });
     const crewId = getCrewIdentity();
 
     // Query session activity (from this teammate's namespace)
-    const filesNs = crewNamespace(`session/${sessionId}/files`, crewId);
-    const agentsNs = crewNamespace(`session/${sessionId}/subagents`, crewId);
+    const filesNs = crewNamespace(`session/${sessionId}/files`, crewId, projectHash);
+    const agentsNs = crewNamespace(`session/${sessionId}/subagents`, crewId, projectHash);
     const sessionFiles = blink.list(filesNs);
     const sessionSubagents = blink.list(agentsNs);
 
@@ -44,7 +46,7 @@ async function main() {
 
     // Save SESSION record (META = structured session metadata)
     blink.save({
-      namespace: crewNamespace('session', crewId),
+      namespace: crewNamespace('session', crewId, projectHash),
       title: `Session ${new Date().toISOString()}`,
       summary,
       type: 'META',
