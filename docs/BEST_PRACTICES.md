@@ -25,10 +25,10 @@ Capsule Kit v3.0 uses **Blink** (SQLite) with automatic JS hooks. There is **no 
 
 ```bash
 # Dependency analysis
-bash .claude/tools/query-deps/query-deps.sh <file>        # What imports this?
-bash .claude/tools/impact-analysis/impact-analysis.sh <file>  # What breaks?
-bash .claude/tools/find-circular/find-circular.sh          # Circular deps?
-bash .claude/tools/find-dead-code/find-dead-code.sh        # Dead code?
+bash $HOME/.claude/cck/tools/query-deps/query-deps.sh <file>        # What imports this?
+bash $HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh <file>  # What breaks?
+bash $HOME/.claude/cck/tools/find-circular/find-circular.sh          # Circular deps?
+bash $HOME/.claude/cck/tools/find-dead-code/find-dead-code.sh        # Dead code?
 
 # File/code search
 Glob(pattern="**/*auth*")           # Find files
@@ -119,7 +119,7 @@ Task(subagent_type="architecture-explorer", ...)
 Task(subagent_type="Explore", prompt="Find what imports auth.ts")
 
 # GOOD:
-bash .claude/tools/query-deps/query-deps.sh src/auth/auth.ts
+bash $HOME/.claude/cck/tools/query-deps/query-deps.sh src/auth/auth.ts
 # Instant result from pre-built graph
 ```
 

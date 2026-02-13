@@ -78,7 +78,7 @@ fi
 
 echo ""
 echo "💡 To log a discovery, use:"
-echo "   ./.claude/hooks/log-discovery.sh \"<category>\" \"<content>\""
+echo "   $HOME/.claude/cck/hooks/log-discovery.sh \"<category>\" \"<content>\""
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""

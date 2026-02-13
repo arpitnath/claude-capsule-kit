@@ -180,7 +180,7 @@ When invoked with a query topic, search all memory layers SYSTEMATICALLY and ret
 ### Layer 1: Memory Graph (Cross-Session Knowledge, 2-3s)
 
 ```bash
-bash .claude/tools/memory-graph/memory-query.sh --search "{query_topic}" --limit 5 --format full
+bash $HOME/.claude/cck/tools/memory-graph/memory-query.sh --search "{query_topic}" --limit 5 --format full
 ```
 
 **Extract**:
@@ -254,8 +254,8 @@ grep -i "{query_topic}" .claude/session_subagents.log 2>/dev/null
 
 **If query mentions a file path**:
 ```bash
-bash .claude/tools/query-deps/query-deps.sh {file_path}
-bash .claude/tools/impact-analysis/impact-analysis.sh {file_path}
+bash $HOME/.claude/cck/tools/query-deps/query-deps.sh {file_path}
+bash $HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh {file_path}
 ```
 
 **Extract**: Imports, importers, impact score

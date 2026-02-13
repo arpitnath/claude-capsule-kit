@@ -3,15 +3,20 @@
  * Context-Query Tool v3.0 - Query Blink context database
  * Uses blink-query for proper namespace/type-aware querying
  *
- * Usage: node .claude/tools/context-query/context-query.js <command> [args]
+ * Usage: node $HOME/.claude/cck/tools/context-query/context-query.js <command> [args]
  */
 
 import { Blink } from 'blink-query';
 import { existsSync } from 'fs';
 import { dirname, join } from 'path';
+import { homedir } from 'os';
 
-// Find blink.db - walk up from CWD
+// Find blink.db - check global path first, then walk up from CWD
 function findBlinkDb() {
+  // Global installation: check ~/.claude/blink.db first
+  const globalDb = join(homedir(), '.claude', 'blink.db');
+  if (existsSync(globalDb)) return globalDb;
+  // Fallback: walk up from CWD (for development/testing)
   let dir = process.cwd();
   while (dir !== '/') {
     const dbPath = join(dir, '.claude', 'blink.db');
@@ -225,7 +230,7 @@ try {
 
     default:
       console.log(`## Blink Context Query\n`);
-      console.log(`Usage: bash .claude/tools/context-query/context-query.sh <command> [args]\n`);
+      console.log(`Usage: bash $HOME/.claude/cck/tools/context-query/context-query.sh <command> [args]\n`);
       console.log(`Read:`);
       console.log(`  search <term>      Search records by keyword`);
       console.log(`  files [limit]      Recent file operations (default: 20)`);

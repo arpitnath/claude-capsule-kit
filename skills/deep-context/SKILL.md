@@ -105,22 +105,22 @@ $HOME/.claude/bin/progressive-reader --continue-file /tmp/continue.toon
 
 **What imports this file?**
 ```bash
-bash .claude/tools/query-deps/query-deps.sh path/to/file.ts
+bash $HOME/.claude/cck/tools/query-deps/query-deps.sh path/to/file.ts
 ```
 
 **What would break if I change this?**
 ```bash
-bash .claude/tools/impact-analysis/impact-analysis.sh path/to/file.ts
+bash $HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh path/to/file.ts
 ```
 
 **Any circular dependencies?**
 ```bash
-bash .claude/tools/find-circular/find-circular.sh
+bash $HOME/.claude/cck/tools/find-circular/find-circular.sh
 ```
 
 **Find unused files**:
 ```bash
-bash .claude/tools/find-dead-code/find-dead-code.sh
+bash $HOME/.claude/cck/tools/find-dead-code/find-dead-code.sh
 ```
 
 **What these tools provide**:
@@ -306,7 +306,7 @@ $HOME/.claude/bin/progressive-reader --path middleware/auth.middleware.ts --chun
 
 **Layer 3: Dependency Analysis**
 ```bash
-bash .claude/tools/query-deps/query-deps.sh src/auth/auth.service.ts
+bash $HOME/.claude/cck/tools/query-deps/query-deps.sh src/auth/auth.service.ts
 # Result: Imported by 12 files (login, register, profile, admin...)
 ```
 
@@ -363,10 +363,10 @@ $HOME/.claude/bin/progressive-reader --path package.json --list
 **Layer 3: Map Structure**
 ```bash
 # Find circular dependencies (architectural smell)
-bash .claude/tools/find-circular/find-circular.sh
+bash $HOME/.claude/cck/tools/find-circular/find-circular.sh
 
 # Check for dead code
-bash .claude/tools/find-dead-code/find-dead-code.sh
+bash $HOME/.claude/cck/tools/find-dead-code/find-dead-code.sh
 ```
 
 **Layer 4: Architecture Deep Dive**

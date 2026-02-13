@@ -20,7 +20,7 @@ Claude Capsule Kit provides specialized tools that are **FASTER and MORE ACCURAT
 
 **Command**:
 ```bash
-bash .claude/tools/query-deps/query-deps.sh <file-path>
+bash $HOME/.claude/cck/tools/query-deps/query-deps.sh <file-path>
 ```
 
 **Use cases**:
@@ -30,7 +30,7 @@ bash .claude/tools/query-deps/query-deps.sh <file-path>
 
 **Example**:
 ```bash
-bash .claude/tools/query-deps/query-deps.sh src/auth/auth.service.ts
+bash $HOME/.claude/cck/tools/query-deps/query-deps.sh src/auth/auth.service.ts
 
 # Output:
 Imported by 12 files:
@@ -46,7 +46,7 @@ Imported by 12 files:
 
 **Command**:
 ```bash
-bash .claude/tools/impact-analysis/impact-analysis.sh <file-path>
+bash $HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh <file-path>
 ```
 
 **Use cases**:
@@ -61,7 +61,7 @@ bash .claude/tools/impact-analysis/impact-analysis.sh <file-path>
 
 **Example**:
 ```bash
-bash .claude/tools/impact-analysis/impact-analysis.sh src/auth/auth.service.ts
+bash $HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh src/auth/auth.service.ts
 
 # Output:
 DIRECT DEPENDENTS (5 files):
@@ -82,7 +82,7 @@ Recommendation: Update tests after changes
 
 **Command**:
 ```bash
-bash .claude/tools/find-circular/find-circular.sh
+bash $HOME/.claude/cck/tools/find-circular/find-circular.sh
 ```
 
 **Use cases**:
@@ -95,7 +95,7 @@ bash .claude/tools/find-circular/find-circular.sh
 
 **Example**:
 ```bash
-bash .claude/tools/find-circular/find-circular.sh
+bash $HOME/.claude/cck/tools/find-circular/find-circular.sh
 
 # Output:
 CIRCULAR DEPENDENCY FOUND:
@@ -110,7 +110,7 @@ Suggestion: Break cycle by extracting shared code to D.ts
 
 **Command**:
 ```bash
-bash .claude/tools/find-dead-code/find-dead-code.sh
+bash $HOME/.claude/cck/tools/find-dead-code/find-dead-code.sh
 ```
 
 **Use cases**:
@@ -123,7 +123,7 @@ bash .claude/tools/find-dead-code/find-dead-code.sh
 
 **Example**:
 ```bash
-bash .claude/tools/find-dead-code/find-dead-code.sh
+bash $HOME/.claude/cck/tools/find-dead-code/find-dead-code.sh
 
 # Output:
 Potentially unused files (5):
@@ -392,7 +392,7 @@ $HOME/.claude/bin/progressive-reader --path <file> --list
   "useInstead": [
     {
       "name": "query-deps",
-      "command": "bash .claude/tools/query-deps/query-deps.sh <file-path>"
+      "command": "bash $HOME/.claude/cck/tools/query-deps/query-deps.sh <file-path>"
     }
   ]
 }
