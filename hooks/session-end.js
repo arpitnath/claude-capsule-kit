@@ -68,8 +68,16 @@ async function main() {
     // Update team-state.json when in crew mode
     if (crewId) {
       try {
-        const stateDir = resolve(homedir(), '.claude', 'crew', projectHash);
-        const statePath = resolve(stateDir, 'team-state.json');
+        const profileName = crewId.profile_name || 'default';
+        const baseStateDir = resolve(homedir(), '.claude', 'crew', projectHash);
+        const profileStateDir = resolve(baseStateDir, profileName);
+
+        // Try profile-scoped path first, then legacy flat path
+        let statePath = resolve(profileStateDir, 'team-state.json');
+        if (!existsSync(statePath)) {
+          statePath = resolve(baseStateDir, 'team-state.json');
+        }
+
         if (existsSync(statePath)) {
           const state = JSON.parse(readFileSync(statePath, 'utf-8'));
           if (state.teammates?.[crewId.teammate_name]) {

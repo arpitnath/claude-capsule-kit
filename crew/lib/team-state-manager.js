@@ -2,29 +2,48 @@
  * Team State Manager - Persistent team state CRUD
  *
  * Manages team-state.json for tracking teammate sessions across restarts.
- * State lives at ~/.claude/crew/{projectHash}/team-state.json
+ * State lives at ~/.claude/crew/{projectHash}/{profileName}/team-state.json
+ *
+ * Profile scoping: each profile gets its own state directory.
+ * Migration: old flat state (~/.claude/crew/{hash}/team-state.json)
+ * auto-moves to the 'default' profile subdirectory.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, renameSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import { homedir } from 'os';
 
 /**
- * Get the state directory for a project.
+ * Get the state directory for a project profile.
  * @param {string} projectHash - 12-char project hash
- * @returns {string} Path to ~/.claude/crew/{projectHash}/
+ * @param {string} [profileName='default'] - Profile name
+ * @returns {string} Path to ~/.claude/crew/{projectHash}/{profileName}/
  */
-export function getStateDir(projectHash) {
-  return resolve(homedir(), '.claude', 'crew', projectHash);
+export function getStateDir(projectHash, profileName = 'default') {
+  const baseDir = resolve(homedir(), '.claude', 'crew', projectHash);
+
+  // Auto-migrate: if old flat team-state.json exists and we're asking for 'default'
+  if (profileName === 'default') {
+    const oldStatePath = resolve(baseDir, 'team-state.json');
+    const newDir = resolve(baseDir, 'default');
+    const newStatePath = resolve(newDir, 'team-state.json');
+    if (existsSync(oldStatePath) && !existsSync(newStatePath)) {
+      mkdirSync(newDir, { recursive: true });
+      renameSync(oldStatePath, newStatePath);
+    }
+  }
+
+  return resolve(baseDir, profileName);
 }
 
 /**
  * Load existing team state, or null if none exists.
  * @param {string} projectHash - 12-char project hash
+ * @param {string} [profileName='default'] - Profile name
  * @returns {object|null} Parsed team state or null
  */
-export function loadTeamState(projectHash) {
-  const statePath = resolve(getStateDir(projectHash), 'team-state.json');
+export function loadTeamState(projectHash, profileName = 'default') {
+  const statePath = resolve(getStateDir(projectHash, profileName), 'team-state.json');
   if (!existsSync(statePath)) return null;
   try {
     return JSON.parse(readFileSync(statePath, 'utf-8'));
@@ -37,9 +56,10 @@ export function loadTeamState(projectHash) {
  * Save team state to disk.
  * @param {string} projectHash - 12-char project hash
  * @param {object} state - Team state object
+ * @param {string} [profileName='default'] - Profile name
  */
-export function saveTeamState(projectHash, state) {
-  const dir = getStateDir(projectHash);
+export function saveTeamState(projectHash, state, profileName = 'default') {
+  const dir = getStateDir(projectHash, profileName);
   mkdirSync(dir, { recursive: true });
   state.updated_at = new Date().toISOString();
   writeFileSync(resolve(dir, 'team-state.json'), JSON.stringify(state, null, 2) + '\n');
@@ -50,12 +70,30 @@ export function saveTeamState(projectHash, state) {
  * @param {string} projectHash - 12-char project hash
  * @param {string} name - Teammate name
  * @param {object} update - Partial update to merge
+ * @param {string} [profileName='default'] - Profile name
  */
-export function updateTeammateState(projectHash, name, update) {
-  const state = loadTeamState(projectHash) || { teammates: {} };
+export function updateTeammateState(projectHash, name, update, profileName = 'default') {
+  const state = loadTeamState(projectHash, profileName) || { teammates: {} };
   if (!state.teammates) state.teammates = {};
   state.teammates[name] = { ...(state.teammates[name] || {}), ...update };
-  saveTeamState(projectHash, state);
+  saveTeamState(projectHash, state, profileName);
+}
+
+/**
+ * List all profile names that have state for a project.
+ * @param {string} projectHash - 12-char project hash
+ * @returns {string[]} Array of profile names with existing state
+ */
+export function listProfiles(projectHash) {
+  const baseDir = resolve(homedir(), '.claude', 'crew', projectHash);
+  if (!existsSync(baseDir)) return [];
+
+  // Trigger migration for 'default' profile if needed
+  getStateDir(projectHash, 'default');
+
+  return readdirSync(baseDir, { withFileTypes: true })
+    .filter(d => d.isDirectory() && existsSync(resolve(baseDir, d.name, 'team-state.json')))
+    .map(d => d.name);
 }
 
 /**

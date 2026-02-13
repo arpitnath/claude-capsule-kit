@@ -15,6 +15,7 @@ type Chunk struct {
 	Type         string
 	Name         string
 	Context      string
+	Depth        int // heading nesting depth for markdown (0 = top-level)
 	HasMore      bool
 	TotalChunks  int
 	CurrentChunk int
@@ -44,13 +45,22 @@ func NewChunker(filePath string, sourceCode []byte, maxTokens int) (*Chunker, er
 }
 
 func (c *Chunker) ChunkFile() ([]Chunk, error) {
+	lang := c.parser.GetLanguage()
+
+	// Non-AST languages: handle without tree-sitter
+	switch lang {
+	case "markdown":
+		return c.chunkMarkdown()
+	case "text":
+		return c.chunkFallback()
+	}
+
+	// AST-based languages
 	tree, err := c.parser.Parse(c.sourceCode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse file: %w", err)
 	}
 	defer tree.Close()
-
-	lang := c.parser.GetLanguage()
 
 	switch lang {
 	case "typescript":
@@ -603,6 +613,212 @@ func (c *Chunker) chunkFallback() ([]Chunk, error) {
 	}
 
 	return chunks, nil
+}
+
+// chunkMarkdown splits a markdown file into chunks at heading boundaries.
+// Headings (# through ######) define section boundaries. Content between
+// headings stays together. Code fences are respected (# inside ``` is not a heading).
+func (c *Chunker) chunkMarkdown() ([]Chunk, error) {
+	type heading struct {
+		level int
+		text  string
+		line  int // 0-indexed
+	}
+
+	// Pass 1: find all headings (skip code fences and frontmatter)
+	var headings []heading
+	inCodeBlock := false
+	contentStart := 0
+
+	// Detect YAML frontmatter
+	if len(c.sourceLines) >= 3 && strings.TrimSpace(c.sourceLines[0]) == "---" {
+		for i := 1; i < len(c.sourceLines) && i < 50; i++ {
+			if strings.TrimSpace(c.sourceLines[i]) == "---" {
+				contentStart = i + 1
+				break
+			}
+		}
+	}
+
+	for i := contentStart; i < len(c.sourceLines); i++ {
+		trimmed := strings.TrimSpace(c.sourceLines[i])
+
+		if strings.HasPrefix(trimmed, "```") {
+			inCodeBlock = !inCodeBlock
+			continue
+		}
+		if inCodeBlock {
+			continue
+		}
+
+		if strings.HasPrefix(trimmed, "#") {
+			level := 0
+			for _, ch := range trimmed {
+				if ch == '#' {
+					level++
+				} else {
+					break
+				}
+			}
+			if level >= 1 && level <= 6 && level < len(trimmed) && trimmed[level] == ' ' {
+				headings = append(headings, heading{
+					level: level,
+					text:  strings.TrimSpace(trimmed[level:]),
+					line:  i,
+				})
+			}
+		}
+	}
+
+	var chunks []Chunk
+
+	// Frontmatter chunk
+	if contentStart > 0 {
+		content := strings.Join(c.sourceLines[0:contentStart], "\n")
+		ctx := ""
+		for _, line := range c.sourceLines[1:contentStart] {
+			t := strings.TrimSpace(line)
+			if t != "" && t != "---" {
+				ctx = t
+				break
+			}
+		}
+		chunks = append(chunks, Chunk{
+			Content:   content,
+			StartLine: 1,
+			EndLine:   contentStart,
+			Type:      "frontmatter",
+			Name:      "YAML Frontmatter",
+			Context:   ctx,
+		})
+	}
+
+	// No headings → single chunk (or fallback)
+	if len(headings) == 0 {
+		content := strings.Join(c.sourceLines[contentStart:], "\n")
+		tokens := estimateTokens(content)
+		if tokens <= c.maxTokens {
+			chunks = append(chunks, Chunk{
+				Content:   content,
+				StartLine: contentStart + 1,
+				EndLine:   len(c.sourceLines),
+				Type:      "text",
+				Context:   extractMarkdownContext(content),
+			})
+		} else {
+			// Fall back to line-based splitting
+			fb, _ := c.chunkFallback()
+			chunks = append(chunks, fb...)
+		}
+		c.finalizeChunks(chunks)
+		return chunks, nil
+	}
+
+	// Preamble: content before first heading
+	if headings[0].line > contentStart {
+		preambleLines := c.sourceLines[contentStart:headings[0].line]
+		content := strings.Join(preambleLines, "\n")
+		if strings.TrimSpace(content) != "" {
+			chunks = append(chunks, Chunk{
+				Content:   content,
+				StartLine: contentStart + 1,
+				EndLine:   headings[0].line,
+				Type:      "text",
+				Context:   extractMarkdownContext(content),
+			})
+		}
+	}
+
+	// Find the minimum heading level to determine "top-level"
+	minLevel := 7
+	for _, h := range headings {
+		if h.level < minLevel {
+			minLevel = h.level
+		}
+	}
+
+	// Pass 2: create a chunk for each heading
+	for i, h := range headings {
+		endLine := len(c.sourceLines) - 1
+		if i+1 < len(headings) {
+			endLine = headings[i+1].line - 1
+		}
+
+		content := strings.Join(c.sourceLines[h.line:endLine+1], "\n")
+		tokens := estimateTokens(content)
+
+		depth := h.level - minLevel
+
+		if tokens <= c.maxTokens {
+			chunks = append(chunks, Chunk{
+				Content:   content,
+				StartLine: h.line + 1,
+				EndLine:   endLine + 1,
+				Type:      "section",
+				Name:      h.text,
+				Depth:     depth,
+				Context:   extractMarkdownContext(content),
+			})
+		} else {
+			// Section too large -- split by line budget
+			linesPerChunk := (c.maxTokens * 4) / 60
+			if linesPerChunk < 20 {
+				linesPerChunk = 20
+			}
+
+			for offset := h.line; offset <= endLine; offset += linesPerChunk {
+				chunkEnd := offset + linesPerChunk - 1
+				if chunkEnd > endLine {
+					chunkEnd = endLine
+				}
+
+				chunkContent := strings.Join(c.sourceLines[offset:chunkEnd+1], "\n")
+				name := ""
+				if offset == h.line {
+					name = h.text
+				} else {
+					name = h.text + " (cont.)"
+				}
+
+				chunks = append(chunks, Chunk{
+					Content:   chunkContent,
+					StartLine: offset + 1,
+					EndLine:   chunkEnd + 1,
+					Type:      "section",
+					Name:      name,
+					Depth:     depth,
+					Context:   extractMarkdownContext(chunkContent),
+				})
+			}
+		}
+	}
+
+	c.finalizeChunks(chunks)
+	return chunks, nil
+}
+
+func (c *Chunker) finalizeChunks(chunks []Chunk) {
+	for i := range chunks {
+		chunks[i].TotalChunks = len(chunks)
+		chunks[i].CurrentChunk = i
+		chunks[i].HasMore = i < len(chunks)-1
+	}
+}
+
+func extractMarkdownContext(content string) string {
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		// Skip headings, empty lines, code fences, horizontal rules
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") || strings.HasPrefix(trimmed, "```") || trimmed == "---" {
+			continue
+		}
+		if len(trimmed) > 70 {
+			return trimmed[:67] + "..."
+		}
+		return trimmed
+	}
+	return ""
 }
 
 func (c *Chunker) getLinesRange(start, end int) string {

@@ -21,6 +21,15 @@ type Parser struct {
 func NewParser(filePath string) (*Parser, error) {
 	lang := DetectLanguage(filePath)
 
+	// Non-AST languages: return nil parser, chunker handles them directly
+	if lang == "markdown" || lang == "text" {
+		return &Parser{
+			parser:   nil,
+			language: nil,
+			langName: lang,
+		}, nil
+	}
+
 	var tsLang *sitter.Language
 	switch lang {
 	case "typescript":
@@ -68,6 +77,8 @@ func DetectLanguage(filePath string) string {
 		return "python"
 	case ".go":
 		return "go"
+	case ".md", ".markdown", ".mdx":
+		return "markdown"
 	default:
 		return "text"
 	}

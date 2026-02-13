@@ -9,9 +9,7 @@
         "name": "teammate-1",
         "branch": "feature/my-feature",
         "worktree": true,
-        "model": "sonnet",
-        "subagent_type": "general-purpose",
-        "mode": "bypassPermissions",
+        "role": "developer",
         "focus": "Describe what this teammate should work on."
       }
     ]

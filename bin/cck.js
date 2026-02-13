@@ -48,7 +48,7 @@ function setup() {
 
   mkdirSync(CCK_DIR, { recursive: true });
 
-  const assetDirs = ['hooks', 'tools', 'lib', 'agents', 'skills', 'commands'];
+  const assetDirs = ['hooks', 'tools', 'lib', 'agents', 'skills', 'commands', 'crew', 'templates'];
   for (const dir of assetDirs) {
     const src = join(PKG_ROOT, dir);
     const dest = join(CCK_DIR, dir);
@@ -237,10 +237,10 @@ async function crew() {
     console.log('Usage: cck crew <command>');
     console.log('');
     console.log('Commands:');
-    console.log('  cck crew init       Create .crew-config.json in current directory');
-    console.log('  cck crew start      Launch team (setup worktrees, generate lead prompt)');
-    console.log('  cck crew stop       Stop team and update state');
-    console.log('  cck crew status     Show team state');
+    console.log('  cck crew init              Create .crew-config.json in current directory');
+    console.log('  cck crew start [profile]   Launch team (setup worktrees, generate lead prompt)');
+    console.log('  cck crew stop [profile]    Stop team and update state');
+    console.log('  cck crew status [profile]  Show team state (all profiles if omitted)');
     process.exit(sub ? 1 : 0);
   }
 
@@ -288,8 +288,11 @@ async function crewInit() {
 }
 
 async function crewStart() {
-  const { loadCrewConfig, hashConfig, validateConfig, resolveWorktreePath } = await import(
+  const { loadCrewConfig, hashConfig, validateConfig, resolveWorktreePath, resolveProfile } = await import(
     join(PKG_ROOT, 'crew', 'lib', 'crew-config-reader.js')
+  );
+  const { resolveRole } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'role-presets.js')
   );
   const { loadTeamState, saveTeamState, isStale: isTeammateStale, isConfigChanged } = await import(
     join(PKG_ROOT, 'crew', 'lib', 'team-state-manager.js')
@@ -303,6 +306,8 @@ async function crewStart() {
 
   const projectRoot = process.cwd();
   const fresh = process.argv.includes('--fresh');
+  // Profile name: first non-flag arg after "crew start"
+  const profileArg = process.argv.slice(4).find(a => !a.startsWith('--'));
 
   // 1. Load and validate config
   let config;
@@ -321,12 +326,25 @@ async function crewStart() {
     process.exit(1);
   }
 
-  // 2. Compute hashes and load state
+  // 2. Resolve profile
+  let profile, profileName;
+  try {
+    ({ profile, profileName } = resolveProfile(config, profileArg));
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+
+  // Resolve roles for all teammates
+  const resolvedTeammates = profile.teammates.map(resolveRole);
+  const team = { ...profile, teammates: resolvedTeammates };
+
+  // 3. Compute hashes and load state
   const projectHash = getProjectHash();
   const configHash = hashConfig(config);
-  const existingState = loadTeamState(projectHash);
+  const existingState = loadTeamState(projectHash, profileName);
 
-  // 3. Resume decision
+  // 4. Resume decision
   let shouldResume = false;
   if (fresh) {
     console.log('--fresh flag: starting fresh team session.');
@@ -345,13 +363,13 @@ async function crewStart() {
     }
   }
 
-  // 4. Setup worktrees
+  // 5. Setup worktrees
   const worktreePaths = { _projectRoot: projectRoot };
 
-  for (const mate of config.team.teammates) {
+  for (const mate of team.teammates) {
     if (!mate.worktree) continue;
 
-    const wtPath = resolveWorktreePath(projectRoot, mate.branch);
+    const wtPath = resolveWorktreePath(projectRoot, mate.branch, profileName);
     worktreePaths[mate.name] = wtPath;
 
     if (existsSync(wtPath)) {
@@ -359,12 +377,10 @@ async function crewStart() {
     } else {
       console.log(`  Creating worktree: ${wtPath} (branch: ${mate.branch})`);
       try {
-        // Try to create from existing branch
         execSync(`git worktree add "${wtPath}" "${mate.branch}"`, {
           cwd: projectRoot, stdio: 'pipe'
         });
       } catch {
-        // Branch doesn't exist — create it
         try {
           const mainBranch = config.project?.main_branch || 'main';
           execSync(`git worktree add -b "${mate.branch}" "${wtPath}" "${mainBranch}"`, {
@@ -382,16 +398,17 @@ async function crewStart() {
       teammate_name: mate.name,
       project_root: projectRoot,
       branch: mate.branch,
-      team_name: config.team.name,
+      team_name: team.name,
+      profile_name: profileName,
       created_at: new Date().toISOString()
     };
     writeFileSync(resolve(wtPath, 'crew-identity.json'), JSON.stringify(identity, null, 2) + '\n');
   }
 
-  // 5. Write worktrees.json
+  // 6. Write worktrees.json
   const crewDir = resolve(homedir(), '.claude', 'crew', projectHash);
   mkdirSync(crewDir, { recursive: true });
-  const worktreeEntries = config.team.teammates
+  const worktreeEntries = team.teammates
     .filter(m => m.worktree && worktreePaths[m.name])
     .map(m => ({
       name: m.name,
@@ -403,13 +420,14 @@ async function crewStart() {
     JSON.stringify({ worktrees: worktreeEntries }, null, 2) + '\n'
   );
 
-  // 6. Generate lead prompt
+  // 7. Generate lead prompt (pass resolved team directly)
   const teamState = shouldResume ? existingState : null;
-  const prompt = generateLeadPrompt(config, teamState, worktreePaths);
+  const prompt = generateLeadPrompt(team, teamState, worktreePaths, configHash);
 
-  // 7. Save state
+  // 8. Save state
   const newState = {
-    team_name: config.team.name,
+    team_name: team.name,
+    profile_name: profileName,
     config_hash: configHash,
     status: 'active',
     started_at: shouldResume ? (existingState.started_at || new Date().toISOString()) : new Date().toISOString(),
@@ -417,7 +435,7 @@ async function crewStart() {
     teammates: {}
   };
 
-  for (const mate of config.team.teammates) {
+  for (const mate of team.teammates) {
     const prev = existingState?.teammates?.[mate.name];
     newState.teammates[mate.name] = {
       branch: mate.branch,
@@ -428,14 +446,15 @@ async function crewStart() {
     };
   }
 
-  saveTeamState(projectHash, newState);
+  saveTeamState(projectHash, newState, profileName);
 
-  // 8. Output prompt
-  const promptPath = resolve(crewDir, 'lead-prompt.md');
+  // 9. Output prompt
+  const promptPath = resolve(crewDir, profileName, 'lead-prompt.md');
+  mkdirSync(resolve(crewDir, profileName), { recursive: true });
   writeFileSync(promptPath, prompt + '\n');
 
   console.log('');
-  console.log(`Team "${config.team.name}" ready.`);
+  console.log(`Team "${team.name}" (profile: ${profileName}) ready.`);
   console.log(`Lead prompt saved to: ${promptPath}`);
   console.log('');
   console.log('Copy the prompt below and paste it into Claude Code to launch the team:');
@@ -444,10 +463,10 @@ async function crewStart() {
 }
 
 async function crewStop() {
-  const { loadCrewConfig, hashConfig } = await import(
+  const { loadCrewConfig, resolveProfile } = await import(
     join(PKG_ROOT, 'crew', 'lib', 'crew-config-reader.js')
   );
-  const { loadTeamState, saveTeamState } = await import(
+  const { loadTeamState, saveTeamState, listProfiles } = await import(
     join(PKG_ROOT, 'crew', 'lib', 'team-state-manager.js')
   );
   const { getProjectHash } = await import(
@@ -457,41 +476,57 @@ async function crewStop() {
   const projectRoot = process.cwd();
   const projectHash = getProjectHash();
   const cleanup = process.argv.includes('--cleanup');
+  const profileArg = process.argv.slice(4).find(a => !a.startsWith('--'));
 
-  const state = loadTeamState(projectHash);
-  if (!state) {
-    console.log('No active team session found.');
-    return;
+  // Determine which profile(s) to stop
+  let profilesToStop = [];
+  if (profileArg) {
+    profilesToStop = [profileArg];
+  } else {
+    // Try to resolve from config, fall back to 'default'
+    try {
+      const config = loadCrewConfig(projectRoot);
+      const { profileName } = resolveProfile(config);
+      profilesToStop = [profileName];
+    } catch {
+      profilesToStop = ['default'];
+    }
   }
 
-  // Mark all teammates as stopped
-  for (const name of Object.keys(state.teammates || {})) {
-    state.teammates[name].status = 'stopped';
-  }
-  state.status = 'stopped';
-  saveTeamState(projectHash, state);
-  console.log(`Team "${state.team_name}" stopped.`);
+  for (const pName of profilesToStop) {
+    const state = loadTeamState(projectHash, pName);
+    if (!state) {
+      console.log(`No active team session found for profile "${pName}".`);
+      continue;
+    }
 
-  // Optionally remove worktrees
-  if (cleanup) {
-    for (const [name, mate] of Object.entries(state.teammates || {})) {
-      if (mate.worktree_path && existsSync(mate.worktree_path)) {
-        console.log(`  Removing worktree: ${mate.worktree_path}`);
-        try {
-          execSync(`git worktree remove "${mate.worktree_path}" --force`, {
-            cwd: projectRoot, stdio: 'pipe'
-          });
-        } catch (err) {
-          console.warn(`  Warning: Could not remove worktree for ${name}: ${err.message}`);
+    for (const name of Object.keys(state.teammates || {})) {
+      state.teammates[name].status = 'stopped';
+    }
+    state.status = 'stopped';
+    saveTeamState(projectHash, state, pName);
+    console.log(`Team "${state.team_name}" (profile: ${pName}) stopped.`);
+
+    if (cleanup) {
+      for (const [name, mate] of Object.entries(state.teammates || {})) {
+        if (mate.worktree_path && existsSync(mate.worktree_path)) {
+          console.log(`  Removing worktree: ${mate.worktree_path}`);
+          try {
+            execSync(`git worktree remove "${mate.worktree_path}" --force`, {
+              cwd: projectRoot, stdio: 'pipe'
+            });
+          } catch (err) {
+            console.warn(`  Warning: Could not remove worktree for ${name}: ${err.message}`);
+          }
         }
       }
+      console.log('Worktrees cleaned up.');
     }
-    console.log('Worktrees cleaned up.');
   }
 }
 
 async function crewStatus() {
-  const { loadTeamState } = await import(
+  const { loadTeamState, listProfiles } = await import(
     join(PKG_ROOT, 'crew', 'lib', 'team-state-manager.js')
   );
   const { getProjectHash } = await import(
@@ -499,27 +534,48 @@ async function crewStatus() {
   );
 
   const projectHash = getProjectHash();
-  const state = loadTeamState(projectHash);
+  const profileArg = process.argv.slice(4).find(a => !a.startsWith('--'));
 
-  if (!state) {
-    console.log('No team state found. Run "cck crew start" first.');
-    return;
+  // Determine which profiles to show
+  let profilesToShow;
+  if (profileArg) {
+    profilesToShow = [profileArg];
+  } else {
+    // Show all profiles that have state
+    profilesToShow = listProfiles(projectHash);
+    if (profilesToShow.length === 0) {
+      console.log('No team state found. Run "cck crew start" first.');
+      return;
+    }
   }
 
-  const ageHours = Math.round((Date.now() - new Date(state.updated_at).getTime()) / 3600000);
+  for (let idx = 0; idx < profilesToShow.length; idx++) {
+    const pName = profilesToShow[idx];
+    const state = loadTeamState(projectHash, pName);
 
-  console.log(`Team: ${state.team_name}`);
-  console.log(`Status: ${state.status} (updated ${ageHours}h ago)`);
-  console.log(`Config hash: ${state.config_hash}`);
-  console.log('─'.repeat(60));
-  console.log('  Name'.padEnd(22) + 'Status'.padEnd(12) + 'Branch'.padEnd(30) + 'Agent ID');
-  console.log('─'.repeat(60));
+    if (!state) {
+      console.log(`No team state found for profile "${pName}".`);
+      continue;
+    }
 
-  for (const [name, mate] of Object.entries(state.teammates || {})) {
-    const agentId = mate.agent_id ? mate.agent_id.slice(0, 12) + '...' : 'none';
-    console.log(
-      `  ${name.padEnd(20)}${(mate.status || 'unknown').padEnd(12)}${(mate.branch || '').padEnd(30)}${agentId}`
-    );
+    if (idx > 0) console.log('');
+
+    const ageHours = Math.round((Date.now() - new Date(state.updated_at).getTime()) / 3600000);
+
+    console.log(`Profile: ${pName}`);
+    console.log(`Team: ${state.team_name}`);
+    console.log(`Status: ${state.status} (updated ${ageHours}h ago)`);
+    console.log(`Config hash: ${state.config_hash}`);
+    console.log('─'.repeat(60));
+    console.log('  Name'.padEnd(22) + 'Status'.padEnd(12) + 'Branch'.padEnd(30) + 'Agent ID');
+    console.log('─'.repeat(60));
+
+    for (const [name, mate] of Object.entries(state.teammates || {})) {
+      const agentId = mate.agent_id ? mate.agent_id.slice(0, 12) + '...' : 'none';
+      console.log(
+        `  ${name.padEnd(20)}${(mate.status || 'unknown').padEnd(12)}${(mate.branch || '').padEnd(30)}${agentId}`
+      );
+    }
   }
 }
 

@@ -101,25 +101,58 @@ async function main() {
     if (existsSync(crewConfigPath)) {
       try {
         const crewConfig = JSON.parse(readFileSync(crewConfigPath, 'utf-8'));
-        const stateDir = resolve(homedir(), '.claude', 'crew', projectHash);
-        const teamStatePath = resolve(stateDir, 'team-state.json');
+        const baseStateDir = resolve(homedir(), '.claude', 'crew', projectHash);
 
-        let parts = [`## Team: ${crewConfig.team.name}`];
-        parts.push(`Teammates: ${crewConfig.team.teammates.map(t => t.name).join(', ')}`);
+        if (crewConfig.profiles) {
+          // New multi-profile format
+          const profileNames = Object.keys(crewConfig.profiles);
+          let parts = [`## Crew Profiles: ${profileNames.join(', ')}`];
+          if (crewConfig.default) parts.push(`Default: ${crewConfig.default}`);
 
-        if (existsSync(teamStatePath)) {
-          const state = JSON.parse(readFileSync(teamStatePath, 'utf-8'));
-          const ageHours = Math.round((Date.now() - new Date(state.updated_at).getTime()) / 3600000);
-          for (const [name, mate] of Object.entries(state.teammates || {})) {
-            parts.push(`- ${name}: ${mate.status}, ${ageHours}h ago`);
+          for (const pName of profileNames) {
+            const profile = crewConfig.profiles[pName];
+            parts.push(`\n### ${pName}: ${profile.name}`);
+            parts.push(`Teammates: ${profile.teammates.map(t => t.name).join(', ')}`);
+
+            const statePath = resolve(baseStateDir, pName, 'team-state.json');
+            if (existsSync(statePath)) {
+              const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+              const ageHours = Math.round((Date.now() - new Date(state.updated_at).getTime()) / 3600000);
+              for (const [name, mate] of Object.entries(state.teammates || {})) {
+                parts.push(`- ${name}: ${mate.status}, ${ageHours}h ago`);
+              }
+              if (ageHours <= 4) {
+                parts.push(`\nResumable. Use \`cck crew start ${pName}\` to launch.`);
+              }
+            } else {
+              parts.push(`No previous session. Use \`cck crew start ${pName}\` to launch.`);
+            }
           }
-          if (ageHours <= 4) {
-            parts.push('\nTeammates may be resumable. Use `cck crew start` to launch.');
+          contextParts.push(parts.join('\n'));
+        } else if (crewConfig.team) {
+          // Old single-team format
+          let parts = [`## Team: ${crewConfig.team.name}`];
+          parts.push(`Teammates: ${crewConfig.team.teammates.map(t => t.name).join(', ')}`);
+
+          // Check both old flat path and new profile-scoped path
+          const oldStatePath = resolve(baseStateDir, 'team-state.json');
+          const newStatePath = resolve(baseStateDir, 'default', 'team-state.json');
+          const statePath = existsSync(newStatePath) ? newStatePath : oldStatePath;
+
+          if (existsSync(statePath)) {
+            const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+            const ageHours = Math.round((Date.now() - new Date(state.updated_at).getTime()) / 3600000);
+            for (const [name, mate] of Object.entries(state.teammates || {})) {
+              parts.push(`- ${name}: ${mate.status}, ${ageHours}h ago`);
+            }
+            if (ageHours <= 4) {
+              parts.push('\nTeammates may be resumable. Use `cck crew start` to launch.');
+            }
+          } else {
+            parts.push('No previous team session. Use `cck crew start` to launch.');
           }
-        } else {
-          parts.push('No previous team session. Use `cck crew start` to launch.');
+          contextParts.push(parts.join('\n'));
         }
-        contextParts.push(parts.join('\n'));
       } catch { /* silent */ }
     }
 

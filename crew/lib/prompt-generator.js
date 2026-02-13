@@ -3,24 +3,28 @@
  *
  * Builds structured prompts that guide the lead agent through creating
  * a team, spawning teammates, and assigning tasks.
+ *
+ * Accepts a resolved profile (team object) — callers use resolveProfile()
+ * before calling generateLeadPrompt().
  */
 
 import { isStale, isConfigChanged } from './team-state-manager.js';
+import { resolveRole } from './role-presets.js';
 
 /**
  * Generate the full lead prompt for launching or resuming a team.
  *
- * @param {object} config - Parsed .crew-config.json
+ * @param {object} team - Resolved team/profile object (has name, teammates[], lead)
  * @param {object|null} teamState - Existing team state (null = fresh)
  * @param {object} worktreePaths - Map of teammate name → worktree path
+ * @param {string} currentConfigHash - Hash for change detection
  * @returns {string} Lead prompt string
  */
-export function generateLeadPrompt(config, teamState, worktreePaths) {
-  const { team } = config;
+export function generateLeadPrompt(team, teamState, worktreePaths, currentConfigHash) {
   const projectRoot = worktreePaths._projectRoot || process.cwd();
 
   const canResume = teamState
-    && !isConfigChanged(teamState.config_hash, teamState.config_hash) // same hash
+    && !isConfigChanged(currentConfigHash, teamState.config_hash)
     && teamState.teammates
     && Object.values(teamState.teammates).some(t => !isStale(t));
 
@@ -54,6 +58,7 @@ function generateResumePrompt(team, teamState, worktreePaths, projectRoot) {
   ];
 
   for (const mate of team.teammates) {
+    const resolved = resolveRole(mate);
     const savedState = teamState.teammates?.[mate.name];
     const wtPath = worktreePaths[mate.name] || 'unknown';
     const agentId = savedState?.agent_id || 'none';
@@ -61,14 +66,16 @@ function generateResumePrompt(team, teamState, worktreePaths, projectRoot) {
 
     lines.push(`#### ${mate.name}`);
     lines.push(`- Agent ID: ${agentId}${stale ? ' (STALE — spawn fresh)' : ''}`);
-    lines.push(`- Branch: ${mate.branch}`);
+    lines.push(`- Branch: ${resolved.branch}`);
     lines.push(`- Worktree: ${wtPath}`);
 
     if (stale || agentId === 'none') {
       lines.push(`- Action: Spawn fresh with prompt below`);
+      lines.push(`- model: "${resolved.model || 'sonnet'}"`);
+      lines.push(`- mode: "${resolved.mode || 'bypassPermissions'}"`);
       lines.push('');
       lines.push('```');
-      lines.push(generateTeammatePrompt(mate, wtPath, projectRoot));
+      lines.push(generateTeammatePrompt(resolved, wtPath, projectRoot));
       lines.push('```');
     } else {
       lines.push(`- Action: Resume with agent_id="${agentId}"`);
@@ -99,7 +106,8 @@ function generateFreshPrompt(team, worktreePaths, projectRoot) {
   ];
 
   for (const mate of team.teammates) {
-    lines.push(`- Task for **${mate.name}**: ${mate.focus || 'See teammate prompt for details'}`);
+    const resolved = resolveRole(mate);
+    lines.push(`- Task for **${mate.name}**: ${resolved.focus || 'See teammate prompt for details'}`);
   }
 
   lines.push('');
@@ -108,18 +116,19 @@ function generateFreshPrompt(team, worktreePaths, projectRoot) {
   lines.push('');
 
   for (const mate of team.teammates) {
+    const resolved = resolveRole(mate);
     const wtPath = worktreePaths[mate.name] || 'unknown';
     lines.push(`#### ${mate.name}`);
     lines.push('```');
     lines.push(`Task tool parameters:`);
     lines.push(`  name: "${mate.name}"`);
     lines.push(`  team_name: "${team.name}"`);
-    lines.push(`  subagent_type: "${mate.subagent_type || 'general-purpose'}"`);
-    lines.push(`  mode: "${mate.mode || 'bypassPermissions'}"`);
-    lines.push(`  model: "${mate.model || 'sonnet'}"`);
+    lines.push(`  subagent_type: "${resolved.subagent_type || 'general-purpose'}"`);
+    lines.push(`  mode: "${resolved.mode || 'bypassPermissions'}"`);
+    lines.push(`  model: "${resolved.model || 'sonnet'}"`);
     lines.push(`  run_in_background: true`);
     lines.push(`  prompt: |`);
-    lines.push(indent(generateTeammatePrompt(mate, wtPath, projectRoot), 4));
+    lines.push(indent(generateTeammatePrompt(resolved, wtPath, projectRoot), 4));
     lines.push('```');
     lines.push('');
   }
