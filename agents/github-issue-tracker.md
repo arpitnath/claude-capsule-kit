@@ -241,7 +241,7 @@ gh issue create \
 
 ## Integration with Capsule Kit
 
-Issue creation and tracking are automatically captured by Blink hooks (post-tool-use.js).
+Issue creation and tracking are automatically captured by Capsule hooks (post-tool-use.js).
 
 ## Example Questions You Can Answer
 

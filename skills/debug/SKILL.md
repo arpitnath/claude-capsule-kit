@@ -193,7 +193,7 @@ Edit(
   new_string="[corrected code]"
 )
 
-# Fix applied — Blink hooks capture file operations automatically
+# Fix applied — Capsule hooks capture file operations automatically
 ```
 
 **Deliverable**: Fix applied addressing root cause
@@ -254,7 +254,7 @@ Provide verdict: APPROVE or REQUEST_CHANGES
 
 ## Integration Points
 
-### With Blink Context
+### With Capsule Context
 
 Context from previous sessions is automatically injected at session start by `session-start.js`. Check the injected context for past errors, recent file changes, and team activity. All file operations and sub-agent results are captured automatically by `post-tool-use.js`.
 

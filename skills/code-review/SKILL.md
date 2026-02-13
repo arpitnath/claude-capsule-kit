@@ -294,9 +294,9 @@ if [[ "$TOOL" == "Bash" && "$COMMAND" =~ "git commit" ]]; then
 fi
 ```
 
-### With Blink Context
+### With Capsule Context
 
-File operations and sub-agent results are captured automatically by Blink hooks. No manual logging needed.
+File operations and sub-agent results are captured automatically by Capsule hooks. No manual logging needed.
 
 ---
 
