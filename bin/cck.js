@@ -188,7 +188,7 @@ function version() {
 }
 
 async function prune() {
-  if (!existsSync(BLINK_DB_PATH)) {
+  if (!existsSync(CAPSULE_DB_PATH)) {
     console.log('No database found. Nothing to prune.');
     return;
   }
@@ -198,7 +198,7 @@ async function prune() {
   const cutoff = new Date(Date.now() - days * 86400000).toISOString();
 
   const { Blink } = await import('blink-query');
-  const blink = new Blink({ dbPath: BLINK_DB_PATH });
+  const blink = new Blink({ dbPath: CAPSULE_DB_PATH });
 
   const stale = blink.db.prepare(
     'SELECT COUNT(*) as count FROM records WHERE updated_at < ?'
