@@ -9,8 +9,9 @@
 import { Blink } from 'blink-query';
 import { createInterface } from 'readline';
 import { getCapsuleDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
-import { existsSync, rmSync, unlinkSync } from 'fs';
+import { existsSync, readFileSync, rmSync, unlinkSync } from 'fs';
 import { resolve } from 'path';
+import { homedir } from 'os';
 
 function cleanupV2Artifacts() {
   const localClaude = resolve(process.cwd(), '.claude');
@@ -93,6 +94,33 @@ async function main() {
           otherTeammates.map(s => `- ${s.title}: ${s.summary?.slice(0, 80) || ''}`).join('\n')
         );
       }
+    }
+
+    // Team profile awareness — inject .crew-config.json context
+    const crewConfigPath = resolve(process.cwd(), '.crew-config.json');
+    if (existsSync(crewConfigPath)) {
+      try {
+        const crewConfig = JSON.parse(readFileSync(crewConfigPath, 'utf-8'));
+        const stateDir = resolve(homedir(), '.claude', 'crew', projectHash);
+        const teamStatePath = resolve(stateDir, 'team-state.json');
+
+        let parts = [`## Team: ${crewConfig.team.name}`];
+        parts.push(`Teammates: ${crewConfig.team.teammates.map(t => t.name).join(', ')}`);
+
+        if (existsSync(teamStatePath)) {
+          const state = JSON.parse(readFileSync(teamStatePath, 'utf-8'));
+          const ageHours = Math.round((Date.now() - new Date(state.updated_at).getTime()) / 3600000);
+          for (const [name, mate] of Object.entries(state.teammates || {})) {
+            parts.push(`- ${name}: ${mate.status}, ${ageHours}h ago`);
+          }
+          if (ageHours <= 4) {
+            parts.push('\nTeammates may be resumable. Use `cck crew start` to launch.');
+          }
+        } else {
+          parts.push('No previous team session. Use `cck crew start` to launch.');
+        }
+        contextParts.push(parts.join('\n'));
+      } catch { /* silent */ }
     }
 
     let context = contextParts.length > 0
