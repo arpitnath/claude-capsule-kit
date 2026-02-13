@@ -34,9 +34,10 @@ import { homedir } from 'os';
  * 5. Default → ./.claude/capsule.db
  */
 export function getCapsuleDbPath() {
-  // Strategy 0: Global installation path (highest priority for global CCK)
+  // Strategy 0: Global CCK installation — always use global path if CCK is installed
   const globalDbPath = resolve(homedir(), '.claude', 'capsule.db');
-  if (existsSync(globalDbPath)) return globalDbPath;
+  const globalCckDir = resolve(homedir(), '.claude', 'cck');
+  if (existsSync(globalDbPath) || existsSync(globalCckDir)) return globalDbPath;
 
   const cwdClaudeDir = resolve(process.cwd(), '.claude');
 
