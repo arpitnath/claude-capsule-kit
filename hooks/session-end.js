@@ -11,7 +11,19 @@ import { createInterface } from 'readline';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { resolve } from 'path';
+import { execSync } from 'child_process';
 import { getCapsuleDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
+
+function getCurrentBranch() {
+  try {
+    return execSync('git rev-parse --abbrev-ref HEAD', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    }).trim();
+  } catch {
+    return null;
+  }
+}
 
 async function main() {
   try {
@@ -27,6 +39,7 @@ async function main() {
     const sessionId = input.session_id || 'default';
     if (isDisabled()) process.exit(0);
     const projectHash = getProjectHash();
+    const currentBranch = getCurrentBranch();
 
     // Shared DB in crew mode, local otherwise
     const blink = new Blink({ dbPath: getCapsuleDbPath() });
@@ -56,6 +69,7 @@ async function main() {
       content: {
         sessionId,
         teammateName: crewId?.teammate_name || null,
+        branch: currentBranch,
         filesCount: sessionFiles.length,
         subagentsCount: sessionSubagents.length,
         endedAt: Date.now()
