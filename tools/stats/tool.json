@@ -1,0 +1,34 @@
+{
+  "name": "stats",
+  "version": "3.0.0",
+  "description": "Query Capsule for usage analytics and statistics",
+  "type": "analytics",
+  "subcommands": [
+    {
+      "name": "overview",
+      "description": "Session count, record count, top files, top agents"
+    },
+    {
+      "name": "files",
+      "description": "Most accessed files ranked by frequency",
+      "args": "[limit]"
+    },
+    {
+      "name": "agents",
+      "description": "Most used sub-agents ranked by frequency",
+      "args": "[limit]"
+    },
+    {
+      "name": "sessions",
+      "description": "Session history with file/agent counts per session",
+      "args": "[limit]"
+    },
+    {
+      "name": "branch",
+      "description": "Stats scoped to current or named git branch",
+      "args": "[branch-name]"
+    }
+  ],
+  "dependencies": ["blink-query"],
+  "requires_db": true
+}

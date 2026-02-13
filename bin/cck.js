@@ -21,7 +21,7 @@ const VERSION = pkg.version;
 
 const command = process.argv[2];
 
-const commands = { setup, teardown, status, version, update, prune, crew };
+const commands = { setup, teardown, status, version, update, prune, crew, stats };
 
 if (!command || !commands[command]) {
   console.log(`cck v${VERSION} - Claude Capsule Kit`);
@@ -34,6 +34,7 @@ if (!command || !commands[command]) {
   console.log('  cck update     Update CCK installation if version changed');
   console.log('  cck prune [days]  Remove old records (default: 30 days)');
   console.log('  cck crew <sub> Manage team profiles (init|start|stop|status)');
+  console.log('  cck stats <sub> Usage analytics (overview|files|agents|sessions|branch)');
   process.exit(command ? 1 : 0);
 }
 
@@ -677,4 +678,25 @@ async function prune() {
 
   console.log(`Pruned ${result.changes} records older than ${days} days.`);
   blink.close();
+}
+
+async function stats() {
+  const statsToolPath = join(CCK_DIR, 'tools', 'stats', 'stats.js');
+
+  if (!existsSync(statsToolPath)) {
+    console.error('Stats tool not found. Run "cck setup" first.');
+    process.exit(1);
+  }
+
+  // Pass all args after "stats" to the tool
+  const args = process.argv.slice(3);
+
+  try {
+    execSync(`node "${statsToolPath}" ${args.join(' ')}`, {
+      stdio: 'inherit',
+      cwd: process.cwd()
+    });
+  } catch (err) {
+    process.exit(err.status || 1);
+  }
 }
