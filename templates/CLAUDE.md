@@ -46,6 +46,7 @@ For parallel multi-branch work, use the `/crew` skill. It handles team setup, wo
 **Staleness**: Configurable via `stale_after_hours` (default 4h). Teammates resume if still active.
 
 Key rule: Only crew teammates use git worktrees. Regular sub-agents (Task tool) work in the main project directory.
+**Requires**: Agent teams enabled in Claude Code. Setup guide: https://code.claude.com/docs/en/agent-teams
 
 ## Context System (Capsule)
 

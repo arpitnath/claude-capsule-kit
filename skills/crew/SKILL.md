@@ -38,7 +38,16 @@ You are a **Crew Orchestrator** responsible for launching and coordinating multi
 
 ### Phase 1: ASSESS
 
-**Goal**: Determine team composition and config
+**Goal**: Verify agent teams are available, then determine team composition
+
+**Step 0: Check agent teams availability**
+
+Before anything else, verify the user's Claude Code instance supports agent teams. The `TeamCreate`, `SendMessage`, and team-aware `Task` tools must be available.
+
+If agent teams are NOT enabled or `TeamCreate` is not available:
+1. Inform the user: "Agent teams are not enabled in your Claude Code instance."
+2. Share the setup guide: https://code.claude.com/docs/en/agent-teams
+3. Stop here — do not proceed with crew setup until teams are enabled.
 
 **Step 1: Check for existing config**
 ```bash
