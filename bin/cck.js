@@ -20,7 +20,7 @@ const VERSION = pkg.version;
 
 const command = process.argv[2];
 
-const commands = { setup, teardown, status, version };
+const commands = { setup, teardown, status, version, prune };
 
 if (!command || !commands[command]) {
   console.log(`cck v${VERSION} - Claude Capsule Kit`);
@@ -30,11 +30,12 @@ if (!command || !commands[command]) {
   console.log('  cck teardown   Remove CCK (keeps blink.db user data)');
   console.log('  cck status     Show installation status');
   console.log('  cck version    Print version');
+  console.log('  cck prune [days]  Remove old records (default: 30 days)');
   process.exit(command ? 1 : 0);
 }
 
 try {
-  commands[command]();
+  await commands[command]();
 } catch (err) {
   console.error(`Error running '${command}': ${err.message}`);
   process.exit(1);
@@ -184,4 +185,41 @@ function status() {
 
 function version() {
   console.log(`cck v${VERSION}`);
+}
+
+async function prune() {
+  if (!existsSync(BLINK_DB_PATH)) {
+    console.log('No database found. Nothing to prune.');
+    return;
+  }
+
+  const days = parseInt(process.argv[3]) || 30;
+  const dryRun = process.argv.includes('--dry-run');
+  const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+
+  const { Blink } = await import('blink-query');
+  const blink = new Blink({ dbPath: BLINK_DB_PATH });
+
+  const stale = blink.db.prepare(
+    'SELECT COUNT(*) as count FROM records WHERE updated_at < ?'
+  ).get(cutoff);
+
+  if (stale.count === 0) {
+    console.log(`No records older than ${days} days.`);
+    blink.close();
+    return;
+  }
+
+  if (dryRun) {
+    console.log(`Would prune ${stale.count} records older than ${days} days.`);
+    blink.close();
+    return;
+  }
+
+  const result = blink.db.prepare(
+    'DELETE FROM records WHERE updated_at < ?'
+  ).run(cutoff);
+
+  console.log(`Pruned ${result.changes} records older than ${days} days.`);
+  blink.close();
 }

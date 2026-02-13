@@ -45,6 +45,14 @@ async function main() {
 
     const contextParts = [];
 
+    try {
+      const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
+      const pruned = blink.db.prepare('DELETE FROM records WHERE updated_at < ?').run(cutoff);
+      if (pruned.changes > 0) {
+        contextParts.push(`[CCK] Auto-pruned ${pruned.changes} stale records.`);
+      }
+    } catch { /* don't block session start if prune fails */ }
+
     const sessionNs = crewNamespace('session', crewId, projectHash);
     const recentSessions = blink.list(sessionNs, 'recent').slice(0, 1);
 
