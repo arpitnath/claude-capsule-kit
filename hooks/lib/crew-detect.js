@@ -149,10 +149,12 @@ export function getCrewIdentity(hints = {}) {
     }
   }
 
-  // Strategy 3 & 4: Worktree registry scan (global or project-local)
+  // Strategy 3 & 4: Worktree registry scan (project-scoped, legacy global, project-local)
+  const projectHash = getProjectHash();
   const registryCandidates = [
-    resolve(homedir(), '.claude', 'crew', 'worktrees.json'),
-    resolve(cwd, '.claude', 'crew', 'worktrees.json'),
+    resolve(homedir(), '.claude', 'crew', projectHash, 'worktrees.json'),  // project-scoped
+    resolve(homedir(), '.claude', 'crew', 'worktrees.json'),               // legacy global
+    resolve(cwd, '.claude', 'crew', 'worktrees.json'),                     // project-local
   ];
 
   for (const registryPath of registryCandidates) {
@@ -213,6 +215,10 @@ export function getCrewIdentity(hints = {}) {
 export function crewNamespace(base, crewId, projectHash = null) {
   const projPrefix = projectHash ? `proj/${projectHash}/` : '';
   return crewId ? `${projPrefix}crew/${crewId.teammate_name}/${base}` : `${projPrefix}${base}`;
+}
+
+export function getCrewStateDir() {
+  return resolve(homedir(), '.claude', 'crew', getProjectHash());
 }
 
 export function getProjectHash() {

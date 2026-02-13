@@ -8,6 +8,9 @@
 
 import { Blink } from 'blink-query';
 import { createInterface } from 'readline';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { homedir } from 'os';
+import { resolve } from 'path';
 import { getCapsuleDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
 
 async function main() {
@@ -61,6 +64,23 @@ async function main() {
     });
 
     blink.close();
+
+    // Update team-state.json when in crew mode
+    if (crewId) {
+      try {
+        const stateDir = resolve(homedir(), '.claude', 'crew', projectHash);
+        const statePath = resolve(stateDir, 'team-state.json');
+        if (existsSync(statePath)) {
+          const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+          if (state.teammates?.[crewId.teammate_name]) {
+            state.teammates[crewId.teammate_name].last_active = new Date().toISOString();
+            state.teammates[crewId.teammate_name].status = 'idle';
+            state.updated_at = new Date().toISOString();
+            writeFileSync(statePath, JSON.stringify(state, null, 2));
+          }
+        }
+      } catch { /* best effort */ }
+    }
 
     // No output needed for SessionEnd
     process.exit(0);

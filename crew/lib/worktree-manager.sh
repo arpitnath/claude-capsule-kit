@@ -377,7 +377,10 @@ _cleanup_claude_dir() {
 
 _init_state_dir() {
     local project_root="$1"
-    _CREW_STATE_DIR="$project_root/.claude/crew"
+    local origin_url
+    origin_url=$(git -C "$project_root" remote get-url origin 2>/dev/null || echo "$project_root")
+    local project_hash=$(echo -n "$origin_url" | shasum -a 256 | cut -c1-12)
+    _CREW_STATE_DIR="$HOME/.claude/crew/$project_hash"
     _WORKTREE_REGISTRY="$_CREW_STATE_DIR/worktrees.json"
     mkdir -p "$_CREW_STATE_DIR"
 }
@@ -453,6 +456,15 @@ PYEOF
 # ═══════════════════════════════════════════════════════════════════
 # Public API
 # ═══════════════════════════════════════════════════════════════════
+
+# setup_single_worktree PROJECT_ROOT MAIN_BRANCH NAME BRANCH
+# Entry point for Node.js to create a single worktree directly.
+setup_single_worktree() {
+    local project_root="$1" main_branch="$2" name="$3" branch="$4"
+    _init_state_dir "$project_root"
+    [[ ! -f "$_WORKTREE_REGISTRY" ]] && _init_registry
+    _create_worktree "$project_root" "$main_branch" "$name" "$branch"
+}
 
 # setup_worktrees CONFIG_FILE
 # Main orchestrator: parse config, create all worktrees, symlink .claude/.
