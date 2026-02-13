@@ -16,5 +16,6 @@
   },
   "project": {
     "main_branch": "main"
-  }
+  },
+  "stale_after_hours": 4
 }

@@ -18,18 +18,19 @@ import { resolveRole } from './role-presets.js';
  * @param {object|null} teamState - Existing team state (null = fresh)
  * @param {object} worktreePaths - Map of teammate name → worktree path
  * @param {string} currentConfigHash - Hash for change detection
+ * @param {number} [staleAfterMs=14400000] - Staleness threshold in ms (default: 4 hours)
  * @returns {string} Lead prompt string
  */
-export function generateLeadPrompt(team, teamState, worktreePaths, currentConfigHash) {
+export function generateLeadPrompt(team, teamState, worktreePaths, currentConfigHash, staleAfterMs = 4 * 3600000) {
   const projectRoot = worktreePaths._projectRoot || process.cwd();
 
   const canResume = teamState
     && !isConfigChanged(currentConfigHash, teamState.config_hash)
     && teamState.teammates
-    && Object.values(teamState.teammates).some(t => !isStale(t));
+    && Object.values(teamState.teammates).some(t => !isStale(t, staleAfterMs));
 
   if (canResume) {
-    return generateResumePrompt(team, teamState, worktreePaths, projectRoot);
+    return generateResumePrompt(team, teamState, worktreePaths, projectRoot, staleAfterMs);
   }
 
   return generateFreshPrompt(team, worktreePaths, projectRoot);
@@ -38,7 +39,7 @@ export function generateLeadPrompt(team, teamState, worktreePaths, currentConfig
 /**
  * Generate a resume prompt for an existing team session.
  */
-function generateResumePrompt(team, teamState, worktreePaths, projectRoot) {
+function generateResumePrompt(team, teamState, worktreePaths, projectRoot, staleAfterMs = 4 * 3600000) {
   const lastActive = teamState.updated_at
     ? Math.round((Date.now() - new Date(teamState.updated_at).getTime()) / 3600000)
     : '?';
@@ -62,7 +63,7 @@ function generateResumePrompt(team, teamState, worktreePaths, projectRoot) {
     const savedState = teamState.teammates?.[mate.name];
     const wtPath = worktreePaths[mate.name] || 'unknown';
     const agentId = savedState?.agent_id || 'none';
-    const stale = !savedState || isStale(savedState);
+    const stale = !savedState || isStale(savedState, staleAfterMs);
 
     lines.push(`#### ${mate.name}`);
     lines.push(`- Agent ID: ${agentId}${stale ? ' (STALE — spawn fresh)' : ''}`);
@@ -79,7 +80,11 @@ function generateResumePrompt(team, teamState, worktreePaths, projectRoot) {
       lines.push('```');
     } else {
       lines.push(`- Action: Resume with agent_id="${agentId}"`);
-      lines.push(`- Resume prompt: "Continue working on your tasks. Check TaskList for pending work."`);
+      lines.push(`- Resume prompt:`);
+      lines.push('');
+      lines.push('```');
+      lines.push(generateResumeTeammatePrompt(resolved, wtPath, projectRoot));
+      lines.push('```');
     }
     lines.push('');
   }
@@ -175,6 +180,56 @@ function generateTeammatePrompt(mate, worktreePath, projectRoot) {
     '4. When done, mark the task completed via TaskUpdate',
     '5. Check TaskList for more pending tasks',
     '6. Send a message to the team lead when you finish all tasks',
+  ];
+
+  return lines.join('\n');
+}
+
+/**
+ * Generate a resume prompt for an individual teammate.
+ * Includes full identity context plus previous session info.
+ */
+function generateResumeTeammatePrompt(mate, worktreePath, projectRoot) {
+  const focus = (mate.focus || '')
+    .replace(/\{WORKTREE_PATH\}/g, worktreePath)
+    .replace(/\{PROJECT_ROOT\}/g, projectRoot)
+    .replace(/\{TEAMMATE_NAME\}/g, mate.name);
+
+  const lines = [
+    `# Identity`,
+    `You are "${mate.name}" — a teammate working on branch "${mate.branch}".`,
+    '',
+    `# Working Directory`,
+    `Your worktree is at: ${worktreePath}`,
+    '',
+    '# Path Rules',
+    '| Action | Correct | Wrong |',
+    '|--------|---------|-------|',
+    `| Read/Write files | ${worktreePath}/... | ${projectRoot}/... |`,
+    `| Run commands | cd ${worktreePath} first | Commands in ${projectRoot} |`,
+    `| Create new files | ${worktreePath}/src/... | ${projectRoot}/src/... |`,
+    '',
+    `CRITICAL: ALL file operations MUST use paths starting with ${worktreePath}/`,
+    `NEVER use ${projectRoot}/ — that is the lead\'s project root.`,
+    '',
+    '# Resume Context',
+    'You are resuming from a previous session. Your previous work context is available via Capsule.',
+    'Use the context-query tool to retrieve your previous session context:',
+    '```bash',
+    `bash $HOME/.claude/cck/tools/context-query/context-query.sh files crew/${mate.name}`,
+    '```',
+    '',
+    '# Focus',
+    focus,
+    '',
+    '# Task Workflow',
+    '1. Check TaskList to see pending tasks',
+    '2. If you have an assigned task, read it via TaskGet',
+    '3. Mark it in_progress via TaskUpdate',
+    '4. Do the work in your worktree',
+    '5. When done, mark the task completed via TaskUpdate',
+    '6. Check TaskList for more pending tasks',
+    '7. Send a message to the team lead when you finish all tasks',
   ];
 
   return lines.join('\n');

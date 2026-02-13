@@ -109,6 +109,18 @@ async function main() {
           let parts = [`## Crew Profiles: ${profileNames.join(', ')}`];
           if (crewConfig.default) parts.push(`Default: ${crewConfig.default}`);
 
+          // Load worktrees.json for path information
+          const worktreesPath = resolve(baseStateDir, 'worktrees.json');
+          const worktreeMap = {};
+          if (existsSync(worktreesPath)) {
+            try {
+              const worktreesData = JSON.parse(readFileSync(worktreesPath, 'utf-8'));
+              for (const wt of worktreesData.worktrees || []) {
+                worktreeMap[wt.name] = wt.path;
+              }
+            } catch { /* silent */ }
+          }
+
           for (const pName of profileNames) {
             const profile = crewConfig.profiles[pName];
             parts.push(`\n### ${pName}: ${profile.name}`);
@@ -118,11 +130,26 @@ async function main() {
             if (existsSync(statePath)) {
               const state = JSON.parse(readFileSync(statePath, 'utf-8'));
               const ageHours = Math.round((Date.now() - new Date(state.updated_at).getTime()) / 3600000);
+
+              // Stale threshold (profile > top-level > default 4h)
+              const staleAfterHours = profile.stale_after_hours ?? crewConfig.stale_after_hours ?? 4;
+              const isStale = ageHours > staleAfterHours;
+
+              parts.push('');
+              parts.push('| Teammate | Status | Branch | Worktree |');
+              parts.push('|----------|--------|--------|----------|');
               for (const [name, mate] of Object.entries(state.teammates || {})) {
-                parts.push(`- ${name}: ${mate.status}, ${ageHours}h ago`);
+                const wtPath = mate.worktree_path || worktreeMap[name] || 'N/A';
+                const shortPath = wtPath !== 'N/A' ? wtPath.split('/').slice(-2).join('/') : 'N/A';
+                parts.push(`| ${name} | ${mate.status} | ${mate.branch || 'unknown'} | ${shortPath} |`);
               }
-              if (ageHours <= 4) {
+              parts.push('');
+              parts.push(`Last active: ${ageHours}h ago${isStale ? ' (STALE)' : ''}`);
+
+              if (!isStale) {
                 parts.push(`\nResumable. Use \`cck crew start ${pName}\` to launch.`);
+              } else {
+                parts.push(`\nStale (>${staleAfterHours}h). Use \`cck crew start ${pName}\` for fresh launch.`);
               }
             } else {
               parts.push(`No previous session. Use \`cck crew start ${pName}\` to launch.`);
@@ -134,6 +161,18 @@ async function main() {
           let parts = [`## Team: ${crewConfig.team.name}`];
           parts.push(`Teammates: ${crewConfig.team.teammates.map(t => t.name).join(', ')}`);
 
+          // Load worktrees.json for path information
+          const worktreesPath = resolve(baseStateDir, 'worktrees.json');
+          const worktreeMap = {};
+          if (existsSync(worktreesPath)) {
+            try {
+              const worktreesData = JSON.parse(readFileSync(worktreesPath, 'utf-8'));
+              for (const wt of worktreesData.worktrees || []) {
+                worktreeMap[wt.name] = wt.path;
+              }
+            } catch { /* silent */ }
+          }
+
           // Check both old flat path and new profile-scoped path
           const oldStatePath = resolve(baseStateDir, 'team-state.json');
           const newStatePath = resolve(baseStateDir, 'default', 'team-state.json');
@@ -142,11 +181,26 @@ async function main() {
           if (existsSync(statePath)) {
             const state = JSON.parse(readFileSync(statePath, 'utf-8'));
             const ageHours = Math.round((Date.now() - new Date(state.updated_at).getTime()) / 3600000);
+
+            // Stale threshold (top-level > default 4h)
+            const staleAfterHours = crewConfig.stale_after_hours ?? 4;
+            const isStale = ageHours > staleAfterHours;
+
+            parts.push('');
+            parts.push('| Teammate | Status | Branch | Worktree |');
+            parts.push('|----------|--------|--------|----------|');
             for (const [name, mate] of Object.entries(state.teammates || {})) {
-              parts.push(`- ${name}: ${mate.status}, ${ageHours}h ago`);
+              const wtPath = mate.worktree_path || worktreeMap[name] || 'N/A';
+              const shortPath = wtPath !== 'N/A' ? wtPath.split('/').slice(-2).join('/') : 'N/A';
+              parts.push(`| ${name} | ${mate.status} | ${mate.branch || 'unknown'} | ${shortPath} |`);
             }
-            if (ageHours <= 4) {
+            parts.push('');
+            parts.push(`Last active: ${ageHours}h ago${isStale ? ' (STALE)' : ''}`);
+
+            if (!isStale) {
               parts.push('\nTeammates may be resumable. Use `cck crew start` to launch.');
+            } else {
+              parts.push(`\nStale (>${staleAfterHours}h). Use \`cck crew start\` for fresh launch.`);
             }
           } else {
             parts.push('No previous team session. Use `cck crew start` to launch.');
