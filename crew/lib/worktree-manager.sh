@@ -201,7 +201,7 @@ _create_worktree() {
     # Setup hybrid .claude/ directory (shared tools, isolated session state)
     _setup_claude_dir "$project_root" "$worktree_path"
 
-    # Write crew identity marker for Blink hooks
+    # Write crew identity marker for Capsule hooks
     # This file is LOCAL to the worktree (not symlinked), so each
     # teammate gets their own identity for namespace scoping.
     local identity_file="$worktree_path/.claude/crew-identity.json"
