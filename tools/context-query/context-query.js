@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 /**
  * Context-Query Tool v3.0 - Query Blink context database
- * Uses blink-query for proper namespace/type-aware querying
- *
- * Usage: node $HOME/.claude/cck/tools/context-query/context-query.js <command> [args]
+ * Uses blink-query for namespace/type-aware querying
  */
 
 import { Blink } from 'blink-query';
@@ -13,12 +11,9 @@ import { homedir } from 'os';
 import { createHash } from 'crypto';
 import { execSync } from 'child_process';
 
-// Find blink.db - check global path first, then walk up from CWD
 function findBlinkDb() {
-  // Global installation: check ~/.claude/blink.db first
   const globalDb = join(homedir(), '.claude', 'blink.db');
   if (existsSync(globalDb)) return globalDb;
-  // Fallback: walk up from CWD (for development/testing)
   let dir = process.cwd();
   while (dir !== '/') {
     const dbPath = join(dir, '.claude', 'blink.db');
@@ -28,7 +23,6 @@ function findBlinkDb() {
   return null;
 }
 
-// Compute project hash for namespace scoping
 function getProjectHash() {
   let identifier;
   try {
@@ -39,15 +33,12 @@ function getProjectHash() {
   return createHash('sha256').update(identifier).digest('hex').slice(0, 12);
 }
 
-// Helper: get all records from project-scoped session tree
 function getAllRecords(blink) {
   const hash = getProjectHash();
-  // Try project-scoped namespaces first (global mode)
   let projRecords = [];
   try { projRecords = blink.list(`proj/${hash}/session`, 'recent'); } catch { /* no proj records */ }
   let projCrew = [];
   try { projCrew = blink.list(`proj/${hash}/crew`, 'recent'); } catch { /* no crew records */ }
-  // Also try legacy namespaces (pre-global mode)
   let solo = [];
   try { solo = blink.list('session', 'recent'); } catch { /* no legacy records */ }
   let crew = [];
@@ -165,8 +156,6 @@ try {
     }
 
     case 'save': {
-      // save <namespace> <title> <summary> [type]
-      // e.g.: context-query save discoveries/auth "OAuth flow" "Uses PKCE with refresh tokens" SUMMARY
       if (!arg) {
         console.log('Usage: context-query save <namespace> <title> <summary> [type]');
         console.log('Types: SUMMARY (default), META, COLLECTION, SOURCE, ALIAS');
@@ -191,8 +180,6 @@ try {
     }
 
     case 'update': {
-      // update <search-term> <new-summary>
-      // Finds the most recent record matching search-term and updates its summary
       if (!arg) {
         console.log('Usage: context-query update <search-term> <new-summary>');
         console.log('');
@@ -214,7 +201,6 @@ try {
         process.exit(1);
       }
       const record = matches[0];
-      // Re-save with updated summary (blink upserts by namespace+title)
       blink.save({
         namespace: record.namespace,
         title: record.title,

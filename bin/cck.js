@@ -43,7 +43,6 @@ try {
 function setup() {
   console.log(`Setting up CCK v${VERSION}...`);
 
-  // 1. Create CCK directory and copy assets
   mkdirSync(CCK_DIR, { recursive: true });
 
   const assetDirs = ['hooks', 'tools', 'lib'];
@@ -56,10 +55,8 @@ function setup() {
     }
   }
 
-  // 2. Create package.json for ESM support in CCK dir
   writeFileSync(join(CCK_DIR, 'package.json'), JSON.stringify({ type: 'module' }, null, 2) + '\n');
 
-  // 3. Install blink-query (try npm link first for local dev, then npm install for published)
   console.log('  Installing blink-query...');
   try {
     execSync('npm link blink-query', { cwd: CCK_DIR, stdio: 'pipe' });
@@ -74,7 +71,6 @@ function setup() {
     }
   }
 
-  // 4. Merge hooks into settings.json
   const hooksTemplate = JSON.parse(readFileSync(join(PKG_ROOT, 'templates', 'settings-hooks.json'), 'utf8'));
   let settings = {};
   if (existsSync(SETTINGS_PATH)) {
@@ -89,14 +85,12 @@ function setup() {
   writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n');
   console.log('  Hooks registered in settings.json');
 
-  // 5. Copy CLAUDE.md template
   const claudeMdSrc = join(PKG_ROOT, 'templates', 'CLAUDE.md');
   if (existsSync(claudeMdSrc)) {
     cpSync(claudeMdSrc, CLAUDE_MD_PATH);
     console.log('  CLAUDE.md installed');
   }
 
-  // 6. Try to build Go binaries
   mkdirSync(BIN_DIR, { recursive: true });
   try {
     execSync('go version', { stdio: 'pipe' });
@@ -128,13 +122,11 @@ function setup() {
 function teardown() {
   console.log('Tearing down CCK...');
 
-  // 1. Remove CCK directory
   if (existsSync(CCK_DIR)) {
     rmSync(CCK_DIR, { recursive: true, force: true });
     console.log('  Removed ~/.claude/cck/');
   }
 
-  // 2. Remove hooks from settings.json
   if (existsSync(SETTINGS_PATH)) {
     try {
       const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
@@ -146,7 +138,6 @@ function teardown() {
     }
   }
 
-  // 3. Remove CLAUDE.md
   if (existsSync(CLAUDE_MD_PATH)) {
     rmSync(CLAUDE_MD_PATH);
     console.log('  Removed ~/.claude/CLAUDE.md');
@@ -165,11 +156,9 @@ function status() {
   console.log(`CCK v${VERSION} Status`);
   console.log('─'.repeat(40));
 
-  // Hooks directory
   const hooksDir = join(CCK_DIR, 'hooks');
   console.log(`  Hooks directory:  ${existsSync(hooksDir) ? 'installed' : 'not found'}`);
 
-  // Settings hooks
   let hooksRegistered = false;
   if (existsSync(SETTINGS_PATH)) {
     try {
@@ -179,7 +168,6 @@ function status() {
   }
   console.log(`  Hooks registered: ${hooksRegistered ? 'yes' : 'no'}`);
 
-  // Blink database
   if (existsSync(BLINK_DB_PATH)) {
     const stats = statSync(BLINK_DB_PATH);
     const sizeKB = (stats.size / 1024).toFixed(1);
@@ -188,7 +176,6 @@ function status() {
     console.log('  Blink database:   not created yet');
   }
 
-  // Go binaries
   const depScanner = join(BIN_DIR, 'dependency-scanner');
   const progReader = join(BIN_DIR, 'progressive-reader');
   console.log(`  dep-scanner:      ${existsSync(depScanner) ? 'installed' : 'not found'}`);

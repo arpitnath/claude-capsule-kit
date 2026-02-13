@@ -3,11 +3,7 @@
  * SessionStart Hook - Blink Integration
  *
  * Queries Blink for recent context and injects it into the Claude Code session.
- * Crew-aware: when running in a worktree, uses the shared blink.db and
- * injects both personal + team context.
- *
- * Input: JSON from stdin with session metadata
- * Output: JSON with additionalContext for session initialization
+ * Crew-aware: shared blink.db with personal + team context in worktree mode.
  */
 
 import { Blink } from 'blink-query';
@@ -31,7 +27,6 @@ function cleanupV2Artifacts() {
 
 async function main() {
   try {
-    // Read hook input from stdin
     const rl = createInterface({ input: process.stdin });
     let inputJson = '';
 
@@ -45,14 +40,11 @@ async function main() {
     const projectHash = getProjectHash();
     const sessionId = input.session_id || 'default';
 
-    // Initialize Blink (shared DB in crew mode, local otherwise)
     const blink = new Blink({ dbPath: getBlinkDbPath() });
     const crewId = getCrewIdentity();
 
-    // Build context message
     const contextParts = [];
 
-    // --- Personal context (own recent session) ---
     const sessionNs = crewNamespace('session', crewId, projectHash);
     const recentSessions = blink.list(sessionNs, 'recent').slice(0, 1);
 
@@ -61,7 +53,6 @@ async function main() {
       contextParts.push(`## Last Session\n${session.summary || session.title}`);
     }
 
-    // --- Discoveries (shared in crew mode) ---
     const discoveryNs = crewId
       ? (projectHash ? `proj/${projectHash}/crew/_shared/discoveries` : 'crew/_shared/discoveries')
       : crewNamespace('discoveries', null, projectHash);
@@ -74,7 +65,6 @@ async function main() {
       );
     }
 
-    // --- Recent files ---
     const recentFiles = blink.search('file', undefined, 3);
 
     if (recentFiles.length > 0) {
@@ -84,7 +74,6 @@ async function main() {
       );
     }
 
-    // --- Team activity (crew mode only) ---
     if (crewId) {
       const teamSessions = blink.list('crew', 'recent').slice(0, 3);
       const otherTeammates = teamSessions.filter(s =>
@@ -106,10 +95,8 @@ async function main() {
       context += '\n\n[CCK] Cleaned up local v2 artifacts from this project.';
     }
 
-    // Close database
     blink.close();
 
-    // Output hook response
     const response = {
       hookSpecificOutput: {
         hookEventName: 'SessionStart',
@@ -120,14 +107,11 @@ async function main() {
     console.log(JSON.stringify(response));
 
   } catch (error) {
-    // Graceful degradation - if blink not available, just exit quietly
-    // Don't block session start if database doesn't exist yet
+    // Graceful degradation - don't block session start if database doesn't exist yet
     if (error.code === 'SQLITE_CANTOPEN' || error.message?.includes('no such file')) {
-      // Database doesn't exist yet - first session
       process.exit(0);
     }
 
-    // Log error but don't block session
     console.error(`[session-start.js] Error: ${error.message}`);
     process.exit(0);
   }
