@@ -13,6 +13,7 @@
     "lib/",
     "agents/",
     "skills/",
+    "commands/",
     "scripts/",
     "docs/",
     "templates/"

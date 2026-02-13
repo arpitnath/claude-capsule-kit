@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, rmSync, statSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync, rmSync, statSync, symlinkSync, lstatSync, readlinkSync } from 'fs';
 import { join, dirname } from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -46,7 +46,7 @@ function setup() {
 
   mkdirSync(CCK_DIR, { recursive: true });
 
-  const assetDirs = ['hooks', 'tools', 'lib'];
+  const assetDirs = ['hooks', 'tools', 'lib', 'agents', 'skills', 'commands'];
   for (const dir of assetDirs) {
     const src = join(PKG_ROOT, dir);
     const dest = join(CCK_DIR, dir);
@@ -54,6 +54,24 @@ function setup() {
       cpSync(src, dest, { recursive: true });
       console.log(`  Copied ${dir}/`);
     }
+  }
+
+  // Symlink agents, skills, commands into ~/.claude/ for Claude Code discovery
+  for (const dir of ['agents', 'skills', 'commands']) {
+    const target = join(CCK_DIR, dir);
+    const link = join(CLAUDE_DIR, dir);
+    if (!existsSync(target)) continue;
+    try {
+      const stat = lstatSync(link);
+      if (stat.isSymbolicLink()) {
+        if (readlinkSync(link) === target) continue;
+        rmSync(link);
+      } else {
+        rmSync(link, { recursive: true, force: true });
+      }
+    } catch { /* doesn't exist */ }
+    symlinkSync(target, link);
+    console.log(`  Linked ${dir}/ → ~/.claude/${dir}/`);
   }
 
   writeFileSync(join(CCK_DIR, 'package.json'), JSON.stringify({ type: 'module' }, null, 2) + '\n');
@@ -123,6 +141,17 @@ function setup() {
 function teardown() {
   console.log('Tearing down CCK...');
 
+  // Remove symlinks first (before removing cck/ which is their target)
+  for (const dir of ['agents', 'skills', 'commands']) {
+    const link = join(CLAUDE_DIR, dir);
+    try {
+      if (lstatSync(link).isSymbolicLink()) {
+        rmSync(link);
+        console.log(`  Removed ~/.claude/${dir} symlink`);
+      }
+    } catch { /* not a symlink or doesn't exist */ }
+  }
+
   if (existsSync(CCK_DIR)) {
     rmSync(CCK_DIR, { recursive: true, force: true });
     console.log('  Removed ~/.claude/cck/');
@@ -175,6 +204,17 @@ function status() {
     console.log(`  Capsule database: ${sizeKB} KB`);
   } else {
     console.log('  Capsule database: not created yet');
+  }
+
+  // Agents, skills, commands
+  for (const dir of ['agents', 'skills', 'commands']) {
+    const link = join(CLAUDE_DIR, dir);
+    try {
+      const isLink = lstatSync(link).isSymbolicLink();
+      console.log(`  ${dir.padEnd(18)} ${isLink ? 'linked' : 'exists (not symlink)'}`);
+    } catch {
+      console.log(`  ${dir.padEnd(18)} not found`);
+    }
   }
 
   const depScanner = join(BIN_DIR, 'dependency-scanner');
