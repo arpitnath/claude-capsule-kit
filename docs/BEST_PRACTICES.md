@@ -6,7 +6,7 @@ Guidelines for getting the most value from Capsule Kit's automatic context syste
 
 ## How Context Works Now
 
-Capsule Kit v3.0 uses **Blink** (SQLite) with automatic JS hooks. There is **no manual logging** — everything is captured automatically:
+Capsule Kit v3.0 uses **Capsule** (SQLite) with automatic JS hooks. There is **no manual logging** — everything is captured automatically:
 
 - **File operations** → Captured by `post-tool-use.js` as META records
 - **Sub-agent results** → Captured by `post-tool-use.js` as SUMMARY records
@@ -191,4 +191,4 @@ Skills enforce best practices automatically:
 
 ---
 
-**Remember**: Capsule Kit v3.0 is automatic. Focus on using the right tools and agents — Blink handles the memory.
+**Remember**: Capsule Kit v3.0 is automatic. Focus on using the right tools and agents — Capsule handles the memory.

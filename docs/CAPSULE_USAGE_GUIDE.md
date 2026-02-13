@@ -2,13 +2,13 @@
 
 ## For Claude: How to Use This System Effectively
 
-Capsule Kit v3.0 uses **Blink** (SQLite) for automatic context tracking. No manual logging needed — JS hooks capture everything.
+Capsule Kit v3.0 uses **Capsule** (SQLite) for automatic context tracking. No manual logging needed — JS hooks capture everything.
 
 ---
 
 ## Core Principle
 
-**Context is automatic.** The Blink hooks handle all logging:
+**Context is automatic.** The Capsule hooks handle all logging:
 
 | Hook | When | What It Captures |
 |------|------|-----------------|
@@ -43,7 +43,7 @@ At session end, a META record captures:
 
 ---
 
-## Blink Record Types
+## Capsule Record Types
 
 Records have a `type` field that tells you how to consume them:
 
@@ -57,7 +57,7 @@ Records have a `type` field that tells you how to consume them:
 
 ---
 
-## Blink Namespaces
+## Capsule Namespaces
 
 ### Solo Mode
 ```
@@ -113,7 +113,7 @@ All sub-agents are **read-only** for production safety:
 
 ### Pattern 1: Just Work
 
-With Blink, the workflow is simple:
+With Capsule, the workflow is simple:
 
 ```
 1. Session starts → context injected automatically
@@ -182,4 +182,4 @@ Before starting any task:
 - [ ] Launch agents for deep work (parallel when possible)
 - [ ] Use progressive-reader for large files
 
-**That's it.** No manual logging, no capsule management, no memory-graph commands. Blink handles persistence automatically.
+**That's it.** No manual logging, no capsule management, no memory-graph commands. Capsule handles persistence automatically.

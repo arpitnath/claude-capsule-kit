@@ -641,14 +641,14 @@ Some agents should be used PROACTIVELY (without explicit user request):
 ✅ Parallel spawning used when appropriate (independent tasks)
 ✅ Proactive agents used without explicit request (architecture-explorer)
 ✅ Results synthesized (don't just pass agent output to user)
-✅ Findings persisted (captured automatically by Blink hooks)
+✅ Findings persisted (captured automatically by Capsule hooks)
 
 ### Quality Signals
 
 - **Efficiency**: Agents used for deep work, not simple tasks
 - **Coverage**: Multiple perspectives for complex decisions
 - **Speed**: Parallel execution, not sequential
-- **Persistence**: Agent findings captured automatically by Blink
+- **Persistence**: Agent findings captured automatically by Capsule
 
 ---
 
