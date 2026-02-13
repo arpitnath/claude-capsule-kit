@@ -1,5 +1,5 @@
 {
-  "name": "@cck",
+  "name": "claude-capsule-kit",
   "version": "3.0.0",
   "type": "module",
   "description": "Claude Capsule Kit - Context memory for Claude Code",
