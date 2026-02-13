@@ -10,6 +10,8 @@ import { Blink } from 'blink-query';
 import { existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { homedir } from 'os';
+import { createHash } from 'crypto';
+import { execSync } from 'child_process';
 
 // Find blink.db - check global path first, then walk up from CWD
 function findBlinkDb() {
@@ -26,12 +28,31 @@ function findBlinkDb() {
   return null;
 }
 
-// Helper: get all records from session tree, optionally filtered
+// Compute project hash for namespace scoping
+function getProjectHash() {
+  let identifier;
+  try {
+    identifier = execSync('git remote get-url origin', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  } catch {
+    identifier = process.cwd();
+  }
+  return createHash('sha256').update(identifier).digest('hex').slice(0, 12);
+}
+
+// Helper: get all records from project-scoped session tree
 function getAllRecords(blink) {
-  const solo = blink.list('session', 'recent');
+  const hash = getProjectHash();
+  // Try project-scoped namespaces first (global mode)
+  let projRecords = [];
+  try { projRecords = blink.list(`proj/${hash}/session`, 'recent'); } catch { /* no proj records */ }
+  let projCrew = [];
+  try { projCrew = blink.list(`proj/${hash}/crew`, 'recent'); } catch { /* no crew records */ }
+  // Also try legacy namespaces (pre-global mode)
+  let solo = [];
+  try { solo = blink.list('session', 'recent'); } catch { /* no legacy records */ }
   let crew = [];
   try { crew = blink.list('crew', 'recent'); } catch { /* no crew records */ }
-  return [...solo, ...crew];
+  return [...projRecords, ...projCrew, ...solo, ...crew];
 }
 
 const dbPath = findBlinkDb();
@@ -98,7 +119,7 @@ try {
       const limit = parseInt(arg) || 5;
       const all = getAllRecords(blink);
       const sessionRecords = all.filter(r =>
-        r.namespace === 'session' || (r.namespace === 'crew' && r.type === 'META')
+        r.namespace?.endsWith('/session') || r.namespace === 'session' || (r.namespace?.includes('crew') && r.type === 'META')
       ).slice(0, limit);
       console.log(`## Session History (${sessionRecords.length})\n`);
       if (sessionRecords.length === 0) {

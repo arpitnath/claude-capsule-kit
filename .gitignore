@@ -6,6 +6,13 @@ CLAUDE.md
 __notepad__/*
 docs/*
 
+# Runtime data
+blink.db
+node_modules/
+
+# Crew mode
+crew/__notepad__/
+
 # OS files
 .DS_Store
 Thumbs.db

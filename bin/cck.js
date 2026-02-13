@@ -59,13 +59,19 @@ function setup() {
   // 2. Create package.json for ESM support in CCK dir
   writeFileSync(join(CCK_DIR, 'package.json'), JSON.stringify({ type: 'module' }, null, 2) + '\n');
 
-  // 3. Install blink-query
+  // 3. Install blink-query (try npm link first for local dev, then npm install for published)
   console.log('  Installing blink-query...');
   try {
-    execSync('npm install blink-query', { cwd: CCK_DIR, stdio: 'pipe' });
-    console.log('  blink-query installed');
-  } catch (err) {
-    console.warn('  Warning: Failed to install blink-query. Run manually: cd ~/.claude/cck && npm install blink-query');
+    execSync('npm link blink-query', { cwd: CCK_DIR, stdio: 'pipe' });
+    console.log('  blink-query linked (local)');
+  } catch {
+    try {
+      execSync('npm install blink-query', { cwd: CCK_DIR, stdio: 'pipe' });
+      console.log('  blink-query installed (npm)');
+    } catch {
+      console.warn('  Warning: Failed to install blink-query.');
+      console.warn('  Run: npm link blink-query  OR  cd ~/.claude/cck && npm install blink-query');
+    }
   }
 
   // 4. Merge hooks into settings.json
@@ -97,14 +103,14 @@ function setup() {
     console.log('  Go detected, building binaries...');
 
     const goBinaries = [
-      { name: 'dependency-scanner', src: join(PKG_ROOT, 'tools', 'dependency-scanner') },
-      { name: 'progressive-reader', src: join(PKG_ROOT, 'tools', 'progressive-reader') },
+      { name: 'dependency-scanner', src: join(PKG_ROOT, 'tools', 'dependency-scanner'), pkg: '.' },
+      { name: 'progressive-reader', src: join(PKG_ROOT, 'tools', 'progressive-reader'), pkg: './cmd/' },
     ];
 
     for (const bin of goBinaries) {
       if (existsSync(bin.src)) {
         try {
-          execSync(`go build -o ${join(BIN_DIR, bin.name)} .`, { cwd: bin.src, stdio: 'pipe' });
+          execSync(`go build -o ${join(BIN_DIR, bin.name)} ${bin.pkg}`, { cwd: bin.src, stdio: 'pipe' });
           console.log(`  Built ${bin.name}`);
         } catch {
           console.warn(`  Warning: Failed to build ${bin.name}`);
