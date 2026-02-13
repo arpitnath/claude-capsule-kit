@@ -1,6 +1,6 @@
 # Capsule Kit v3.0
 
-Context memory for Claude Code. Blink (SQLite) stores session state automatically via JS hooks. No manual logging needed.
+Context memory for Claude Code. Capsule (SQLite) stores session state automatically via JS hooks. No manual logging needed.
 
 ## RULES
 
@@ -12,7 +12,7 @@ Context memory for Claude Code. Blink (SQLite) stores session state automaticall
    - Dead code: `bash $HOME/.claude/cck/tools/find-dead-code/find-dead-code.sh`
    - File search: `Glob` -- Code search: `Grep`
    - Large files (>50KB): `$HOME/.claude/bin/progressive-reader --path <file> --list`
-   - Blink context: `bash $HOME/.claude/cck/tools/context-query/context-query.sh <command> [args]`
+   - Capsule context: `bash $HOME/.claude/cck/tools/context-query/context-query.sh <command> [args]`
      - Read: `search <term>`, `files`, `agents`, `sessions`, `recent`, `stats`
      - Write: `save <ns> <title> <summary> [type]`, `update <search> <new-summary>`
    - NEVER use Task/Explore for dependency queries, file search, or code search.
@@ -24,7 +24,7 @@ Context memory for Claude Code. Blink (SQLite) stores session state automaticall
    - Full list: 17 agents -- see `docs/AGENT_ROUTING_GUIDE.md`
 4. **Skills**: `/workflow` (complex tasks), `/debug` (errors/bugs), `/deep-context` (understand codebase), `/code-review` (pre-commit). Auto-activate on keywords.
 
-## Context System (Blink)
+## Context System (Capsule)
 
 Context is handled automatically. Hooks capture everything:
 - **session-start.js**: Injects last session summary, top discoveries, recent files, team activity (crew mode)

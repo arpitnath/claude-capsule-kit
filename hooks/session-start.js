@@ -96,7 +96,7 @@ async function main() {
     }
 
     let context = contextParts.length > 0
-      ? `# Capsule Context (Blink)\n\n${contextParts.join('\n\n')}\n\n---`
+      ? `# Capsule Context\n\n${contextParts.join('\n\n')}\n\n---`
       : '';
 
     if (didCleanup) {

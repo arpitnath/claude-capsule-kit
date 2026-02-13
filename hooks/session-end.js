@@ -2,7 +2,7 @@
 /**
  * SessionEnd Hook - Capsule Integration
  *
- * Finalizes the session by creating a session summary record in Blink.
+ * Finalizes the session by creating a session summary record in Capsule.
  * Crew-aware: scopes to teammate namespace and writes to shared DB.
  */
 
@@ -25,7 +25,7 @@ async function main() {
     if (isDisabled()) process.exit(0);
     const projectHash = getProjectHash();
 
-    // Initialize Blink (shared DB in crew mode, local otherwise)
+    // Shared DB in crew mode, local otherwise
     const blink = new Blink({ dbPath: getCapsuleDbPath() });
     const crewId = getCrewIdentity();
 

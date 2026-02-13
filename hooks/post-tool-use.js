@@ -33,7 +33,7 @@ async function main() {
     const toolInput = input.tool_input || {};
     const sessionId = input.session_id || 'default';
 
-    // Initialize Blink (shared DB in crew mode, local otherwise)
+    // Shared DB in crew mode, local otherwise
     // Pass file path hint for worktree-based crew identity detection
     const filePath = toolInput.file_path || toolInput.path || '';
     const blink = new Blink({ dbPath: getCapsuleDbPath() });
