@@ -21,7 +21,7 @@ const VERSION = pkg.version;
 
 const command = process.argv[2];
 
-const commands = { setup, teardown, status, version, prune, crew };
+const commands = { setup, teardown, status, version, update, prune, crew };
 
 if (!command || !commands[command]) {
   console.log(`cck v${VERSION} - Claude Capsule Kit`);
@@ -31,6 +31,7 @@ if (!command || !commands[command]) {
   console.log('  cck teardown   Remove CCK (keeps capsule.db user data)');
   console.log('  cck status     Show installation status');
   console.log('  cck version    Print version');
+  console.log('  cck update     Update CCK installation if version changed');
   console.log('  cck prune [days]  Remove old records (default: 30 days)');
   console.log('  cck crew <sub> Manage team profiles (init|start|stop|status)');
   process.exit(command ? 1 : 0);
@@ -76,7 +77,7 @@ function setup() {
     console.log(`  Linked ${dir}/ → ~/.claude/${dir}/`);
   }
 
-  writeFileSync(join(CCK_DIR, 'package.json'), JSON.stringify({ type: 'module' }, null, 2) + '\n');
+  writeFileSync(join(CCK_DIR, 'package.json'), JSON.stringify({ type: 'module', version: VERSION }, null, 2) + '\n');
 
   console.log('  Installing blink-query...');
   try {
@@ -101,7 +102,11 @@ function setup() {
       // Start fresh if settings.json is malformed
     }
   }
-  settings.hooks = hooksTemplate;
+  // Merge CCK hooks into existing hooks (preserve user's non-CCK hooks)
+  if (!settings.hooks) {
+    settings.hooks = {};
+  }
+  settings.hooks = { ...settings.hooks, ...hooksTemplate };
   mkdirSync(dirname(SETTINGS_PATH), { recursive: true });
   writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n');
   console.log('  Hooks registered in settings.json');
@@ -157,6 +162,11 @@ function teardown() {
   if (existsSync(CCK_DIR)) {
     rmSync(CCK_DIR, { recursive: true, force: true });
     console.log('  Removed ~/.claude/cck/');
+  }
+
+  if (existsSync(BIN_DIR)) {
+    rmSync(BIN_DIR, { recursive: true, force: true });
+    console.log('  Removed ~/.claude/bin/');
   }
 
   if (existsSync(SETTINGS_PATH)) {
@@ -219,6 +229,12 @@ function status() {
     }
   }
 
+  // Crew and templates directories
+  for (const dir of ['crew', 'templates']) {
+    const path = join(CCK_DIR, dir);
+    console.log(`  ${dir.padEnd(18)} ${existsSync(path) ? 'installed' : 'not found'}`);
+  }
+
   const depScanner = join(BIN_DIR, 'dependency-scanner');
   const progReader = join(BIN_DIR, 'progressive-reader');
   console.log(`  dep-scanner:      ${existsSync(depScanner) ? 'installed' : 'not found'}`);
@@ -227,6 +243,45 @@ function status() {
 
 function version() {
   console.log(`cck v${VERSION}`);
+}
+
+function update() {
+  // Check if CCK is installed
+  const installedPkgPath = join(CCK_DIR, 'package.json');
+
+  if (!existsSync(CCK_DIR) || !existsSync(installedPkgPath)) {
+    console.log('CCK is not installed yet. Run "cck setup" first.');
+    return;
+  }
+
+  // Read installed version from the marker package.json
+  let installedVersion = null;
+  try {
+    const installedPkg = JSON.parse(readFileSync(installedPkgPath, 'utf8'));
+    installedVersion = installedPkg.version;
+  } catch {
+    // No version in installed package.json
+  }
+
+  if (!installedVersion) {
+    console.log('Cannot determine installed version. Re-running setup...');
+    setup();
+    return;
+  }
+
+  if (installedVersion === VERSION) {
+    console.log(`CCK is up to date (v${VERSION}).`);
+    return;
+  }
+
+  console.log(`Updating CCK: v${installedVersion} → v${VERSION}`);
+  console.log('');
+
+  // Re-run setup
+  setup();
+
+  console.log('');
+  console.log('Update complete.');
 }
 
 async function crew() {
