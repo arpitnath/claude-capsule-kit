@@ -12,6 +12,9 @@ Context memory for Claude Code. Blink (SQLite) stores session state automaticall
    - Dead code: `bash .claude/tools/find-dead-code/find-dead-code.sh`
    - File search: `Glob` -- Code search: `Grep`
    - Large files (>50KB): `$HOME/.claude/bin/progressive-reader --path <file> --list`
+   - Blink context: `bash .claude/tools/context-query/context-query.sh <command> [args]`
+     - Read: `search <term>`, `files`, `agents`, `sessions`, `recent`, `stats`
+     - Write: `save <ns> <title> <summary> [type]`, `update <search> <new-summary>`
    - NEVER use Task/Explore for dependency queries, file search, or code search.
 3. **Agent routing**: Use specialized agents via Task tool. Spawn in PARALLEL when independent.
    - Errors/bugs: `error-detective` | Debugging: `debugger` | Code review: `code-reviewer`

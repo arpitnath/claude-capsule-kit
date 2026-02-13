@@ -18,6 +18,9 @@ Context memory for Claude Code. Blink (SQLite) stores session state automaticall
    - Dead code: `bash .claude/tools/find-dead-code/find-dead-code.sh`
    - File search: `Glob` -- Code search: `Grep`
    - Large files (>50KB): `$HOME/.claude/bin/progressive-reader --path <file> --list`
+   - Blink context: `bash .claude/tools/context-query/context-query.sh <command> [args]`
+     - Read: `search <term>`, `files`, `agents`, `sessions`, `recent`, `stats`
+     - Write: `save <ns> <title> <summary> [type]`, `update <search> <new-summary>`
    - NEVER use Task/Explore for dependency queries, file search, or code search.
 3. **Agent routing**: Use specialized agents via Task tool. Spawn in PARALLEL when independent.
    - Errors/bugs: `error-detective` | Debugging: `debugger` | Code review: `code-reviewer`
@@ -80,6 +83,17 @@ crew/_shared/discoveries                              -- Shared team discoveries
 | Dead/unused code? | `bash .claude/tools/find-dead-code/find-dead-code.sh` |
 
 NEVER use Task/Explore for dependency queries. These tools use a pre-built graph — instant vs sequential scanning.
+
+### Blink Context Query (mid-session access)
+
+| Question | Command |
+|----------|---------|
+| Search past context | `bash .claude/tools/context-query/context-query.sh search <term>` |
+| Recent file operations | `bash .claude/tools/context-query/context-query.sh files` |
+| Sub-agent history | `bash .claude/tools/context-query/context-query.sh agents` |
+| Session summaries | `bash .claude/tools/context-query/context-query.sh sessions` |
+| Save a discovery | `bash .claude/tools/context-query/context-query.sh save discoveries "<title>" "<summary>"` |
+| Update a record | `bash .claude/tools/context-query/context-query.sh update "<title>" "<new summary>"` |
 
 ### Large File Navigation (>50KB)
 
