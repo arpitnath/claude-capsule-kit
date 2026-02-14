@@ -21,7 +21,7 @@ const VERSION = pkg.version;
 
 const command = process.argv[2];
 
-const commands = { setup, teardown, status, version, update, prune, crew, stats };
+const commands = { setup, teardown, status, version, update, prune, crew, stats, build };
 
 if (!command || !commands[command]) {
   console.log(`cck v${VERSION} - Claude Capsule Kit`);
@@ -33,6 +33,7 @@ if (!command || !commands[command]) {
   console.log('  cck version    Print version');
   console.log('  cck update     Update CCK installation if version changed');
   console.log('  cck prune [days]  Remove old records (default: 30 days)');
+  console.log('  cck build      Build Go binaries (dependency-scanner, progressive-reader)');
   console.log('  cck crew <sub> Manage team profiles (init|start|stop|status)');
   console.log('  cck stats <sub> Usage analytics (overview|files|agents|sessions|branch)');
   process.exit(command ? 1 : 0);
@@ -148,6 +149,54 @@ function setup() {
   console.log('Crew Mode (Agent Teams):');
   console.log('  To use /crew for parallel multi-branch teams, enable Agent Teams in Claude Code.');
   console.log('  Setup guide: https://code.claude.com/docs/en/agent-teams');
+}
+
+function build() {
+  console.log('Building Go binaries...');
+
+  try {
+    execSync('go version', { stdio: 'pipe' });
+  } catch {
+    console.error('Error: Go is not installed. Install Go 1.20+ from https://go.dev/dl/');
+    process.exit(1);
+  }
+
+  mkdirSync(BIN_DIR, { recursive: true });
+
+  // Try CCK install dir first, fall back to package source
+  const toolsDir = existsSync(join(CCK_DIR, 'tools')) ? join(CCK_DIR, 'tools') : join(PKG_ROOT, 'tools');
+  const goBinaries = [
+    { name: 'dependency-scanner', src: join(toolsDir, 'dependency-scanner'), pkg: '.' },
+    { name: 'progressive-reader', src: join(toolsDir, 'progressive-reader'), pkg: './cmd/' },
+  ];
+
+  let built = 0;
+  for (const bin of goBinaries) {
+    if (!existsSync(bin.src)) {
+      console.warn(`  Skipping ${bin.name} (Go source not found at ${bin.src})`);
+      continue;
+    }
+    // Check for Go source files
+    if (!existsSync(join(bin.src, 'go.mod'))) {
+      console.warn(`  Skipping ${bin.name} (no go.mod — Go source not included in npm package)`);
+      console.warn(`  To build, clone the repo: https://github.com/anthropics/claude-capsule-kit`);
+      continue;
+    }
+    try {
+      execSync(`go build -o ${join(BIN_DIR, bin.name)} ${bin.pkg}`, { cwd: bin.src, stdio: 'pipe' });
+      console.log(`  Built ${bin.name} → ${join(BIN_DIR, bin.name)}`);
+      built++;
+    } catch (err) {
+      console.error(`  Failed to build ${bin.name}: ${err.message}`);
+    }
+  }
+
+  if (built > 0) {
+    console.log(`\n${built} binaries built successfully.`);
+  } else {
+    console.log('\nNo binaries built. Go source files are not included in the npm package.');
+    console.log('Clone the repo and run `cck build` from the source directory.');
+  }
 }
 
 function teardown() {
