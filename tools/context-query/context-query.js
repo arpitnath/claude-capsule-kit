@@ -229,10 +229,16 @@ try {
       namespaces.forEach(ns => {
         try {
           const result = blink.resolve(ns);
-          // blink.resolve returns {status, record} — content has child records
+          // blink.resolve returns {status, record} — content has child refs
+          // Resolve each child fully to get created_at, summary, etc.
           if (result?.record?.content && Array.isArray(result.record.content)) {
-            allDiscoveries = allDiscoveries.concat(result.record.content);
-          } else if (result?.record) {
+            for (const child of result.record.content) {
+              try {
+                const full = blink.resolve(child.path);
+                if (full?.record) allDiscoveries.push(full.record);
+              } catch { /* skip unresolvable */ }
+            }
+          } else if (result?.record?.summary) {
             allDiscoveries.push(result.record);
           }
         } catch {

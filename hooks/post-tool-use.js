@@ -22,10 +22,18 @@ import { getCapsuleDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDis
 function tryResolveNamespace(blink, namespace) {
   try {
     const result = blink.resolve(namespace);
-    // blink.resolve returns {status, record} — content has child records
+    // blink.resolve returns {status, record} — content has child refs
+    // Resolve each child fully to get summary for matching
     if (result?.record?.content && Array.isArray(result.record.content)) {
-      return result.record.content;
-    } else if (result?.record) {
+      const records = [];
+      for (const child of result.record.content) {
+        try {
+          const full = blink.resolve(child.path);
+          if (full?.record) records.push(full.record);
+        } catch { /* skip */ }
+      }
+      return records;
+    } else if (result?.record?.summary) {
       return [result.record];
     }
     return [];
