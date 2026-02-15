@@ -373,7 +373,8 @@ async function crew() {
     decompose: crewDecompose,
     discoveries: crewDiscoveries,
     'merge-preview': crewMergePreview,
-    merge: crewMerge
+    merge: crewMerge,
+    gc: crewGc
   };
 
   if (!sub || !subs[sub]) {
@@ -383,8 +384,9 @@ async function crew() {
     console.log('  cck crew init                     Create .crew-config.json in current directory');
     console.log('  cck crew decompose [paths]        Analyze dependencies and suggest crew config');
     console.log('  cck crew start [profile]          Launch team (setup worktrees, generate lead prompt)');
-    console.log('  cck crew stop [profile]           Stop team and update state');
+    console.log('  cck crew stop [profile]           Stop team (removes worktrees by default)');
     console.log('  cck crew status [profile]         Show team state (all profiles if omitted)');
+    console.log('  cck crew gc [--branches] [--force] Clean up orphaned worktrees');
     console.log('  cck crew discoveries [limit]      List shared team discoveries (default: 20)');
     console.log('  cck crew merge-preview [profile]  Preview branch merges (conflicts, changed files)');
     console.log('  cck crew merge [profile]          Execute branch merges after preview and confirmation');
@@ -514,7 +516,24 @@ async function crewStart() {
     }
   }
 
-  // 6. Setup worktrees
+  // 6. Check for orphaned worktrees and warn
+  const { findOrphans } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'worktree-gc.js')
+  );
+
+  try {
+    const orphans = findOrphans();
+    if (orphans.length > 0) {
+      console.log('');
+      console.log(`⚠ Warning: Found ${orphans.length} orphaned worktree${orphans.length > 1 ? 's' : ''} from previous sessions.`);
+      console.log('  Run "cck crew gc" to clean them up and free disk space.');
+      console.log('');
+    }
+  } catch {
+    // Silently ignore orphan check errors
+  }
+
+  // 7. Setup worktrees
   const worktreePaths = { _projectRoot: projectRoot };
 
   for (const mate of team.teammates) {
@@ -556,7 +575,7 @@ async function crewStart() {
     writeFileSync(resolve(wtPath, 'crew-identity.json'), JSON.stringify(identity, null, 2) + '\n');
   }
 
-  // 7. Write worktrees.json
+  // 8. Write worktrees.json
   const crewDir = resolve(homedir(), '.claude', 'crew', projectHash);
   mkdirSync(crewDir, { recursive: true });
   const worktreeEntries = team.teammates
@@ -571,11 +590,11 @@ async function crewStart() {
     JSON.stringify({ worktrees: worktreeEntries }, null, 2) + '\n'
   );
 
-  // 8. Generate lead prompt (pass resolved team and staleness threshold)
+  // 9. Generate lead prompt (pass resolved team and staleness threshold)
   const teamState = shouldResume ? existingState : null;
   const prompt = generateLeadPrompt(team, teamState, worktreePaths, configHash, staleAfterMs);
 
-  // 9. Save state
+  // 10. Save state
   const newState = {
     team_name: team.name,
     profile_name: profileName,
@@ -599,7 +618,7 @@ async function crewStart() {
 
   saveTeamState(projectHash, newState, profileName);
 
-  // 10. Output prompt
+  // 11. Output prompt
   const promptPath = resolve(crewDir, profileName, 'lead-prompt.md');
   mkdirSync(resolve(crewDir, profileName), { recursive: true });
   writeFileSync(promptPath, prompt + '\n');
@@ -626,7 +645,8 @@ async function crewStop() {
 
   const projectRoot = process.cwd();
   const projectHash = getProjectHash();
-  const cleanup = process.argv.includes('--cleanup');
+  // FLIPPED: now cleanup by default, --keep-worktrees to preserve
+  const keepWorktrees = process.argv.includes('--keep-worktrees');
   const profileArg = process.argv.slice(4).find(a => !a.startsWith('--'));
 
   // Determine which profile(s) to stop
@@ -658,7 +678,8 @@ async function crewStop() {
     saveTeamState(projectHash, state, pName);
     console.log(`Team "${state.team_name}" (profile: ${pName}) stopped.`);
 
-    if (cleanup) {
+    // FLIPPED: cleanup by default unless --keep-worktrees is passed
+    if (!keepWorktrees) {
       for (const [name, mate] of Object.entries(state.teammates || {})) {
         if (mate.worktree_path && existsSync(mate.worktree_path)) {
           console.log(`  Removing worktree: ${mate.worktree_path}`);
@@ -672,8 +693,126 @@ async function crewStop() {
         }
       }
       console.log('Worktrees cleaned up.');
+    } else {
+      console.log('Worktrees preserved (--keep-worktrees).');
     }
   }
+}
+
+async function crewGc() {
+  const { findOrphans, cleanup } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'worktree-gc.js')
+  );
+
+  const deleteBranches = process.argv.includes('--branches');
+  const force = process.argv.includes('--force');
+
+  console.log('Scanning for orphaned worktrees...');
+  console.log('');
+
+  const orphans = findOrphans();
+
+  if (orphans.length === 0) {
+    console.log('✓ No orphaned worktrees found.');
+    return;
+  }
+
+  console.log(`Found ${orphans.length} orphaned worktree${orphans.length > 1 ? 's' : ''}:`);
+  console.log('');
+
+  // Display table
+  console.log('─'.repeat(120));
+  console.log(
+    '  Worktree Path'.padEnd(50) +
+    'Branch'.padEnd(30) +
+    'Reason'.padEnd(20) +
+    'Age'.padEnd(10) +
+    'Size'
+  );
+  console.log('─'.repeat(120));
+
+  for (const orphan of orphans) {
+    const reasonText = {
+      'directory-missing': 'dir deleted',
+      'team-stopped': 'team stopped',
+      'teammate-stopped': 'mate stopped',
+      'stale': 'stale'
+    }[orphan.reason] || orphan.reason;
+
+    const ageDaysText = orphan.ageDays === 'unknown' ? 'unknown' : `${orphan.ageDays}d`;
+    const sizeText = orphan.diskSize || (orphan.exists ? '?' : 'N/A');
+
+    // Truncate path if too long
+    const pathDisplay = orphan.path.length > 48 ?
+      '...' + orphan.path.slice(-45) :
+      orphan.path;
+
+    console.log(
+      `  ${pathDisplay.padEnd(48)}${orphan.branch.padEnd(30)}${reasonText.padEnd(20)}${ageDaysText.padEnd(10)}${sizeText}`
+    );
+  }
+
+  console.log('─'.repeat(120));
+  console.log('');
+
+  // Show what will be deleted
+  const existingOrphans = orphans.filter(o => o.exists);
+  console.log(`Will remove ${existingOrphans.length} worktree${existingOrphans.length !== 1 ? 's' : ''}.`);
+  if (deleteBranches) {
+    console.log('Will also delete associated git branches (--branches flag).');
+  }
+  console.log('');
+
+  // Confirmation prompt
+  if (!force) {
+    const readline = await import('readline');
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    const answer = await new Promise(resolve => {
+      rl.question('Proceed with cleanup? (yes/no): ', resolve);
+    });
+    rl.close();
+
+    if (answer.toLowerCase() !== 'yes' && answer.toLowerCase() !== 'y') {
+      console.log('Cleanup cancelled.');
+      return;
+    }
+    console.log('');
+  }
+
+  // Execute cleanup
+  console.log('Cleaning up...');
+  console.log('');
+
+  const results = cleanup(orphans, { deleteBranches, force: true });
+
+  // Display results
+  console.log('─'.repeat(80));
+  console.log('Cleanup Results:');
+  console.log('─'.repeat(80));
+  console.log('');
+
+  if (results.removed > 0) {
+    console.log(`✓ Removed ${results.removed} worktree${results.removed !== 1 ? 's' : ''}`);
+  }
+
+  if (results.branchesDeleted > 0) {
+    console.log(`✓ Deleted ${results.branchesDeleted} branch${results.branchesDeleted !== 1 ? 'es' : ''}`);
+  }
+
+  if (results.failed.length > 0) {
+    console.log('');
+    console.log(`✗ Failed to remove ${results.failed.length} worktree${results.failed.length !== 1 ? 's' : ''}:`);
+    for (const failed of results.failed) {
+      console.log(`  ${failed.name} (${failed.branch}): ${failed.error}`);
+    }
+  }
+
+  console.log('');
+  console.log('Done.');
 }
 
 async function crewStatus() {
