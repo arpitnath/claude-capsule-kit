@@ -365,13 +365,14 @@ function update() {
 
 async function crew() {
   const sub = process.argv[3];
-  const subs = { init: crewInit, start: crewStart, stop: crewStop, status: crewStatus };
+  const subs = { init: crewInit, start: crewStart, stop: crewStop, status: crewStatus, decompose: crewDecompose };
 
   if (!sub || !subs[sub]) {
     console.log('Usage: cck crew <command>');
     console.log('');
     console.log('Commands:');
     console.log('  cck crew init              Create .crew-config.json in current directory');
+    console.log('  cck crew decompose [paths] Analyze dependencies and suggest crew config');
     console.log('  cck crew start [profile]   Launch team (setup worktrees, generate lead prompt)');
     console.log('  cck crew stop [profile]    Stop team and update state');
     console.log('  cck crew status [profile]  Show team state (all profiles if omitted)');
@@ -714,6 +715,91 @@ async function crewStatus() {
         `  ${name.padEnd(20)}${(mate.status || 'unknown').padEnd(12)}${(mate.branch || '').padEnd(30)}${agentId}`
       );
     }
+  }
+}
+
+async function crewDecompose() {
+  const { decompose, generateCrewConfig } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'task-decomposer.js')
+  );
+
+  const projectRoot = process.cwd();
+  const write = process.argv.includes('--write');
+
+  // Get entry paths (all args after "crew decompose" that aren't flags)
+  const entryPaths = process.argv.slice(4).filter(a => !a.startsWith('--'));
+
+  // Parse --teammates flag
+  let maxTeammates = null;
+  const teammatesIdx = process.argv.indexOf('--teammates');
+  if (teammatesIdx !== -1 && process.argv[teammatesIdx + 1]) {
+    maxTeammates = parseInt(process.argv[teammatesIdx + 1]);
+    if (isNaN(maxTeammates) || maxTeammates < 1) {
+      console.error('Error: --teammates must be a positive integer');
+      process.exit(1);
+    }
+  }
+
+  const graphFile = join(process.env.HOME, '.claude', 'dep-graph.toon');
+  if (!existsSync(graphFile)) {
+    console.error('Error: Dependency graph not found.');
+    console.error('Run the dependency scanner first:');
+    console.error('  $HOME/.claude/bin/dependency-scanner');
+    process.exit(1);
+  }
+
+  console.log('Analyzing dependency graph...');
+  console.log('');
+
+  let result;
+  try {
+    result = decompose(projectRoot, entryPaths, { maxTeammates });
+  } catch (err) {
+    console.error(`Error: ${err.message}`);
+    process.exit(1);
+  }
+
+  const { clusters, metadata } = result;
+
+  console.log(`Found ${metadata.totalFiles} files in ${metadata.totalClusters} independent clusters:`);
+  console.log('');
+
+  // Display clusters
+  for (let i = 0; i < clusters.length; i++) {
+    const cluster = clusters[i];
+    console.log(`Cluster ${i + 1}: ${cluster.name}`);
+    console.log(`  Branch: ${cluster.suggestedBranch}`);
+    console.log(`  Files: ${cluster.files.length}`);
+    console.log(`  Focus: ${cluster.suggestedFocus}`);
+    console.log('');
+  }
+
+  // Generate crew config
+  const crewConfig = generateCrewConfig(clusters);
+
+  console.log('Suggested crew config:');
+  console.log('─'.repeat(60));
+  console.log(JSON.stringify(crewConfig, null, 2));
+  console.log('─'.repeat(60));
+  console.log('');
+
+  if (write) {
+    const dest = resolve(projectRoot, '.crew-config.json');
+    if (existsSync(dest)) {
+      console.error('Error: .crew-config.json already exists.');
+      console.error('Remove it first or omit --write to preview only.');
+      process.exit(1);
+    }
+
+    writeFileSync(dest, JSON.stringify(crewConfig, null, 2) + '\n');
+    console.log(`Written to: ${dest}`);
+    console.log('');
+    console.log('Next steps:');
+    console.log('  1. Review and edit .crew-config.json as needed');
+    console.log('  2. Run: cck crew start');
+  } else {
+    console.log('To write this config:');
+    console.log('  cck crew decompose --write');
   }
 }
 
