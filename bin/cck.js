@@ -365,16 +365,25 @@ function update() {
 
 async function crew() {
   const sub = process.argv[3];
-  const subs = { init: crewInit, start: crewStart, stop: crewStop, status: crewStatus };
+  const subs = {
+    init: crewInit,
+    start: crewStart,
+    stop: crewStop,
+    status: crewStatus,
+    'merge-preview': crewMergePreview,
+    merge: crewMerge
+  };
 
   if (!sub || !subs[sub]) {
     console.log('Usage: cck crew <command>');
     console.log('');
     console.log('Commands:');
-    console.log('  cck crew init              Create .crew-config.json in current directory');
-    console.log('  cck crew start [profile]   Launch team (setup worktrees, generate lead prompt)');
-    console.log('  cck crew stop [profile]    Stop team and update state');
-    console.log('  cck crew status [profile]  Show team state (all profiles if omitted)');
+    console.log('  cck crew init                  Create .crew-config.json in current directory');
+    console.log('  cck crew start [profile]       Launch team (setup worktrees, generate lead prompt)');
+    console.log('  cck crew stop [profile]        Stop team and update state');
+    console.log('  cck crew status [profile]      Show team state (all profiles if omitted)');
+    console.log('  cck crew merge-preview [profile]  Preview branch merges (conflicts, changed files)');
+    console.log('  cck crew merge [profile]       Execute branch merges after preview and confirmation');
     process.exit(sub ? 1 : 0);
   }
 
@@ -715,6 +724,285 @@ async function crewStatus() {
       );
     }
   }
+}
+
+async function crewMergePreview() {
+  const { loadCrewConfig, resolveProfile } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'crew-config-reader.js')
+  );
+  const { loadTeamState } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'team-state-manager.js')
+  );
+  const { getProjectHash } = await import(
+    join(PKG_ROOT, 'hooks', 'lib', 'crew-detect.js')
+  );
+  const { mergePreview, detectOverlaps } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'merge-pilot.js')
+  );
+
+  const projectRoot = process.cwd();
+  const projectHash = getProjectHash();
+  const profileArg = process.argv.slice(4).find(a => !a.startsWith('--'));
+
+  // Load config to get main branch
+  let config;
+  try {
+    config = loadCrewConfig(projectRoot);
+  } catch (err) {
+    console.error('Failed to load .crew-config.json:', err.message);
+    console.error('Run "cck crew init" first.');
+    process.exit(1);
+  }
+
+  // Resolve profile
+  let profile, profileName;
+  try {
+    ({ profile, profileName } = resolveProfile(config, profileArg));
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+
+  const mainBranch = config.project?.main_branch || 'main';
+
+  // Load team state to get branches
+  const state = loadTeamState(projectHash, profileName);
+  if (!state || !state.teammates) {
+    console.log(`No team state found for profile "${profileName}".`);
+    console.log('Run "cck crew start" first.');
+    return;
+  }
+
+  // Build teammates array from state
+  const teammates = Object.entries(state.teammates).map(([name, mate]) => ({
+    name,
+    branch: mate.branch,
+    worktree_path: mate.worktree_path
+  }));
+
+  if (teammates.length === 0) {
+    console.log('No teammates found in team state.');
+    return;
+  }
+
+  console.log(`Merge Preview: ${state.team_name} (profile: ${profileName})`);
+  console.log(`Main branch: ${mainBranch}`);
+  console.log('─'.repeat(80));
+  console.log('');
+
+  // Run merge preview
+  const results = mergePreview(projectRoot, mainBranch, teammates);
+
+  // Display results as table
+  console.log('Branch Merge Status:');
+  console.log('─'.repeat(80));
+  console.log(
+    '  Teammate'.padEnd(20) +
+    'Branch'.padEnd(30) +
+    'Status'.padEnd(12) +
+    'Conflicts'.padEnd(10) +
+    'Changed'
+  );
+  console.log('─'.repeat(80));
+
+  for (const result of results) {
+    const statusIcon = result.status === 'clean' ? '✓' : result.status === 'conflict' ? '✗' : '⚠';
+    const statusColor = result.status === 'clean' ? result.status : result.status;
+    console.log(
+      `  ${result.name.padEnd(18)}${result.branch.padEnd(30)}${(statusIcon + ' ' + statusColor).padEnd(12)}${result.conflictFiles.length.toString().padEnd(10)}${result.changedFiles.length}`
+    );
+    if (result.message) {
+      console.log(`    → ${result.message}`);
+    }
+  }
+
+  console.log('');
+
+  // Show overlapping changes
+  const overlaps = detectOverlaps(projectRoot, mainBranch, teammates);
+  if (overlaps.length > 0) {
+    console.log('Overlapping File Changes:');
+    console.log('─'.repeat(80));
+    for (const overlap of overlaps) {
+      console.log(`  ${overlap.teammates[0]} ↔ ${overlap.teammates[1]}`);
+      console.log(`    Files: ${overlap.files.join(', ')}`);
+    }
+    console.log('');
+  }
+
+  // Summary
+  const cleanCount = results.filter(r => r.status === 'clean').length;
+  const conflictCount = results.filter(r => r.status === 'conflict').length;
+  const errorCount = results.filter(r => r.status === 'error').length;
+
+  console.log('Summary:');
+  console.log(`  ✓ ${cleanCount} clean merges`);
+  if (conflictCount > 0) console.log(`  ✗ ${conflictCount} with conflicts`);
+  if (errorCount > 0) console.log(`  ⚠ ${errorCount} errors`);
+  console.log('');
+
+  if (conflictCount > 0 || errorCount > 0) {
+    console.log('To merge: cck crew merge [profile]');
+    console.log('Note: Conflicting branches will require manual resolution.');
+  } else {
+    console.log('All branches can be merged cleanly!');
+    console.log('To proceed: cck crew merge [profile]');
+  }
+}
+
+async function crewMerge() {
+  const { loadCrewConfig, resolveProfile } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'crew-config-reader.js')
+  );
+  const { loadTeamState } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'team-state-manager.js')
+  );
+  const { getProjectHash } = await import(
+    join(PKG_ROOT, 'hooks', 'lib', 'crew-detect.js')
+  );
+  const { mergePreview, executeMerge } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'merge-pilot.js')
+  );
+
+  const projectRoot = process.cwd();
+  const projectHash = getProjectHash();
+  const profileArg = process.argv.slice(4).find(a => !a.startsWith('--'));
+  const runTests = process.argv.includes('--test');
+  const testCommand = process.argv.find(a => a.startsWith('--test-command='))?.split('=')[1] || 'npm test';
+
+  // Load config
+  let config;
+  try {
+    config = loadCrewConfig(projectRoot);
+  } catch (err) {
+    console.error('Failed to load .crew-config.json:', err.message);
+    process.exit(1);
+  }
+
+  // Resolve profile
+  let profile, profileName;
+  try {
+    ({ profile, profileName } = resolveProfile(config, profileArg));
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+
+  const mainBranch = config.project?.main_branch || 'main';
+
+  // Load team state
+  const state = loadTeamState(projectHash, profileName);
+  if (!state || !state.teammates) {
+    console.log(`No team state found for profile "${profileName}".`);
+    process.exit(1);
+  }
+
+  // Build teammates array
+  const teammates = Object.entries(state.teammates).map(([name, mate]) => ({
+    name,
+    branch: mate.branch
+  }));
+
+  if (teammates.length === 0) {
+    console.log('No teammates found.');
+    return;
+  }
+
+  console.log(`Crew Merge: ${state.team_name} (profile: ${profileName})`);
+  console.log(`Main branch: ${mainBranch}`);
+  console.log('─'.repeat(80));
+  console.log('');
+
+  // Show preview first
+  console.log('Running merge preview...');
+  const preview = mergePreview(projectRoot, mainBranch, teammates);
+
+  console.log('');
+  console.log('Preview Results:');
+  for (const result of preview) {
+    const status = result.status === 'clean' ? '✓ clean' : result.status === 'conflict' ? '✗ conflicts' : '⚠ error';
+    console.log(`  ${result.name.padEnd(20)} ${result.branch.padEnd(30)} ${status}`);
+    if (result.conflictFiles.length > 0) {
+      console.log(`    Conflicts in: ${result.conflictFiles.slice(0, 3).join(', ')}${result.conflictFiles.length > 3 ? '...' : ''}`);
+    }
+  }
+  console.log('');
+
+  // Confirmation prompt
+  const readline = await import('readline');
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  const answer = await new Promise(resolve => {
+    rl.question('Proceed with merge? (yes/no): ', resolve);
+  });
+  rl.close();
+
+  if (answer.toLowerCase() !== 'yes' && answer.toLowerCase() !== 'y') {
+    console.log('Merge cancelled.');
+    return;
+  }
+
+  console.log('');
+  console.log('Executing merges...');
+  console.log('');
+
+  // Execute merge
+  const results = executeMerge(projectRoot, mainBranch, teammates, {
+    runTests,
+    testCommand
+  });
+
+  // Display results
+  console.log('─'.repeat(80));
+  console.log('Merge Results:');
+  console.log('─'.repeat(80));
+  console.log('');
+
+  if (results.success.length > 0) {
+    console.log('✓ Successful merges:');
+    for (const s of results.success) {
+      console.log(`  ${s.name.padEnd(20)} ${s.branch}`);
+      if (s.testResult) {
+        console.log(`    Tests: ${s.testResult}`);
+      }
+    }
+    console.log('');
+  }
+
+  if (results.failed.length > 0) {
+    console.log('✗ Failed merges:');
+    for (const f of results.failed) {
+      console.log(`  ${f.name.padEnd(20)} ${f.branch}`);
+      console.log(`    Reason: ${f.reason}`);
+      if (f.message) {
+        console.log(`    ${f.message}`);
+      }
+    }
+    console.log('');
+  }
+
+  if (results.skipped.length > 0) {
+    console.log('⚠ Skipped:');
+    for (const s of results.skipped) {
+      console.log(`  ${s.name.padEnd(20)} ${s.branch}`);
+      console.log(`    ${s.reason}`);
+    }
+    console.log('');
+  }
+
+  if (results.backup_tag) {
+    console.log(`Backup tag created: ${results.backup_tag}`);
+    console.log(`To rollback: git reset --hard ${results.backup_tag}`);
+    console.log('');
+  }
+
+  console.log('Summary:');
+  console.log(`  ✓ ${results.success.length} merged`);
+  console.log(`  ✗ ${results.failed.length} failed`);
+  console.log(`  ⚠ ${results.skipped.length} skipped`);
 }
 
 async function prune() {

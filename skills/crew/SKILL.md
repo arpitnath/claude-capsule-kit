@@ -206,19 +206,40 @@ TaskUpdate(taskId="N", owner="{teammate.name}")
 
 **When ALL tasks are complete**:
 1. Verify each branch has commits
-2. Ask user if they want to merge branches:
+2. **Run merge preview** to check for conflicts:
    ```bash
-   git merge {branch} --no-edit
+   cck crew merge-preview [profile]
    ```
-3. Shut down teammates:
+3. Review the preview results:
+   - **Clean merges** (✓): Can be auto-merged safely
+   - **Conflicts** (✗): Will require manual resolution
+   - **Overlapping changes**: Files modified by multiple teammates
+4. Share preview results with user and recommend strategy:
+   - If all clean: "All branches can merge cleanly. Proceed with merge?"
+   - If conflicts: "N branches have conflicts. Options: (1) merge clean branches first, (2) resolve conflicts manually, (3) review with teammates"
+5. **Execute merge** if user approves:
+   ```bash
+   cck crew merge [profile]
+   ```
+   Optional flags:
+   - `--test`: Run tests after each merge (rollback on failure)
+   - `--test-command="npm run test:ci"`: Custom test command
+6. If merge fails with conflicts, guide user:
+   ```bash
+   git merge {branch}
+   # Resolve conflicts manually
+   git add .
+   git commit
+   ```
+7. Shut down teammates:
    ```
    SendMessage(type="shutdown_request", recipient="{name}", content="Work complete, shutting down.")
    ```
-4. Clean up worktrees:
+8. Clean up worktrees:
    ```bash
    cck crew stop [profile] --cleanup
    ```
-5. Remove `.crew-config.json` if it was created for this session only
+9. Remove `.crew-config.json` if it was created for this session only
 
 **Deliverable**: All work merged, teammates shut down, worktrees cleaned
 
