@@ -109,6 +109,19 @@ function setup() {
     settings.hooks = {};
   }
   settings.hooks = { ...settings.hooks, ...hooksTemplate };
+
+  // Install statusline
+  const statuslineSrc = join(PKG_ROOT, 'templates', 'statusline-command.sh');
+  const statuslineDst = join(CLAUDE_DIR, 'statusline-command.sh');
+  if (existsSync(statuslineSrc)) {
+    cpSync(statuslineSrc, statuslineDst);
+    if (!settings.statusLine) {
+      settings.statusLine = {};
+    }
+    settings.statusLine.command = `bash ${statuslineDst}`;
+    console.log('  Statusline installed');
+  }
+
   mkdirSync(dirname(SETTINGS_PATH), { recursive: true });
   writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n');
   console.log('  Hooks registered in settings.json');
@@ -227,11 +240,23 @@ function teardown() {
     try {
       const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
       delete settings.hooks;
+      // Remove statusline if it points to our script
+      if (settings.statusLine?.command?.includes('statusline-command.sh')) {
+        delete settings.statusLine;
+        console.log('  Removed statusline from settings.json');
+      }
       writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n');
       console.log('  Removed hooks from settings.json');
     } catch {
       console.warn('  Warning: Could not update settings.json');
     }
+  }
+
+  // Remove statusline script
+  const statuslineFile = join(CLAUDE_DIR, 'statusline-command.sh');
+  if (existsSync(statuslineFile)) {
+    rmSync(statuslineFile);
+    console.log('  Removed statusline script');
   }
 
   if (existsSync(CLAUDE_MD_PATH)) {

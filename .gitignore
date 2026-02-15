@@ -12,6 +12,7 @@ node_modules/
 
 # Crew mode
 crew/__notepad__/
+.crew-config.json
 
 # OS files
 .DS_Store
