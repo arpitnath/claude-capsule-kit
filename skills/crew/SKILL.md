@@ -77,19 +77,41 @@ cat .crew-config.json
      - Team name
      - Number of teammates and their names
      - For each: branch name, role (developer/reviewer/tester/architect), focus area
-   - Write `.crew-config.json` directly:
+   - Write `.crew-config.json` directly. Two formats supported:
+
+     **Flat format** (simple — all teammates in one list):
      ```json
      {
        "team": {
          "name": "collected-name",
          "lead": { "model": "sonnet" },
          "teammates": [
+           { "name": "name", "branch": "branch", "worktree": true, "role": "developer", "focus": "focus" }
+         ]
+       },
+       "project": { "main_branch": "auto-detect" },
+       "stale_after_hours": 4
+     }
+     ```
+
+     **Grouped format** (crew grouping — logical sub-teams):
+     ```json
+     {
+       "team": {
+         "name": "collected-name",
+         "lead": { "model": "sonnet" },
+         "crews": [
            {
-             "name": "collected-name",
-             "branch": "collected-branch",
-             "worktree": true,
-             "role": "developer",
-             "focus": "collected-focus"
+             "name": "frontend",
+             "teammates": [
+               { "name": "ui-dev", "branch": "feat/ui", "worktree": true, "role": "developer", "focus": "..." }
+             ]
+           },
+           {
+             "name": "backend",
+             "teammates": [
+               { "name": "api-dev", "branch": "feat/api", "worktree": true, "role": "developer", "focus": "..." }
+             ]
            }
          ]
        },
@@ -97,6 +119,8 @@ cat .crew-config.json
        "stale_after_hours": 4
      }
      ```
+     Use grouped format when you have 4+ teammates that fit into logical sub-teams.
+     CLI commands support `--crew <name>` to filter operations by crew group.
    - Auto-detect `main_branch` from git
 
 **When to use decompose vs manual**:

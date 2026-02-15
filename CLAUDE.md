@@ -21,7 +21,7 @@ Context memory for Claude Code. Capsule (SQLite) stores session state automatica
    - Refactoring: `refactoring-specialist` | Architecture: `architecture-explorer`
    - Security: `security-engineer` | Database: `database-navigator` | Git: `git-workflow-manager`
    - Production: `devops-sre` | Design: `brainstorm-coordinator`
-   - Full list: 17 agents -- see `docs/AGENT_ROUTING_GUIDE.md`
+   - Full list: 18 agents -- see `docs/AGENT_ROUTING_GUIDE.md`
 4. **Skills**: `/workflow` (complex tasks), `/debug` (errors/bugs), `/deep-context` (understand codebase), `/code-review` (pre-commit). Auto-activate on keywords.
 
 ## Context System (Capsule)
@@ -38,7 +38,7 @@ Crew mode: Capsule is crew-aware. Shared `capsule.db` with teammate-scoped names
 ## Docs
 
 - `docs/TOOL_ENFORCEMENT_REFERENCE.md` -- Tool selection rules, progressive-reader workflows
-- `docs/AGENT_ROUTING_GUIDE.md` -- All 17 agents, routing rules, parallel spawning
+- `docs/AGENT_ROUTING_GUIDE.md` -- All 18 agents, routing rules, parallel spawning
 - `docs/BEST_PRACTICES.md` -- Anti-patterns, success metrics
 - `docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md` -- System design
 - `docs/SKILLS_ORCHESTRATION_ARCHITECTURE.md` -- Skills + hooks design

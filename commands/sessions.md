@@ -46,7 +46,7 @@ echo "Use /load-session <project>/<session> to load a session"
 📂 Synced Sessions
    Repository: github.com/username/claude-sessions
 
-━━━ super-claude-kit ━━━
+━━━ my-project ━━━
   • 2024-12-13-abc12345
   • 2024-12-12-def67890
 

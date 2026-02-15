@@ -77,7 +77,7 @@ Create a markdown summary following this structure:
 ## Example Output
 
 ```markdown
-# Session: super-claude-kit
+# Session: my-project
 
 **Date**: 2024-12-13 14:30
 **Duration**: 1h 45m

@@ -2,7 +2,7 @@
   "name": "claude-capsule-kit",
   "version": "3.0.0",
   "type": "module",
-  "description": "Claude Capsule Kit - Context memory for Claude Code",
+  "description": "A toolkit that makes Claude Code better at engineering — session memory, dependency tools, specialist agents, and crew teams",
   "bin": {
     "cck": "./bin/cck.js"
   },
@@ -34,6 +34,27 @@
     "docs/TOOL_ENFORCEMENT_REFERENCE.md",
     "templates/"
   ],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "anthropic",
+    "ai-agents",
+    "developer-tools",
+    "session-memory",
+    "dependency-analysis",
+    "crew-teams",
+    "git-worktrees",
+    "hooks",
+    "sub-agents",
+    "blink-query"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitnath/claude-capsule-kit.git"
+  },
+  "homepage": "https://github.com/arpitnath/claude-capsule-kit#readme",
+  "author": "Arpit Nath",
+  "license": "MIT",
   "engines": {
     "node": ">=18"
   },

@@ -77,6 +77,54 @@ export function resolveProfile(config, requestedName) {
 }
 
 /**
+ * Resolve teammates from a team/profile config.
+ * Supports two formats:
+ * - Flat: { teammates: [...] } — backward compatible
+ * - Grouped: { crews: [{ name, teammates: [...] }] } — crew grouping
+ *
+ * Returns a flat array of teammates with `crew` property set on each.
+ * When using flat format, crew defaults to 'default'.
+ *
+ * @param {object} teamOrProfile - Team or profile object
+ * @param {string} [filterCrew] - Optional crew name to filter by
+ * @returns {object[]} Flat array of teammates with crew metadata
+ */
+export function resolveTeammates(teamOrProfile, filterCrew) {
+  let teammates = [];
+
+  if (teamOrProfile.crews && Array.isArray(teamOrProfile.crews)) {
+    // Grouped format: flatten crews into teammates with crew metadata
+    for (const crew of teamOrProfile.crews) {
+      for (const mate of crew.teammates || []) {
+        teammates.push({ ...mate, crew: crew.name });
+      }
+    }
+  } else if (teamOrProfile.teammates && Array.isArray(teamOrProfile.teammates)) {
+    // Flat format: assign 'default' crew
+    teammates = teamOrProfile.teammates.map(m => ({ ...m, crew: m.crew || 'default' }));
+  }
+
+  // Filter by crew if requested
+  if (filterCrew) {
+    teammates = teammates.filter(m => m.crew === filterCrew);
+  }
+
+  return teammates;
+}
+
+/**
+ * List crew names from a team/profile config.
+ * @param {object} teamOrProfile - Team or profile object
+ * @returns {string[]} Array of crew names
+ */
+export function listCrews(teamOrProfile) {
+  if (teamOrProfile.crews && Array.isArray(teamOrProfile.crews)) {
+    return teamOrProfile.crews.map(c => c.name);
+  }
+  return ['default'];
+}
+
+/**
  * Validate a crew config. Returns array of error strings (empty = valid).
  * Handles both old format (team) and new format (profiles).
  * @param {object} config - Config to validate
@@ -131,24 +179,57 @@ function validateTeam(team, prefix) {
     errors.push(`${prefix}.name is required and must be a string`);
   }
 
-  if (!Array.isArray(team.teammates) || team.teammates.length === 0) {
-    errors.push(`${prefix}.teammates must be a non-empty array`);
-    return errors;
-  }
-
-  for (let i = 0; i < team.teammates.length; i++) {
-    const t = team.teammates[i];
-    if (!t.name || typeof t.name !== 'string') {
-      errors.push(`${prefix}.teammate[${i}]: name is required`);
+  // Support both flat teammates and crews grouping
+  if (team.crews && Array.isArray(team.crews)) {
+    if (team.crews.length === 0) {
+      errors.push(`${prefix}.crews must be a non-empty array`);
+      return errors;
     }
-    if (!t.branch || typeof t.branch !== 'string') {
-      errors.push(`${prefix}.teammate[${i}]: branch is required`);
+    for (let c = 0; c < team.crews.length; c++) {
+      const crew = team.crews[c];
+      if (!crew.name || typeof crew.name !== 'string') {
+        errors.push(`${prefix}.crews[${c}]: name is required`);
+      }
+      if (!Array.isArray(crew.teammates) || crew.teammates.length === 0) {
+        errors.push(`${prefix}.crews[${c}].teammates must be a non-empty array`);
+        continue;
+      }
+      for (let i = 0; i < crew.teammates.length; i++) {
+        const t = crew.teammates[i];
+        if (!t.name || typeof t.name !== 'string') {
+          errors.push(`${prefix}.crews[${c}].teammate[${i}]: name is required`);
+        }
+        if (!t.branch || typeof t.branch !== 'string') {
+          errors.push(`${prefix}.crews[${c}].teammate[${i}]: branch is required`);
+        }
+        if (t.role && !ROLE_PRESETS[t.role]) {
+          errors.push(
+            `${prefix}.crews[${c}].teammate[${i}]: unknown role "${t.role}". Valid: ${Object.keys(ROLE_PRESETS).join(', ')}`
+          );
+        }
+      }
     }
-    if (t.role && !ROLE_PRESETS[t.role]) {
-      errors.push(
-        `${prefix}.teammate[${i}]: unknown role "${t.role}". Valid: ${Object.keys(ROLE_PRESETS).join(', ')}`
-      );
+  } else if (Array.isArray(team.teammates)) {
+    if (team.teammates.length === 0) {
+      errors.push(`${prefix}.teammates must be a non-empty array`);
+      return errors;
     }
+    for (let i = 0; i < team.teammates.length; i++) {
+      const t = team.teammates[i];
+      if (!t.name || typeof t.name !== 'string') {
+        errors.push(`${prefix}.teammate[${i}]: name is required`);
+      }
+      if (!t.branch || typeof t.branch !== 'string') {
+        errors.push(`${prefix}.teammate[${i}]: branch is required`);
+      }
+      if (t.role && !ROLE_PRESETS[t.role]) {
+        errors.push(
+          `${prefix}.teammate[${i}]: unknown role "${t.role}". Valid: ${Object.keys(ROLE_PRESETS).join(', ')}`
+        );
+      }
+    }
+  } else {
+    errors.push(`${prefix} must have either "teammates" or "crews" array`);
   }
 
   return errors;

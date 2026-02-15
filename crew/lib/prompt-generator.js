@@ -155,7 +155,7 @@ function generateTeammatePrompt(mate, worktreePath, projectRoot) {
 
   const lines = [
     `# Identity`,
-    `You are "${mate.name}" — a teammate working on branch "${mate.branch}".`,
+    `You are "${mate.name}" — a teammate working on branch "${mate.branch}"${mate.crew && mate.crew !== 'default' ? ` (crew: ${mate.crew})` : ''}.`,
     '',
     `# Working Directory`,
     `Your worktree is at: ${worktreePath}`,
@@ -209,7 +209,7 @@ function generateResumeTeammatePrompt(mate, worktreePath, projectRoot) {
 
   const lines = [
     `# Identity`,
-    `You are "${mate.name}" — a teammate working on branch "${mate.branch}".`,
+    `You are "${mate.name}" — a teammate working on branch "${mate.branch}"${mate.crew && mate.crew !== 'default' ? ` (crew: ${mate.crew})` : ''}.`,
     '',
     `# Working Directory`,
     `Your worktree is at: ${worktreePath}`,

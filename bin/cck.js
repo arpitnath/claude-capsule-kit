@@ -25,17 +25,23 @@ const commands = { setup, teardown, status, version, update, prune, crew, stats,
 
 if (!command || !commands[command]) {
   console.log(`cck v${VERSION} - Claude Capsule Kit`);
+  console.log('A toolkit that makes Claude Code better at engineering.');
+  console.log('');
+  console.log('Session memory, dependency tools, large file navigation,');
+  console.log('18 specialist agents, and crew teams for parallel multi-branch work.');
   console.log('');
   console.log('Commands:');
-  console.log('  cck setup      Install hooks, tools, and context system');
-  console.log('  cck teardown   Remove CCK (keeps capsule.db user data)');
-  console.log('  cck status     Show installation status');
-  console.log('  cck version    Print version');
-  console.log('  cck update     Update CCK installation if version changed');
-  console.log('  cck prune [days]  Remove old records (default: 30 days)');
-  console.log('  cck build      Build Go binaries (dependency-scanner, progressive-reader)');
-  console.log('  cck crew <sub> Manage team profiles (init|start|stop|status)');
-  console.log('  cck stats <sub> Usage analytics (overview|files|agents|sessions|branch)');
+  console.log('  cck setup              Install hooks, tools, and context system');
+  console.log('  cck teardown           Remove CCK (keeps capsule.db user data)');
+  console.log('  cck status             Show installation status');
+  console.log('  cck version            Print version');
+  console.log('  cck update             Update if version changed');
+  console.log('  cck build              Build Go binaries (dependency-scanner, progressive-reader)');
+  console.log('  cck stats <cmd>        Usage analytics (overview|files|agents|sessions|branch)');
+  console.log('  cck prune [days]       Remove old records (default: 30 days)');
+  console.log('  cck crew <cmd>         Crew teams (init|start|stop|status|doctor|merge|gc|...)');
+  console.log('');
+  console.log('https://github.com/arpitnath/claude-capsule-kit');
   process.exit(command ? 1 : 0);
 }
 
@@ -56,6 +62,8 @@ function setup() {
     const src = join(PKG_ROOT, dir);
     const dest = join(CCK_DIR, dir);
     if (existsSync(src)) {
+      // Clean dest first to remove stale files not in source
+      if (existsSync(dest)) rmSync(dest, { recursive: true, force: true });
       cpSync(src, dest, { recursive: true });
       console.log(`  Copied ${dir}/`);
     }
@@ -83,15 +91,16 @@ function setup() {
 
   console.log('  Installing blink-query...');
   try {
-    execSync('npm link blink-query', { cwd: CCK_DIR, stdio: 'pipe' });
-    console.log('  blink-query linked (local)');
+    execSync('npm install blink-query', { cwd: CCK_DIR, stdio: 'pipe' });
+    console.log('  blink-query installed');
   } catch {
     try {
-      execSync('npm install blink-query', { cwd: CCK_DIR, stdio: 'pipe' });
-      console.log('  blink-query installed (npm)');
+      // Fallback: local link for development
+      execSync('npm link blink-query', { cwd: CCK_DIR, stdio: 'pipe' });
+      console.log('  blink-query linked (local dev)');
     } catch {
       console.warn('  Warning: Failed to install blink-query.');
-      console.warn('  Run: npm link blink-query  OR  cd ~/.claude/cck && npm install blink-query');
+      console.warn('  Run: cd ~/.claude/cck && npm install blink-query');
     }
   }
 
@@ -394,6 +403,10 @@ async function crew() {
     console.log('  cck crew discoveries [limit]      List shared team discoveries (default: 20)');
     console.log('  cck crew merge-preview [profile]  Preview branch merges (conflicts, changed files)');
     console.log('  cck crew merge [profile]          Execute branch merges after preview and confirmation');
+    console.log('');
+    console.log('Crew grouping:');
+    console.log('  --crew <name>                     Filter by crew group (e.g. --crew frontend)');
+    console.log('  Supported by: merge-preview, merge, doctor, activity, discoveries');
     process.exit(sub ? 1 : 0);
   }
 
@@ -438,6 +451,15 @@ async function crewInit() {
   console.log('Next steps:');
   console.log('  1. Edit .crew-config.json — set team name, add teammates');
   console.log('  2. Run: cck crew start');
+}
+
+/** Parse --crew <name> from argv */
+function parseCrewFilter() {
+  const idx = process.argv.indexOf('--crew');
+  if (idx !== -1 && process.argv[idx + 1]) {
+    return process.argv[idx + 1];
+  }
+  return null;
 }
 
 async function crewStart() {
@@ -488,8 +510,12 @@ async function crewStart() {
     process.exit(1);
   }
 
-  // Resolve roles for all teammates
-  const resolvedTeammates = profile.teammates.map(resolveRole);
+  // Resolve teammates (supports both flat and crews grouping)
+  const { resolveTeammates } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'crew-config-reader.js')
+  );
+  const flatTeammates = resolveTeammates(profile);
+  const resolvedTeammates = flatTeammates.map(resolveRole);
   const team = { ...profile, teammates: resolvedTeammates };
 
   // 3. Compute hashes and load state
@@ -570,6 +596,7 @@ async function crewStart() {
     // Write crew-identity.json in worktree root
     const identity = {
       teammate_name: mate.name,
+      crew_name: mate.crew || 'default',
       project_root: projectRoot,
       branch: mate.branch,
       team_name: team.name,
@@ -884,7 +911,7 @@ async function crewStatus() {
 }
 
 async function crewMergePreview() {
-  const { loadCrewConfig, resolveProfile } = await import(
+  const { loadCrewConfig, resolveProfile, resolveTeammates } = await import(
     join(PKG_ROOT, 'crew', 'lib', 'crew-config-reader.js')
   );
   const { loadTeamState } = await import(
@@ -899,7 +926,8 @@ async function crewMergePreview() {
 
   const projectRoot = process.cwd();
   const projectHash = getProjectHash();
-  const profileArg = process.argv.slice(4).find(a => !a.startsWith('--'));
+  const crewFilter = parseCrewFilter();
+  const profileArg = process.argv.slice(4).find(a => !a.startsWith('--') && a !== crewFilter);
 
   // Load config to get main branch
   let config;
@@ -930,19 +958,27 @@ async function crewMergePreview() {
     return;
   }
 
-  // Build teammates array from state
-  const teammates = Object.entries(state.teammates).map(([name, mate]) => ({
-    name,
-    branch: mate.branch,
-    worktree_path: mate.worktree_path
-  }));
+  // Build teammates array from state, optionally filtered by crew
+  const crewNames = crewFilter
+    ? new Set(resolveTeammates(profile, crewFilter).map(t => t.name))
+    : null;
+  const teammates = Object.entries(state.teammates)
+    .filter(([name]) => !crewNames || crewNames.has(name))
+    .map(([name, mate]) => ({
+      name,
+      branch: mate.branch,
+      worktree_path: mate.worktree_path
+    }));
 
   if (teammates.length === 0) {
-    console.log('No teammates found in team state.');
+    console.log(crewFilter
+      ? `No teammates found in crew "${crewFilter}".`
+      : 'No teammates found in team state.');
     return;
   }
 
-  console.log(`Merge Preview: ${state.team_name} (profile: ${profileName})`);
+  const crewLabel = crewFilter ? ` [crew: ${crewFilter}]` : '';
+  console.log(`Merge Preview: ${state.team_name} (profile: ${profileName})${crewLabel}`);
   console.log(`Main branch: ${mainBranch}`);
   console.log('─'.repeat(80));
   console.log('');
@@ -1008,7 +1044,7 @@ async function crewMergePreview() {
 }
 
 async function crewMerge() {
-  const { loadCrewConfig, resolveProfile } = await import(
+  const { loadCrewConfig, resolveProfile, resolveTeammates } = await import(
     join(PKG_ROOT, 'crew', 'lib', 'crew-config-reader.js')
   );
   const { loadTeamState } = await import(
@@ -1023,7 +1059,8 @@ async function crewMerge() {
 
   const projectRoot = process.cwd();
   const projectHash = getProjectHash();
-  const profileArg = process.argv.slice(4).find(a => !a.startsWith('--'));
+  const crewFilter = parseCrewFilter();
+  const profileArg = process.argv.slice(4).find(a => !a.startsWith('--') && a !== crewFilter);
   const runTests = process.argv.includes('--test');
   const testCommand = process.argv.find(a => a.startsWith('--test-command='))?.split('=')[1] || 'npm test';
 
@@ -1054,18 +1091,26 @@ async function crewMerge() {
     process.exit(1);
   }
 
-  // Build teammates array
-  const teammates = Object.entries(state.teammates).map(([name, mate]) => ({
-    name,
-    branch: mate.branch
-  }));
+  // Build teammates array, optionally filtered by crew
+  const crewNames = crewFilter
+    ? new Set(resolveTeammates(profile, crewFilter).map(t => t.name))
+    : null;
+  const teammates = Object.entries(state.teammates)
+    .filter(([name]) => !crewNames || crewNames.has(name))
+    .map(([name, mate]) => ({
+      name,
+      branch: mate.branch
+    }));
 
   if (teammates.length === 0) {
-    console.log('No teammates found.');
+    console.log(crewFilter
+      ? `No teammates found in crew "${crewFilter}".`
+      : 'No teammates found.');
     return;
   }
 
-  console.log(`Crew Merge: ${state.team_name} (profile: ${profileName})`);
+  const crewLabel = crewFilter ? ` [crew: ${crewFilter}]` : '';
+  console.log(`Crew Merge: ${state.team_name} (profile: ${profileName})${crewLabel}`);
   console.log(`Main branch: ${mainBranch}`);
   console.log('─'.repeat(80));
   console.log('');
@@ -1248,7 +1293,7 @@ async function crewDecompose() {
 }
 
 async function crewDoctor() {
-  const { loadCrewConfig, resolveProfile } = await import(
+  const { loadCrewConfig, resolveProfile, resolveTeammates } = await import(
     join(PKG_ROOT, 'crew', 'lib', 'crew-config-reader.js')
   );
   const { loadTeamState } = await import(
@@ -1263,20 +1308,21 @@ async function crewDoctor() {
 
   const projectRoot = process.cwd();
   const projectHash = getProjectHash();
-  const profileArg = process.argv.slice(4).find(a => !a.startsWith('--'));
+  const crewFilter = parseCrewFilter();
+  const profileArg = process.argv.slice(4).find(a => !a.startsWith('--') && a !== crewFilter);
 
   // Determine profile to check
-  let profileName = 'default';
+  let profile, profileName = 'default';
   if (profileArg) {
     profileName = profileArg;
-  } else {
-    try {
-      const config = loadCrewConfig(projectRoot);
-      const resolved = resolveProfile(config);
-      profileName = resolved.profileName;
-    } catch {
-      // Use default
-    }
+  }
+  try {
+    const config = loadCrewConfig(projectRoot);
+    const resolved = resolveProfile(config, profileArg || undefined);
+    profile = resolved.profile;
+    profileName = resolved.profileName;
+  } catch {
+    // Use default
   }
 
   const state = loadTeamState(projectHash, profileName);
@@ -1286,14 +1332,21 @@ async function crewDoctor() {
     return;
   }
 
-  console.log(`Crew Health Check: ${state.team_name} (profile: ${profileName})`);
+  const crewLabel = crewFilter ? ` [crew: ${crewFilter}]` : '';
+  console.log(`Crew Health Check: ${state.team_name} (profile: ${profileName})${crewLabel}`);
   console.log('');
 
   // Run health check
-  const healthReports = checkHealth(projectHash, profileName, {
+  let healthReports = checkHealth(projectHash, profileName, {
     staleThresholdMinutes: 10,
     commitWindowMinutes: 30
   });
+
+  // Filter by crew if requested
+  if (crewFilter && profile) {
+    const crewNames = new Set(resolveTeammates(profile, crewFilter).map(t => t.name));
+    healthReports = healthReports.filter(r => crewNames.has(r.name));
+  }
 
   // Display formatted report
   console.log(formatHealthReport(healthReports));
@@ -1333,8 +1386,25 @@ async function crewDiscoveries() {
     join(PKG_ROOT, 'hooks', 'lib', 'crew-detect.js')
   );
 
-  const limit = parseInt(process.argv[4]) || 20;
+  const projectRoot = process.cwd();
+  const crewFilter = parseCrewFilter();
+  const limit = parseInt(process.argv.slice(4).find(a => !a.startsWith('--') && a !== crewFilter)) || 20;
   const projectHash = getProjectHash();
+
+  // Resolve crew member names for filtering
+  let crewNames = null;
+  if (crewFilter) {
+    try {
+      const { loadCrewConfig, resolveProfile, resolveTeammates } = await import(
+        join(PKG_ROOT, 'crew', 'lib', 'crew-config-reader.js')
+      );
+      const config = loadCrewConfig(projectRoot);
+      const { profile } = resolveProfile(config);
+      crewNames = new Set(resolveTeammates(profile, crewFilter).map(t => t.name));
+    } catch {
+      // If config not available, skip filtering
+    }
+  }
 
   const blink = new Blink({ dbPath: CAPSULE_DB_PATH });
 
@@ -1361,11 +1431,20 @@ async function crewDiscoveries() {
       // Namespace doesn't exist yet
     }
 
+    // Filter by crew if requested
+    if (crewNames) {
+      discoveries = discoveries.filter(d => {
+        const teammate = d.content?.source_teammate;
+        return teammate && crewNames.has(teammate);
+      });
+    }
+
     // Sort by timestamp descending
     discoveries.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
     const toShow = discoveries.slice(0, limit);
 
-    console.log(`## Shared Team Discoveries (${toShow.length})\n`);
+    const crewLabel = crewFilter ? ` [crew: ${crewFilter}]` : '';
+    console.log(`## Shared Team Discoveries (${toShow.length})${crewLabel}\n`);
 
     if (toShow.length === 0) {
       console.log('No team discoveries saved yet.');
@@ -1408,13 +1487,31 @@ async function crewActivity() {
     join(PKG_ROOT, 'hooks', 'lib', 'crew-detect.js')
   );
 
+  const projectRoot = process.cwd();
   const projectHash = getProjectHash();
-  const limit = parseInt(process.argv[4]) || 10;
+  const crewFilter = parseCrewFilter();
+  const limit = parseInt(process.argv.slice(4).find(a => !a.startsWith('--') && a !== crewFilter)) || 10;
 
-  console.log('## Crew Activity Monitor\n');
+  const crewLabel = crewFilter ? ` [crew: ${crewFilter}]` : '';
+  console.log(`## Crew Activity Monitor${crewLabel}\n`);
 
   // Get teammate activities
-  const activities = getTeammateActivity(CAPSULE_DB_PATH, projectHash, { limit });
+  let activities = getTeammateActivity(CAPSULE_DB_PATH, projectHash, { limit });
+
+  // Filter by crew if requested
+  if (crewFilter) {
+    try {
+      const { loadCrewConfig, resolveProfile, resolveTeammates } = await import(
+        join(PKG_ROOT, 'crew', 'lib', 'crew-config-reader.js')
+      );
+      const config = loadCrewConfig(projectRoot);
+      const { profile } = resolveProfile(config);
+      const crewNames = new Set(resolveTeammates(profile, crewFilter).map(t => t.name));
+      activities = activities.filter(a => crewNames.has(a.teammateName));
+    } catch {
+      // If config not available, skip filtering
+    }
+  }
 
   if (activities.length === 0) {
     console.log('No teammate activity found.');

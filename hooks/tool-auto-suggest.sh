@@ -71,7 +71,7 @@ if [ ${#SUGGESTIONS[@]} -gt 0 ]; then
 
     TOOLS_JSON+="]"
 
-    echo "{\"type\":\"enforcement\",\"category\":\"super-claude-kit-tools\",\"required\":true,\"tools\":$TOOLS_JSON,\"usage\":\"bash $HOME/.claude/cck/lib/tool-runner.sh <tool-name> [args]\"}"
+    echo "{\"type\":\"enforcement\",\"category\":\"capsule-kit-tools\",\"required\":true,\"tools\":$TOOLS_JSON,\"usage\":\"bash $HOME/.claude/cck/lib/tool-runner.sh <tool-name> [args]\"}"
 fi
 
 exit 0

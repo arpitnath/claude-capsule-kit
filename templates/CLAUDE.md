@@ -27,7 +27,7 @@ Context memory for Claude Code. Capsule (SQLite) stores session state automatica
    - Refactoring: `refactoring-specialist` | Architecture: `architecture-explorer`
    - Security: `security-engineer` | Database: `database-navigator` | Git: `git-workflow-manager`
    - Production: `devops-sre` | Design: `brainstorm-coordinator`
-   - 17 agents total available.
+   - 18 agents total available.
 4. **Skills**: `/workflow` (complex tasks), `/debug` (errors/bugs), `/deep-context` (understand codebase), `/code-review` (pre-commit), `/crew` (parallel multi-branch teams). Auto-activate on keywords.
 5. **Production safety**: All sub-agents are read-only (Read, Grep, Glob only). No Edit/Write/Bash.
 
@@ -44,6 +44,7 @@ For parallel multi-branch work, use the `/crew` skill. It handles team setup, wo
 **CLI**: `cck crew init|decompose|start|stop|status|doctor|activity|gc|discoveries|merge-preview|merge` for manual control.
 **Roles**: `developer`, `reviewer`, `tester`, `architect` — set defaults for model, mode, and focus.
 **Staleness**: Configurable via `stale_after_hours` (default 4h). Teammates resume if still active.
+**Crew grouping**: Config supports `crews` array to group teammates (e.g. frontend, backend). Use `--crew <name>` to filter commands.
 
 Key rule: Only crew teammates use git worktrees. Regular sub-agents (Task tool) work in the main project directory.
 **Requires**: Agent teams enabled in Claude Code. Setup guide: https://code.claude.com/docs/en/agent-teams

@@ -65,7 +65,7 @@ if [ -n "$TARGET_VERSION" ]; then
 else
   # Get latest version from GitHub
   echo "Checking for updates..."
-  INSTALL_VERSION=$(curl -fsSL --max-time 5 https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/manifest.json 2>/dev/null | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])" 2>/dev/null || echo "")
+  INSTALL_VERSION=$(curl -fsSL --max-time 5 https://raw.githubusercontent.com/arpitnath/claude-capsule-kit/master/manifest.json 2>/dev/null | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])" 2>/dev/null || echo "")
 
   if [ -z "$INSTALL_VERSION" ]; then
     echo "❌ Failed to check for updates (network error or timeout)"
@@ -154,15 +154,15 @@ if [ "$DEV_MODE" = true ]; then
     bash "$SCRIPT_DIR/install"
   else
     echo "❌ Error: Local install script not found at $SCRIPT_DIR/install"
-    echo "   Make sure you're running from the super-claude-kit repository"
+    echo "   Make sure you're running from the claude-capsule-kit repository"
     exit 1
   fi
 else
   if [ -n "$TARGET_VERSION" ]; then
-    INSTALL_URL="https://raw.githubusercontent.com/arpitnath/super-claude-kit/${TARGET_VERSION}/install"
+    INSTALL_URL="https://raw.githubusercontent.com/arpitnath/claude-capsule-kit/${TARGET_VERSION}/install"
     curl -fsSL "$INSTALL_URL" | VERSION="$TARGET_VERSION" bash
   else
-    INSTALL_URL="https://raw.githubusercontent.com/arpitnath/super-claude-kit/master/install"
+    INSTALL_URL="https://raw.githubusercontent.com/arpitnath/claude-capsule-kit/master/install"
     curl -fsSL "$INSTALL_URL" | bash
   fi
 fi

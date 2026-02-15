@@ -12,7 +12,7 @@ Load a previously synced session summary from GitHub for context.
 Provide the session path from `/sessions` output:
 
 ```
-/load-session super-claude-kit/2024-12-13-abc12345
+/load-session my-project/2024-12-13-abc12345
 ```
 
 ## Load Session
@@ -24,7 +24,7 @@ SESSION_PATH="$1"
 if [ -z "$SESSION_PATH" ]; then
     echo "Usage: /load-session <project>/<session>"
     echo ""
-    echo "Example: /load-session super-claude-kit/2024-12-13-abc12345"
+    echo "Example: /load-session my-project/2024-12-13-abc12345"
     echo ""
     echo "Run /sessions to see available sessions"
     exit 0
