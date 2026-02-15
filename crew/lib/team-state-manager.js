@@ -116,3 +116,40 @@ export function isStale(teammate, maxAgeMs = 4 * 3600000) {
 export function isConfigChanged(currentHash, stateHash) {
   return currentHash !== stateHash;
 }
+
+/**
+ * Store a teammate's spawn prompt for recovery/re-spawn.
+ * @param {string} projectHash - 12-char project hash
+ * @param {string} profileName - Profile name
+ * @param {string} teammateName - Teammate name
+ * @param {string} prompt - Full spawn prompt text
+ */
+export function setSpawnPrompt(projectHash, profileName, teammateName, prompt) {
+  const state = loadTeamState(projectHash, profileName);
+  if (!state) {
+    throw new Error(`No team state found for profile "${profileName}"`);
+  }
+
+  if (!state.spawn_prompts) {
+    state.spawn_prompts = {};
+  }
+
+  state.spawn_prompts[teammateName] = prompt;
+  saveTeamState(projectHash, state, profileName);
+}
+
+/**
+ * Retrieve a teammate's spawn prompt.
+ * @param {string} projectHash - 12-char project hash
+ * @param {string} profileName - Profile name
+ * @param {string} teammateName - Teammate name
+ * @returns {string|null} Spawn prompt or null if not found
+ */
+export function getSpawnPrompt(projectHash, profileName, teammateName) {
+  const state = loadTeamState(projectHash, profileName);
+  if (!state || !state.spawn_prompts) {
+    return null;
+  }
+
+  return state.spawn_prompts[teammateName] || null;
+}

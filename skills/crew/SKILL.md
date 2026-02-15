@@ -210,6 +210,42 @@ TaskUpdate(taskId="N", owner="{teammate.name}")
 - Teammates send messages when they complete work or hit blockers
 - Respond to teammate messages with guidance or decisions
 
+**Health Monitoring**:
+
+Teammates can become unresponsive or crash. Use health monitoring to detect issues:
+
+1. **Manual health checks**:
+   ```bash
+   cck crew doctor [profile]
+   ```
+   Displays health table showing each teammate's status, last activity, and recent commits.
+
+2. **Automated monitoring protocol** (every 10-15 minutes):
+   - If a teammate is silent for >10 minutes, send them a message:
+     ```
+     SendMessage(type="message", recipient="{name}", content="Status check: still working?")
+     ```
+   - Wait 2 minutes for response
+   - If still no response, check their worktree:
+     ```bash
+     git -C {worktree_path} log --oneline -5
+     git -C {worktree_path} status
+     ```
+   - If worktree shows no recent activity:
+     - Teammate likely crashed
+     - Re-spawn using stored spawn prompt (see below)
+
+3. **Re-spawning crashed teammates**:
+   - Spawn prompts are stored in team-state.json automatically
+   - To re-spawn, use the same Task call with the stored prompt
+   - The teammate will resume in the same worktree with context preserved
+
+4. **Health status meanings**:
+   - `active` (✓): Updated recently, working normally
+   - `idle` (○): No recent updates but not yet stale, may be thinking
+   - `unresponsive` (⚠): Stale beyond threshold, may need attention
+   - `crashed` (✗): Worktree exists but no activity and very stale, needs re-spawn
+
 **When teammates report completion**:
 1. Check their commits:
    ```bash

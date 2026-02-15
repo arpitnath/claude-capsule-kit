@@ -373,7 +373,8 @@ async function crew() {
     decompose: crewDecompose,
     discoveries: crewDiscoveries,
     'merge-preview': crewMergePreview,
-    merge: crewMerge
+    merge: crewMerge,
+    doctor: crewDoctor
   };
 
   if (!sub || !subs[sub]) {
@@ -385,6 +386,7 @@ async function crew() {
     console.log('  cck crew start [profile]          Launch team (setup worktrees, generate lead prompt)');
     console.log('  cck crew stop [profile]           Stop team and update state');
     console.log('  cck crew status [profile]         Show team state (all profiles if omitted)');
+    console.log('  cck crew doctor [profile]         Check teammate health (detect crashed/hung teammates)');
     console.log('  cck crew discoveries [limit]      List shared team discoveries (default: 20)');
     console.log('  cck crew merge-preview [profile]  Preview branch merges (conflicts, changed files)');
     console.log('  cck crew merge [profile]          Execute branch merges after preview and confirmation');
@@ -1091,6 +1093,81 @@ async function crewDecompose() {
   } else {
     console.log('To write this config:');
     console.log('  cck crew decompose --write');
+  }
+}
+
+async function crewDoctor() {
+  const { loadCrewConfig, resolveProfile } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'crew-config-reader.js')
+  );
+  const { loadTeamState } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'team-state-manager.js')
+  );
+  const { getProjectHash } = await import(
+    join(PKG_ROOT, 'hooks', 'lib', 'crew-detect.js')
+  );
+  const { checkHealth, formatHealthReport } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'health-monitor.js')
+  );
+
+  const projectRoot = process.cwd();
+  const projectHash = getProjectHash();
+  const profileArg = process.argv.slice(4).find(a => !a.startsWith('--'));
+
+  // Determine profile to check
+  let profileName = 'default';
+  if (profileArg) {
+    profileName = profileArg;
+  } else {
+    try {
+      const config = loadCrewConfig(projectRoot);
+      const resolved = resolveProfile(config);
+      profileName = resolved.profileName;
+    } catch {
+      // Use default
+    }
+  }
+
+  const state = loadTeamState(projectHash, profileName);
+  if (!state || !state.teammates) {
+    console.log(`No team state found for profile "${profileName}".`);
+    console.log('Run "cck crew start" first.');
+    return;
+  }
+
+  console.log(`Crew Health Check: ${state.team_name} (profile: ${profileName})`);
+  console.log('');
+
+  // Run health check
+  const healthReports = checkHealth(projectHash, profileName, {
+    staleThresholdMinutes: 10,
+    commitWindowMinutes: 30
+  });
+
+  // Display formatted report
+  console.log(formatHealthReport(healthReports));
+  console.log('');
+
+  // Summary
+  const healthCounts = healthReports.reduce((acc, r) => {
+    acc[r.health] = (acc[r.health] || 0) + 1;
+    return acc;
+  }, {});
+
+  console.log('Summary:');
+  if (healthCounts.active) console.log(`  ✓ ${healthCounts.active} active`);
+  if (healthCounts.idle) console.log(`  ○ ${healthCounts.idle} idle`);
+  if (healthCounts.unresponsive) console.log(`  ⚠ ${healthCounts.unresponsive} unresponsive`);
+  if (healthCounts.crashed) console.log(`  ✗ ${healthCounts.crashed} crashed`);
+  console.log('');
+
+  // Exit code: 0 if all healthy, 1 if any unhealthy
+  const hasUnhealthy = (healthCounts.crashed || 0) + (healthCounts.unresponsive || 0) > 0;
+  if (hasUnhealthy) {
+    console.log('⚠ Some teammates need attention. See recovery steps above.');
+    process.exit(1);
+  } else {
+    console.log('✓ All teammates are healthy.');
   }
 }
 
