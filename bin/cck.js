@@ -682,6 +682,16 @@ async function crewStop() {
     saveTeamState(projectHash, state, pName);
     console.log(`Team "${state.team_name}" (profile: ${pName}) stopped.`);
 
+    // Clean up crew-identity.json files (from worktrees and project root)
+    for (const [name, mate] of Object.entries(state.teammates || {})) {
+      if (mate.worktree_path) {
+        const wtIdentity = resolve(mate.worktree_path, 'crew-identity.json');
+        if (existsSync(wtIdentity)) rmSync(wtIdentity);
+      }
+    }
+    const rootIdentity = resolve(projectRoot, 'crew-identity.json');
+    if (existsSync(rootIdentity)) rmSync(rootIdentity);
+
     // FLIPPED: cleanup by default unless --keep-worktrees is passed
     if (!keepWorktrees) {
       for (const [name, mate] of Object.entries(state.teammates || {})) {

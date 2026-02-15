@@ -12,6 +12,7 @@ node_modules/
 
 # Crew mode
 .crew-config.json
+crew-identity.json
 
 # OS files
 .DS_Store

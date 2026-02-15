@@ -41,7 +41,7 @@ For parallel multi-branch work, use the `/crew` skill. It handles team setup, wo
 - Tasks where teammates need their own branch to commit on
 
 **Config**: `.crew-config.json` in project root defines team profiles, teammates, roles, and branches.
-**CLI**: `cck crew init|start|stop|status` for manual control.
+**CLI**: `cck crew init|decompose|start|stop|status|doctor|activity|gc|discoveries|merge-preview|merge` for manual control.
 **Roles**: `developer`, `reviewer`, `tester`, `architect` — set defaults for model, mode, and focus.
 **Staleness**: Configurable via `stale_after_hours` (default 4h). Teammates resume if still active.
 
@@ -57,6 +57,7 @@ Context is handled **fully automatically**. The JS hooks capture everything:
 | `session-start.js` | Session begins | Injects last session summary, recent files, team activity |
 | `post-tool-use.js` | After Read/Write/Edit/Task | File operations (META), sub-agent invocations (SUMMARY) |
 | `session-end.js` | Session ends | Session summary with file count, agent count |
+| `pre-compact.js` | Before auto-compact | Saves session continuity document while full context is still available |
 | `pre-tool-use.sh` | Before tool calls | Tool enforcement warnings, large file blocking |
 | `stop.sh` | After responses | Quality check |
 

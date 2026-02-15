@@ -47,6 +47,18 @@
       ]
     }
   ],
+  "PreCompact": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node $HOME/.claude/cck/hooks/pre-compact.js",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
   "SessionEnd": [
     {
       "matcher": "*",
