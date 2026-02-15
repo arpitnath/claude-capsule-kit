@@ -10,9 +10,10 @@ import { Blink } from 'blink-query';
 import { createInterface } from 'readline';
 import { getCapsuleDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
 import { existsSync, readFileSync, rmSync, unlinkSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, dirname, join } from 'path';
 import { homedir } from 'os';
 import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
 
 function getCurrentBranch() {
   try {
@@ -265,6 +266,44 @@ async function main() {
               parts.push('');
               parts.push(`Last active: ${ageHours}h ago${isStale ? ' (STALE)' : ''}`);
 
+              // Inject teammate activity if in lead session (no crewId) and team is active
+              if (!crewId && !isStale) {
+                try {
+                  const __filename = fileURLToPath(import.meta.url);
+                  const __dirname = dirname(__filename);
+                  const { getTeammateActivity, detectOverlaps } = await import(
+                    join(__dirname, '..', 'crew', 'lib', 'activity-monitor.js')
+                  );
+
+                  const activities = getTeammateActivity(getCapsuleDbPath(), projectHash, { limit: 3 });
+
+                  if (activities.length > 0) {
+                    parts.push('');
+                    parts.push('## Teammate Activity');
+                    for (const activity of activities) {
+                      const ageMinutes = Math.round((Date.now() - activity.lastActive) / 60000);
+                      const files = activity.recentOps.map(op => op.file.split('/').pop()).join(', ');
+                      if (files) {
+                        parts.push(`- ${activity.teammateName}: ${files} (${ageMinutes}m ago)`);
+                      }
+                    }
+
+                    // Check for overlaps
+                    const overlaps = detectOverlaps(activities);
+                    if (overlaps.length > 0) {
+                      parts.push('');
+                      parts.push('⚠️  **Overlap Warning:**');
+                      for (const overlap of overlaps) {
+                        const fileName = overlap.file.split('/').pop();
+                        parts.push(`- ${fileName}: touched by ${overlap.teammates.join(', ')}`);
+                      }
+                    }
+                  }
+                } catch (err) {
+                  // Graceful degradation - activity monitoring is non-critical
+                }
+              }
+
               if (!isStale) {
                 parts.push(`\nResumable. Use \`cck crew start ${pName}\` to launch.`);
               } else {
@@ -315,6 +354,44 @@ async function main() {
             }
             parts.push('');
             parts.push(`Last active: ${ageHours}h ago${isStale ? ' (STALE)' : ''}`);
+
+            // Inject teammate activity if in lead session (no crewId) and team is active
+            if (!crewId && !isStale) {
+              try {
+                const __filename = fileURLToPath(import.meta.url);
+                const __dirname = dirname(__filename);
+                const { getTeammateActivity, detectOverlaps } = await import(
+                  join(__dirname, '..', 'crew', 'lib', 'activity-monitor.js')
+                );
+
+                const activities = getTeammateActivity(getCapsuleDbPath(), projectHash, { limit: 3 });
+
+                if (activities.length > 0) {
+                  parts.push('');
+                  parts.push('## Teammate Activity');
+                  for (const activity of activities) {
+                    const ageMinutes = Math.round((Date.now() - activity.lastActive) / 60000);
+                    const files = activity.recentOps.map(op => op.file.split('/').pop()).join(', ');
+                    if (files) {
+                      parts.push(`- ${activity.teammateName}: ${files} (${ageMinutes}m ago)`);
+                    }
+                  }
+
+                  // Check for overlaps
+                  const overlaps = detectOverlaps(activities);
+                  if (overlaps.length > 0) {
+                    parts.push('');
+                    parts.push('⚠️  **Overlap Warning:**');
+                    for (const overlap of overlaps) {
+                      const fileName = overlap.file.split('/').pop();
+                      parts.push(`- ${fileName}: touched by ${overlap.teammates.join(', ')}`);
+                    }
+                  }
+                }
+              } catch (err) {
+                // Graceful degradation - activity monitoring is non-critical
+              }
+            }
 
             if (!isStale) {
               parts.push('\nTeammates may be resumable. Use `cck crew start` to launch.');
