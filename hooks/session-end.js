@@ -13,6 +13,7 @@ import { homedir } from 'os';
 import { resolve } from 'path';
 import { execSync } from 'child_process';
 import { getCapsuleDbPath, getCrewIdentity, crewNamespace, getProjectHash, isDisabled } from './lib/crew-detect.js';
+import { generateHandoff } from './lib/handoff-generator.js';
 
 function getCurrentBranch() {
   try {
@@ -75,6 +76,22 @@ async function main() {
         endedAt: Date.now()
       },
       tags: ['session', sessionId, ...(crewId ? [crewId.teammate_name] : [])]
+    });
+
+    // Generate and save handoff document (SUMMARY type for direct consumption)
+    const handoff = generateHandoff(getCapsuleDbPath(), sessionId, crewId, projectHash);
+    blink.save({
+      namespace: crewNamespace(`session/${sessionId}/handoff`, crewId, projectHash),
+      title: `Session ${sessionId} Handoff`,
+      summary: handoff,
+      type: 'SUMMARY',
+      content: {
+        sessionId,
+        teammateName: crewId?.teammate_name || null,
+        branch: currentBranch,
+        generatedAt: Date.now()
+      },
+      tags: ['handoff', sessionId, ...(crewId ? [crewId.teammate_name] : [])]
     });
 
     blink.close();

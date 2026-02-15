@@ -69,47 +69,81 @@ async function main() {
     const sessionNs = crewNamespace('session', crewId, projectHash);
     const currentBranch = getCurrentBranch();
 
-    // Branch-aware session context: prioritize sessions from the current branch
-    const recentSessions = blink.list(sessionNs, 'recent').slice(0, 10);
+    // Query for most recent handoff document
+    let handoffRecord = null;
+    try {
+      // Search for handoff records with the handoff tag
+      const handoffTag = 'handoff';
+      const allHandoffs = blink.search(handoffTag);
 
-    let branchSession = null;
-    let fallbackSession = null;
+      // Filter to this teammate's handoffs in crew mode
+      const relevantHandoffs = crewId
+        ? allHandoffs.filter(h => h.namespace?.includes(`crew/${crewId.teammate_name}/session`))
+        : allHandoffs.filter(h => !h.namespace?.includes('crew/'));
 
-    if (currentBranch) {
-      // Find the most recent session on the current branch
-      for (const session of recentSessions) {
-        try {
-          const content = typeof session.content === 'string'
-            ? JSON.parse(session.content)
-            : session.content;
+      // Sort by timestamp (most recent first)
+      relevantHandoffs.sort((a, b) => {
+        const aTime = typeof a.content === 'string'
+          ? JSON.parse(a.content)?.generatedAt || 0
+          : a.content?.generatedAt || 0;
+        const bTime = typeof b.content === 'string'
+          ? JSON.parse(b.content)?.generatedAt || 0
+          : b.content?.generatedAt || 0;
+        return bTime - aTime;
+      });
 
-          if (content?.branch === currentBranch) {
-            branchSession = session;
-            break;
-          }
-
-          // Keep first session as fallback
-          if (!fallbackSession) {
-            fallbackSession = session;
-          }
-        } catch {
-          // If content parsing fails, use as fallback
-          if (!fallbackSession) {
-            fallbackSession = session;
-          }
-        }
-      }
-    } else {
-      // No git branch detected, use most recent session
-      fallbackSession = recentSessions[0];
+      handoffRecord = relevantHandoffs[0];
+    } catch {
+      // Graceful degradation - handoff is optional
     }
 
-    const sessionToShow = branchSession || fallbackSession;
-    if (sessionToShow) {
-      const header = branchSession && currentBranch
-        ? `## Branch Context (${currentBranch})`
-        : `## Last Session`;
-      contextParts.push(`${header}\n${sessionToShow.summary || sessionToShow.title}`);
+    // Inject handoff prominently if found
+    if (handoffRecord?.summary) {
+      const teammateSuffix = crewId ? ` (${crewId.teammate_name})` : '';
+      contextParts.push(`## Session Handoff${teammateSuffix}\n\n${handoffRecord.summary}`);
+    } else {
+      // Fallback to legacy session summary if no handoff available
+      const recentSessions = blink.list(sessionNs, 'recent').slice(0, 10);
+
+      let branchSession = null;
+      let fallbackSession = null;
+
+      if (currentBranch) {
+        // Find the most recent session on the current branch
+        for (const session of recentSessions) {
+          try {
+            const content = typeof session.content === 'string'
+              ? JSON.parse(session.content)
+              : session.content;
+
+            if (content?.branch === currentBranch) {
+              branchSession = session;
+              break;
+            }
+
+            // Keep first session as fallback
+            if (!fallbackSession) {
+              fallbackSession = session;
+            }
+          } catch {
+            // If content parsing fails, use as fallback
+            if (!fallbackSession) {
+              fallbackSession = session;
+            }
+          }
+        }
+      } else {
+        // No git branch detected, use most recent session
+        fallbackSession = recentSessions[0];
+      }
+
+      const sessionToShow = branchSession || fallbackSession;
+      if (sessionToShow) {
+        const header = branchSession && currentBranch
+          ? `## Branch Context (${currentBranch})`
+          : `## Last Session`;
+        contextParts.push(`${header}\n${sessionToShow.summary || sessionToShow.title}`);
+      }
     }
 
     const discoveryNs = crewId
