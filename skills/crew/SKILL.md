@@ -60,32 +60,48 @@ cat .crew-config.json
 4. Confirm with user before proceeding
 
 **If no config exists**:
-1. Ask user: "What work needs to be parallelized?"
-2. Gather requirements:
-   - Team name
-   - Number of teammates and their names
-   - For each: branch name, role (developer/reviewer/tester/architect), focus area
-3. Write `.crew-config.json` directly:
-   ```json
-   {
-     "team": {
-       "name": "collected-name",
-       "lead": { "model": "sonnet" },
-       "teammates": [
-         {
-           "name": "collected-name",
-           "branch": "collected-branch",
-           "worktree": true,
-           "role": "developer",
-           "focus": "collected-focus"
-         }
-       ]
-     },
-     "project": { "main_branch": "auto-detect" },
-     "stale_after_hours": 4
-   }
-   ```
-4. Auto-detect `main_branch` from git
+1. **Option A: Auto-decompose (recommended for large codebases)**
+   - Suggest running smart task decomposition:
+     ```bash
+     cck crew decompose [paths...]
+     ```
+   - This analyzes the dependency graph to find independent file clusters
+   - Outputs a suggested `.crew-config.json` with teammates for each cluster
+   - User can review and edit the generated config
+   - Use `--write` flag to write directly: `cck crew decompose --write`
+   - Use `--teammates N` to limit team size: `cck crew decompose --teammates 3`
+
+2. **Option B: Manual composition**
+   - Ask user: "What work needs to be parallelized?"
+   - Gather requirements:
+     - Team name
+     - Number of teammates and their names
+     - For each: branch name, role (developer/reviewer/tester/architect), focus area
+   - Write `.crew-config.json` directly:
+     ```json
+     {
+       "team": {
+         "name": "collected-name",
+         "lead": { "model": "sonnet" },
+         "teammates": [
+           {
+             "name": "collected-name",
+             "branch": "collected-branch",
+             "worktree": true,
+             "role": "developer",
+             "focus": "collected-focus"
+           }
+         ]
+       },
+       "project": { "main_branch": "auto-detect" },
+       "stale_after_hours": 4
+     }
+     ```
+   - Auto-detect `main_branch` from git
+
+**When to use decompose vs manual**:
+- **Use decompose**: Large codebase, unclear module boundaries, want optimal parallelization
+- **Use manual**: Small targeted changes, clear separation already known, specific teammate roles needed
 
 **Deliverable**: Valid `.crew-config.json` and confirmed team composition
 
