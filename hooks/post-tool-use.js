@@ -107,6 +107,57 @@ async function main() {
           tags: ['subagent', agentType, sessionId, ...(crewId ? [crewId.teammate_name] : [])]
         });
       }
+
+      // Auto-save discoveries in crew mode when specialist agents find significant insights
+      if (crewId && agentType && input.tool_result) {
+        try {
+          const resultText = typeof input.tool_result === 'string'
+            ? input.tool_result
+            : JSON.stringify(input.tool_result);
+
+          // Detection heuristic: look for discovery indicators from specialist agents
+          const discoveryPatterns = [
+            /found\s+([^.]{10,100})/i,
+            /discovered\s+([^.]{10,100})/i,
+            /identified\s+([^.]{10,100})/i,
+            /pattern:\s*([^.]{10,100})/i,
+            /issue:\s*([^.]{10,100})/i,
+            /important:\s*([^.]{10,100})/i,
+            /key finding:\s*([^.]{10,100})/i,
+          ];
+
+          // Only capture from specialist agents (not general-purpose)
+          const isSpecialist = agentType !== 'general-purpose';
+
+          if (isSpecialist && resultText.length > 100) {
+            for (const pattern of discoveryPatterns) {
+              const match = resultText.match(pattern);
+              if (match) {
+                const finding = match[1].trim();
+
+                // Save to crew shared discoveries namespace
+                blink.save({
+                  namespace: crewNamespace('_shared/discoveries', crewId, projectHash),
+                  title: `${agentType}: ${finding.slice(0, 60)}...`,
+                  summary: finding,
+                  type: 'SUMMARY',
+                  content: {
+                    source_teammate: crewId.teammate_name,
+                    source_agent: agentType,
+                    timestamp: Date.now(),
+                    prompt_context: prompt.slice(0, 200)
+                  },
+                  tags: ['discovery', 'crew-shared', agentType, crewId.teammate_name]
+                });
+
+                break; // Only save the first significant finding per invocation
+              }
+            }
+          }
+        } catch (err) {
+          // Graceful degradation - discovery auto-capture is non-critical
+        }
+      }
     }
 
     // Discovery surfacing: when Read tool is used, show related discoveries

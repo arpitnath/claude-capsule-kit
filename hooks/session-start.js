@@ -144,6 +144,41 @@ async function main() {
           otherTeammates.map(s => `- ${s.title}: ${s.summary?.slice(0, 80) || ''}`).join('\n')
         );
       }
+
+      // Shared team discoveries
+      try {
+        const sharedDiscoveryNs = crewNamespace('_shared/discoveries', crewId, projectHash);
+        const result = blink.resolve(sharedDiscoveryNs);
+
+        let discoveries = [];
+        if (result?.record?.content && Array.isArray(result.record.content)) {
+          // Resolve each child fully to get summary, source_teammate, etc.
+          for (const child of result.record.content) {
+            try {
+              const full = blink.resolve(child.path);
+              if (full?.record) discoveries.push(full.record);
+            } catch { /* skip */ }
+          }
+        } else if (result?.record?.summary) {
+          discoveries = [result.record];
+        }
+
+        // Sort by timestamp descending, show recent 5
+        discoveries.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+        const recentDiscoveries = discoveries.slice(0, 5);
+
+        if (recentDiscoveries.length > 0) {
+          const lines = ['## Shared Team Discoveries'];
+          recentDiscoveries.forEach(d => {
+            const source = d.content?.source_teammate || 'unknown';
+            const sourceAgent = d.content?.source_agent ? ` (${d.content.source_agent})` : '';
+            lines.push(`- [${source}${sourceAgent}]: ${d.summary || d.title}`);
+          });
+          contextParts.push(lines.join('\n'));
+        }
+      } catch (err) {
+        // Graceful degradation - discovery surfacing is non-critical
+      }
     }
 
     // Team profile awareness — inject .crew-config.json context

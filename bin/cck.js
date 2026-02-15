@@ -365,16 +365,17 @@ function update() {
 
 async function crew() {
   const sub = process.argv[3];
-  const subs = { init: crewInit, start: crewStart, stop: crewStop, status: crewStatus };
+  const subs = { init: crewInit, start: crewStart, stop: crewStop, status: crewStatus, discoveries: crewDiscoveries };
 
   if (!sub || !subs[sub]) {
     console.log('Usage: cck crew <command>');
     console.log('');
     console.log('Commands:');
-    console.log('  cck crew init              Create .crew-config.json in current directory');
-    console.log('  cck crew start [profile]   Launch team (setup worktrees, generate lead prompt)');
-    console.log('  cck crew stop [profile]    Stop team and update state');
-    console.log('  cck crew status [profile]  Show team state (all profiles if omitted)');
+    console.log('  cck crew init                Create .crew-config.json in current directory');
+    console.log('  cck crew start [profile]     Launch team (setup worktrees, generate lead prompt)');
+    console.log('  cck crew stop [profile]      Stop team and update state');
+    console.log('  cck crew status [profile]    Show team state (all profiles if omitted)');
+    console.log('  cck crew discoveries [limit] List shared team discoveries (default: 20)');
     process.exit(sub ? 1 : 0);
   }
 
@@ -714,6 +715,79 @@ async function crewStatus() {
         `  ${name.padEnd(20)}${(mate.status || 'unknown').padEnd(12)}${(mate.branch || '').padEnd(30)}${agentId}`
       );
     }
+  }
+}
+
+async function crewDiscoveries() {
+  if (!existsSync(CAPSULE_DB_PATH)) {
+    console.log('No capsule.db found. Discoveries will be available after your first crew session.');
+    return;
+  }
+
+  const { Blink } = await import('blink-query');
+  const { getProjectHash, crewNamespace } = await import(
+    join(PKG_ROOT, 'hooks', 'lib', 'crew-detect.js')
+  );
+
+  const limit = parseInt(process.argv[4]) || 20;
+  const projectHash = getProjectHash();
+
+  const blink = new Blink({ dbPath: CAPSULE_DB_PATH });
+
+  try {
+    // Query crew shared discoveries namespace
+    const sharedNs = `proj/${projectHash}/crew/_shared/discoveries`;
+    let discoveries = [];
+
+    try {
+      const result = blink.resolve(sharedNs);
+
+      if (result?.record?.content && Array.isArray(result.record.content)) {
+        // Resolve each child fully to get summary, source_teammate, timestamp
+        for (const child of result.record.content) {
+          try {
+            const full = blink.resolve(child.path);
+            if (full?.record) discoveries.push(full.record);
+          } catch { /* skip unresolvable */ }
+        }
+      } else if (result?.record?.summary) {
+        discoveries = [result.record];
+      }
+    } catch (err) {
+      // Namespace doesn't exist yet
+    }
+
+    // Sort by timestamp descending
+    discoveries.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+    const toShow = discoveries.slice(0, limit);
+
+    console.log(`## Shared Team Discoveries (${toShow.length})\n`);
+
+    if (toShow.length === 0) {
+      console.log('No team discoveries saved yet.');
+      console.log('');
+      console.log('Teammates can share discoveries:');
+      console.log('  bash $HOME/.claude/cck/tools/context-query/context-query.sh save crew/_shared/discoveries "Title" "Summary"');
+    } else {
+      console.log('| Teammate | Title | Summary | Date |');
+      console.log('|----------|-------|---------|------|');
+
+      toShow.forEach(d => {
+        const teammate = d.content?.source_teammate || 'unknown';
+        const agent = d.content?.source_agent || '';
+        const source = agent ? `${teammate} (${agent})` : teammate;
+        const title = (d.title || '').replace(/\|/g, '\\|').slice(0, 40);
+        const summary = (d.summary || '').replace(/\|/g, '\\|').slice(0, 60);
+        const date = d.created_at ? new Date(d.created_at).toISOString().split('T')[0] : 'unknown';
+
+        console.log(`| ${source.padEnd(20)} | ${title.padEnd(40)} | ${summary.padEnd(60)} | ${date} |`);
+      });
+
+      console.log('');
+      console.log(`Showing ${toShow.length} of ${discoveries.length} total discoveries.`);
+    }
+  } finally {
+    blink.close();
   }
 }
 
