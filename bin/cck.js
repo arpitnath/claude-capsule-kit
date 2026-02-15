@@ -372,6 +372,7 @@ async function crew() {
     status: crewStatus,
     decompose: crewDecompose,
     discoveries: crewDiscoveries,
+    activity: crewActivity,
     'merge-preview': crewMergePreview,
     merge: crewMerge
   };
@@ -385,6 +386,7 @@ async function crew() {
     console.log('  cck crew start [profile]          Launch team (setup worktrees, generate lead prompt)');
     console.log('  cck crew stop [profile]           Stop team and update state');
     console.log('  cck crew status [profile]         Show team state (all profiles if omitted)');
+    console.log('  cck crew activity [profile]       Show recent file operations and detect overlaps');
     console.log('  cck crew discoveries [limit]      List shared team discoveries (default: 20)');
     console.log('  cck crew merge-preview [profile]  Preview branch merges (conflicts, changed files)');
     console.log('  cck crew merge [profile]          Execute branch merges after preview and confirmation');
@@ -1164,6 +1166,79 @@ async function crewDiscoveries() {
     }
   } finally {
     blink.close();
+  }
+}
+
+async function crewActivity() {
+  if (!existsSync(CAPSULE_DB_PATH)) {
+    console.log('No capsule.db found. Activity will be available after your first crew session.');
+    return;
+  }
+
+  const { getTeammateActivity, detectOverlaps } = await import(
+    join(PKG_ROOT, 'crew', 'lib', 'activity-monitor.js')
+  );
+  const { getProjectHash } = await import(
+    join(PKG_ROOT, 'hooks', 'lib', 'crew-detect.js')
+  );
+
+  const projectHash = getProjectHash();
+  const limit = parseInt(process.argv[4]) || 10;
+
+  console.log('## Crew Activity Monitor\n');
+
+  // Get teammate activities
+  const activities = getTeammateActivity(CAPSULE_DB_PATH, projectHash, { limit });
+
+  if (activities.length === 0) {
+    console.log('No teammate activity found.');
+    console.log('');
+    console.log('Teammates will appear here after they start working.');
+    return;
+  }
+
+  // Display per-teammate activity
+  console.log('### Recent File Operations\n');
+
+  for (const activity of activities) {
+    const ageMs = Date.now() - activity.lastActive;
+    const ageMinutes = Math.round(ageMs / 60000);
+    const ageHours = Math.round(ageMs / 3600000);
+    const ageDisplay = ageHours > 0 ? `${ageHours}h ago` : `${ageMinutes}m ago`;
+
+    console.log(`**${activity.teammateName}** (last active ${ageDisplay})`);
+
+    if (activity.recentOps.length === 0) {
+      console.log('  No operations recorded yet.\n');
+      continue;
+    }
+
+    for (const op of activity.recentOps) {
+      const fileName = op.file.split('/').pop();
+      const timeAgo = Math.round((Date.now() - op.timestamp) / 60000);
+      console.log(`  - ${op.action}: ${fileName} (${timeAgo}m ago)`);
+    }
+
+    console.log('');
+  }
+
+  // Detect overlaps
+  const overlaps = detectOverlaps(activities);
+
+  if (overlaps.length > 0) {
+    console.log('### ⚠️  Overlapping File Changes\n');
+
+    for (const overlap of overlaps) {
+      const fileName = overlap.file.split('/').pop();
+      console.log(`**${fileName}**`);
+      console.log(`  Touched by: ${overlap.teammates.join(', ')}`);
+      console.log(`  File: ${overlap.file}\n`);
+    }
+
+    console.log(`\n${overlaps.length} file(s) with potential conflicts detected.`);
+  } else {
+    console.log('### ✓ No Overlaps\n');
+    console.log('No files have been touched by multiple teammates.');
   }
 }
 
