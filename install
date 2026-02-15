@@ -1,5 +1,23 @@
 #!/bin/bash
-# Claude Capsule Kit Installation Script
+# ============================================================================
+# DEPRECATION NOTICE - This is the v2 installation script
+# ============================================================================
+# This installation script is DEPRECATED and should NOT be used.
+#
+# For v3.0 (Capsule Kit), use the npm-based installation instead:
+#
+#   npm install -g claude-capsule-kit
+#   cck setup
+#
+# The v3 system uses a global installation at ~/.claude/cck/ with a shared
+# capsule.db database at ~/.claude/capsule.db. This v2 script installs files
+# into per-project .claude/ directories, which is no longer the supported
+# installation method.
+#
+# If you need to use this v2 script for legacy purposes, proceed with caution.
+# ============================================================================
+#
+# Claude Capsule Kit Installation Script (v2 - LEGACY)
 # Works both locally (for testing) and remotely (curl | bash)
 # Author: Arpit Nath
 
@@ -122,6 +140,11 @@ install_file() {
 echo "Installing hooks..."
 HOOK_COUNT=0
 for hook in $(echo "$MANIFEST" | python3 -c "import sys, json; [print(h) for h in json.load(sys.stdin)['components']['hooks']]"); do
+  # Create subdirectory if needed (e.g., hooks/lib/crew-detect.js)
+  hook_dir=$(dirname "$hook")
+  if [ "$hook_dir" != "." ]; then
+    mkdir -p "$INSTALL_DIR/.claude/hooks/$hook_dir"
+  fi
   install_file "hooks/$hook" ".claude/hooks/$hook"
   chmod +x ".claude/hooks/$hook"
   HOOK_COUNT=$((HOOK_COUNT + 1))
@@ -398,7 +421,7 @@ echo ""
 
 echo "Configuring Claude Code..."
 if [ ! -f "$INSTALL_DIR/.claude/settings.local.json" ]; then
-  cat > "$INSTALL_DIR/.claude/settings.local.json" << 'EOF'
+  cat > "$INSTALL_DIR/.claude/settings.local.json" << 'SETTINGS_EOF'
 {
   "hooks": {
     "SessionStart": [
@@ -407,18 +430,7 @@ if [ ! -f "$INSTALL_DIR/.claude/settings.local.json" ]; then
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/session-start.sh"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/pre-task-analysis.sh"
+            "command": "bash -c 'DIR=$PWD; while [ \"$DIR\" != \"/\" ]; do [ -d \"$DIR/.claude\" ] && cd \"$DIR\" && exec node .claude/hooks/session-start.js; DIR=$(dirname \"$DIR\"); done; exit 0'"
           }
         ]
       }
@@ -429,7 +441,7 @@ if [ ! -f "$INSTALL_DIR/.claude/settings.local.json" ]; then
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/post-tool-use.sh"
+            "command": "bash -c 'DIR=$PWD; while [ \"$DIR\" != \"/\" ]; do [ -d \"$DIR/.claude\" ] && cd \"$DIR\" && exec node .claude/hooks/post-tool-use.js; DIR=$(dirname \"$DIR\"); done; exit 0'"
           }
         ]
       }
@@ -440,7 +452,7 @@ if [ ! -f "$INSTALL_DIR/.claude/settings.local.json" ]; then
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/pre-tool-use.sh"
+            "command": "bash -c 'DIR=$PWD; while [ \"$DIR\" != \"/\" ]; do [ -d \"$DIR/.claude\" ] && cd \"$DIR\" && exec bash .claude/hooks/pre-tool-use.sh; DIR=$(dirname \"$DIR\"); done; exit 0'"
           }
         ]
       }
@@ -451,7 +463,7 @@ if [ ! -f "$INSTALL_DIR/.claude/settings.local.json" ]; then
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/stop.sh"
+            "command": "bash -c 'DIR=$PWD; while [ \"$DIR\" != \"/\" ]; do [ -d \"$DIR/.claude\" ] && cd \"$DIR\" && exec bash .claude/hooks/stop.sh; DIR=$(dirname \"$DIR\"); done; exit 0'"
           }
         ]
       }
@@ -462,14 +474,14 @@ if [ ! -f "$INSTALL_DIR/.claude/settings.local.json" ]; then
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/session-end.sh"
+            "command": "bash -c 'DIR=$PWD; while [ \"$DIR\" != \"/\" ]; do [ -d \"$DIR/.claude\" ] && cd \"$DIR\" && exec node .claude/hooks/session-end.js; DIR=$(dirname \"$DIR\"); done; exit 0'"
           }
         ]
       }
     ]
   }
 }
-EOF
+SETTINGS_EOF
   echo "✓ Created settings.local.json"
 else
   echo "✓ settings.local.json exists, merging hooks..."
@@ -482,20 +494,18 @@ with open('.claude/settings.local.json', 'r') as f:
     existing = json.load(f)
 
 def make_hook_cmd(hook_file):
-    return f'bash -c \'DIR=$PWD; while [ "$DIR" != "/" ]; do [ -d "$DIR/.claude" ] && cd "$DIR" && exec bash .claude/hooks/{hook_file}; DIR=$(dirname "$DIR"); done; exit 0\''
+    # Determine runner: node for .js files, bash for .sh files
+    runner = 'node' if hook_file.endswith('.js') else 'bash'
+    return f'bash -c \'DIR=$PWD; while [ "$DIR" != "/" ]; do [ -d "$DIR/.claude" ] && cd "$DIR" && exec {runner} .claude/hooks/{hook_file}; DIR=$(dirname "$DIR"); done; exit 0\''
 
 required_hooks = {
     "SessionStart": [{
         "matcher": "*",
-        "hooks": [{"type": "command", "command": make_hook_cmd("session-start.sh")}]
-    }],
-    "UserPromptSubmit": [{
-        "matcher": "*",
-        "hooks": [{"type": "command", "command": make_hook_cmd("pre-task-analysis.sh")}]
+        "hooks": [{"type": "command", "command": make_hook_cmd("session-start.js")}]
     }],
     "PostToolUse": [{
         "matcher": "*",
-        "hooks": [{"type": "command", "command": make_hook_cmd("post-tool-use.sh")}]
+        "hooks": [{"type": "command", "command": make_hook_cmd("post-tool-use.js")}]
     }],
     "PreToolUse": [{
         "matcher": "*",
@@ -509,7 +519,7 @@ required_hooks = {
     }],
     "SessionEnd": [{
         "matcher": "*",
-        "hooks": [{"type": "command", "command": make_hook_cmd("session-end.sh")}]
+        "hooks": [{"type": "command", "command": make_hook_cmd("session-end.js")}]
     }]
 }
 
@@ -568,15 +578,17 @@ else
 fi
 echo ""
 
-echo "Initializing capsule system..."
+echo "Initializing Blink context system..."
 cd "$INSTALL_DIR"
-bash .claude/hooks/init-capsule-session.sh >/dev/null 2>&1 || true
-bash .claude/hooks/update-capsule.sh >/dev/null 2>&1 || true
-
-if [ -f "$INSTALL_DIR/.claude/capsule.toon" ]; then
-  echo "✓ Capsule initialized successfully"
+# Install blink-query npm dependency (required for JS hooks)
+if command -v npm &> /dev/null; then
+  if [ ! -d "$INSTALL_DIR/node_modules/blink-query" ]; then
+    npm install blink-query --save 2>/dev/null && echo "✓ blink-query installed" || echo "⚠️  blink-query not available (hooks will gracefully degrade)"
+  else
+    echo "✓ blink-query already installed"
+  fi
 else
-  echo "⚠️  Capsule initialization skipped (may need git repository)"
+  echo "⚠️  npm not found - blink-query not installed (hooks will gracefully degrade)"
 fi
 echo ""
 

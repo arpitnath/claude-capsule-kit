@@ -13,7 +13,7 @@ fi
 DEP_GRAPH="$HOME/.claude/dep-graph.toon"
 
 if [ ! -f "$DEP_GRAPH" ]; then
-    TOOL_RUNNER_PATH="$HOME/.claude/lib/tool-runner.sh"
+    TOOL_RUNNER_PATH="$HOME/.claude/cck/lib/tool-runner.sh"
 
     if [ -f "$TOOL_RUNNER_PATH" ]; then
         source "$TOOL_RUNNER_PATH"
@@ -28,7 +28,7 @@ if [ ! -f "$DEP_GRAPH" ]; then
 fi
 
 # Source TOON parser
-TOON_PARSER="$HOME/.claude/lib/toon-parser.sh"
+TOON_PARSER="$HOME/.claude/cck/lib/toon-parser.sh"
 if [ -f "$TOON_PARSER" ]; then
     source "$TOON_PARSER"
 else

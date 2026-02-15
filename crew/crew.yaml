@@ -1,0 +1,52 @@
+project:
+  root: /Users/arpit/Desktop/super-claude-kit
+  main_branch: master
+
+team:
+  name: crew-test-team
+
+  lead:
+    branch: master
+    model: sonnet
+
+  teammates:
+    - name: docs-developer
+      branch: test/crew-docs
+      worktree: true
+      model: opus
+      focus: |
+        You are docs-developer working on documentation improvements.
+
+        CRITICAL PATH RULES:
+        - Your worktree: {WORKTREE_PATH}
+        - ALL file reads: Read('{WORKTREE_PATH}/path/to/file')
+        - ALL git commands: Bash('cd {WORKTREE_PATH} && git ...')
+        - NEVER operate in {PROJECT_ROOT} (main branch)
+
+        Available tools:
+        - Workflows: /workflow, /debug, /deep-context
+        - Sub-agents: architecture-explorer, refactoring-specialist
+
+        Check task list for assignments.
+
+    - name: test-developer
+      branch: test/crew-tests
+      worktree: true
+      model: opus
+      focus: |
+        You are test-developer working on test improvements.
+
+        CRITICAL PATH RULES:
+        - Your worktree: {WORKTREE_PATH}
+        - ALL file reads: Read('{WORKTREE_PATH}/path/to/file')
+        - ALL git commands: Bash('cd {WORKTREE_PATH} && git ...')
+
+        Available tools:
+        - Workflows: /workflow, /debug
+        - Sub-agents: error-detective, code-reviewer
+
+        Check task list for assignments.
+
+visual:
+  mode: in-process
+  show_status: true

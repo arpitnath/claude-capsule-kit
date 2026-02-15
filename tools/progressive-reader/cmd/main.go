@@ -8,6 +8,7 @@ import (
 
 	"github.com/arpitnath/super-claude-kit/tools/progressive-reader/pkg/chunker"
 	"github.com/arpitnath/super-claude-kit/tools/progressive-reader/pkg/formatter"
+	"github.com/arpitnath/super-claude-kit/tools/progressive-reader/pkg/parser"
 	"github.com/arpitnath/super-claude-kit/tools/progressive-reader/pkg/token"
 )
 
@@ -94,10 +95,11 @@ func run(path string, chunkNum int, continueFile string, maxTokens int, list boo
 
 	tokenPath := ""
 	if chunk.HasMore {
+		lang := parser.DetectLanguage(absPath)
 		tok := token.NewContinuationToken(
 			absPath,
 			targetChunk+1,
-			"typescript",
+			lang,
 			len(chunks),
 			content,
 		)

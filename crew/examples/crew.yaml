@@ -1,0 +1,52 @@
+# Claude Crew Configuration Example
+# Multi-branch parallel development with Agent Teams
+
+project:
+  root: /Users/arpit/Desktop/myproject
+  main_branch: main
+
+team:
+  name: dev-team
+
+  lead:
+    # Lead stays on main branch
+    branch: main
+    model: sonnet
+
+  teammates:
+    - name: backend-developer
+      branch: feature/backend-api
+      worktree: true  # Auto-create worktree
+      model: sonnet
+      focus: |
+        You are backend-developer working on backend API features.
+
+        CRITICAL: Your worktree is at {WORKTREE_PATH}
+        - ALL file operations use absolute paths: Read('{WORKTREE_PATH}/src/...')
+        - ALL git commands: Bash('cd {WORKTREE_PATH} && git ...')
+        - NEVER operate in {PROJECT_ROOT} (that's the main branch)
+
+        You have access to:
+        - Workflows: /workflow, /debug, /deep-context
+        - Sub-agents: error-detective, refactoring-specialist, code-reviewer
+
+        Check the task list for assignments.
+
+    - name: frontend-developer
+      branch: feature/frontend-ui
+      worktree: true
+      model: sonnet
+      focus: |
+        You are frontend-developer working on UI features.
+
+        CRITICAL: Your worktree is at {WORKTREE_PATH}
+        - ALL file operations use absolute paths: Read('{WORKTREE_PATH}/src/...')
+        - ALL git commands: Bash('cd {WORKTREE_PATH} && git ...')
+
+        Leverage workflows and sub-agents as needed.
+
+visual:
+  mode: tmux-split  # or it2-split for iTerm2
+  layout: lead-left-teammates-right
+  show_status: true
+  show_thinking: true

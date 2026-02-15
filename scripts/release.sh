@@ -185,7 +185,7 @@ This release includes updated binaries for all supported platforms.
 ## Installation
 
 \`\`\`bash
-curl -fsSL https://raw.githubusercontent.com/arpitnath/super-claude-kit/$NEW_VERSION/install | bash
+curl -fsSL https://raw.githubusercontent.com/arpitnath/claude-capsule-kit/$NEW_VERSION/install | bash
 \`\`\`
 
 ## What's Changed
@@ -198,7 +198,7 @@ See commit history for detailed changes.
     echo "   brew install gh"
     echo ""
     echo "   Or create the release manually at:"
-    echo "   https://github.com/arpitnath/super-claude-kit/releases/new?tag=$NEW_VERSION"
+    echo "   https://github.com/arpitnath/claude-capsule-kit/releases/new?tag=$NEW_VERSION"
   fi
 else
   echo ""

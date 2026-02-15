@@ -44,9 +44,9 @@ if [ -f "${CLAUDE_DIR}/dep-graph.toon" ]; then
   echo "  Graph saved to: ${CLAUDE_DIR}/dep-graph.toon"
   echo ""
   echo "Query with:"
-  echo "  bash .claude/tools/query-deps/query-deps.sh <file>"
-  echo "  bash .claude/tools/find-circular/find-circular.sh"
-  echo "  bash .claude/tools/find-dead-code/find-dead-code.sh"
+  echo "  bash $HOME/.claude/cck/tools/query-deps/query-deps.sh <file>"
+  echo "  bash $HOME/.claude/cck/tools/find-circular/find-circular.sh"
+  echo "  bash $HOME/.claude/cck/tools/find-dead-code/find-dead-code.sh"
 else
   echo "Error: Failed to create dependency graph"
   exit 1

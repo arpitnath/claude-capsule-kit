@@ -6,6 +6,14 @@ CLAUDE.md
 __notepad__/*
 docs/*
 
+# Runtime data
+capsule.db
+node_modules/
+
+# Crew mode
+.crew-config.json
+crew-identity.json
+
 # OS files
 .DS_Store
 Thumbs.db

@@ -37,7 +37,7 @@ if [ -n "$USER_PROMPT" ]; then
 Detected: Uncertainty about "$TOPIC"
 
 Before proceeding, query context-librarian for existing knowledge:
-  Bash(".claude/tools/context-query/context-query.sh $TOPIC")
+  Bash("$HOME/.claude/cck/tools/context-query/context-query.sh $TOPIC")
 
 This searches all memory layers (3-8s) and returns focused context with 90% attention.
 
@@ -51,7 +51,7 @@ fi
 REMINDER_INTERVAL=10
 if [ $((NEXT_COUNT % REMINDER_INTERVAL)) -eq 0 ]; then
   # Inject memory context (existing functionality from prompt-submit-memory.sh)
-  MEMORY_OUTPUT=$(./.claude/hooks/prompt-submit-memory.sh <<< "$INPUT_JSON" 2>/dev/null || echo "")
+  MEMORY_OUTPUT=$("$HOME/.claude/cck/hooks/prompt-submit-memory.sh" <<< "$INPUT_JSON" 2>/dev/null || echo "")
 
   # Build reminder message
   REMINDER="💡 Capsule Kit Reminder (Message $NEXT_COUNT):
@@ -65,7 +65,7 @@ $MEMORY_OUTPUT"
   echo "$REMINDER"
 else
   # Not a reminder turn, just inject memory if available
-  ./.claude/hooks/prompt-submit-memory.sh <<< "$INPUT_JSON" 2>/dev/null || exit 0
+  "$HOME/.claude/cck/hooks/prompt-submit-memory.sh" <<< "$INPUT_JSON" 2>/dev/null || exit 0
 fi
 
 exit 0

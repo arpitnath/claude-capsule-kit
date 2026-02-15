@@ -124,12 +124,12 @@ echo "5️⃣ Testing capsule generation..."
 ./.claude/hooks/init-capsule-session.sh >/dev/null 2>&1
 ./.claude/hooks/update-capsule.sh >/dev/null 2>&1
 
-if [ -f ".claude/capsule.toon" ]; then
-  echo "   ✅ Capsule generated successfully"
+if [ -f "$HOME/.claude/capsule.db" ]; then
+  echo "   ✅ Capsule database exists"
   PASSED=$((PASSED + 1))
 
   # Check if capsule has content
-  capsule_size=$(wc -c < .claude/capsule.toon)
+  capsule_size=$(wc -c < "$HOME/.claude/capsule.db")
   if [ "$capsule_size" -gt 50 ]; then
     echo "   ✅ Capsule contains data ($capsule_size bytes)"
     PASSED=$((PASSED + 1))

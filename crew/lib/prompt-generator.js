@@ -1,0 +1,268 @@
+/**
+ * Prompt Generator - Generate lead prompts for team launch/resume
+ *
+ * Builds structured prompts that guide the lead agent through creating
+ * a team, spawning teammates, and assigning tasks.
+ *
+ * Accepts a resolved profile (team object) — callers use resolveProfile()
+ * before calling generateLeadPrompt().
+ */
+
+import { isStale, isConfigChanged } from './team-state-manager.js';
+import { resolveRole } from './role-presets.js';
+
+/**
+ * Generate the full lead prompt for launching or resuming a team.
+ *
+ * @param {object} team - Resolved team/profile object (has name, teammates[], lead)
+ * @param {object|null} teamState - Existing team state (null = fresh)
+ * @param {object} worktreePaths - Map of teammate name → worktree path
+ * @param {string} currentConfigHash - Hash for change detection
+ * @param {number} [staleAfterMs=14400000] - Staleness threshold in ms (default: 4 hours)
+ * @returns {string} Lead prompt string
+ */
+export function generateLeadPrompt(team, teamState, worktreePaths, currentConfigHash, staleAfterMs = 4 * 3600000) {
+  const projectRoot = worktreePaths._projectRoot || process.cwd();
+
+  const canResume = teamState
+    && !isConfigChanged(currentConfigHash, teamState.config_hash)
+    && teamState.teammates
+    && Object.values(teamState.teammates).some(t => !isStale(t, staleAfterMs));
+
+  if (canResume) {
+    return generateResumePrompt(team, teamState, worktreePaths, projectRoot, staleAfterMs);
+  }
+
+  return generateFreshPrompt(team, worktreePaths, projectRoot);
+}
+
+/**
+ * Generate a resume prompt for an existing team session.
+ */
+function generateResumePrompt(team, teamState, worktreePaths, projectRoot, staleAfterMs = 4 * 3600000) {
+  const lastActive = teamState.updated_at
+    ? Math.round((Date.now() - new Date(teamState.updated_at).getTime()) / 3600000)
+    : '?';
+
+  const lines = [
+    `## Team Resume: ${team.name}`,
+    '',
+    `Previous teammates were active ${lastActive} hours ago. Attempt resume for each.`,
+    '',
+    '### Step 1: Create Team',
+    `Use TeamCreate with team_name="${team.name}"`,
+    '',
+    '### Step 2: Resume Teammates',
+    'For each teammate below, TRY to resume with their saved agent_id.',
+    'If resume fails (agent expired), spawn fresh with the full prompt.',
+    '',
+  ];
+
+  for (const mate of team.teammates) {
+    const resolved = resolveRole(mate);
+    const savedState = teamState.teammates?.[mate.name];
+    const wtPath = worktreePaths[mate.name] || 'unknown';
+    const agentId = savedState?.agent_id || 'none';
+    const stale = !savedState || isStale(savedState, staleAfterMs);
+
+    lines.push(`#### ${mate.name}`);
+    lines.push(`- Agent ID: ${agentId}${stale ? ' (STALE — spawn fresh)' : ''}`);
+    lines.push(`- Branch: ${resolved.branch}`);
+    lines.push(`- Worktree: ${wtPath}`);
+
+    if (stale || agentId === 'none') {
+      lines.push(`- Action: Spawn fresh with prompt below`);
+      lines.push(`- model: "${resolved.model || 'sonnet'}"`);
+      lines.push(`- mode: "${resolved.mode || 'bypassPermissions'}"`);
+      lines.push('');
+      lines.push('```');
+      lines.push(generateTeammatePrompt(resolved, wtPath, projectRoot));
+      lines.push('```');
+    } else {
+      lines.push(`- Action: Resume with agent_id="${agentId}"`);
+      lines.push(`- Resume prompt:`);
+      lines.push('');
+      lines.push('```');
+      lines.push(generateResumeTeammatePrompt(resolved, wtPath, projectRoot));
+      lines.push('```');
+    }
+    lines.push('');
+  }
+
+  lines.push('### Step 3: Assign Tasks');
+  lines.push('After all teammates are running, create tasks and assign them.');
+
+  return lines.join('\n');
+}
+
+/**
+ * Generate a fresh launch prompt for a new team session.
+ */
+function generateFreshPrompt(team, worktreePaths, projectRoot) {
+  const lines = [
+    `## Team Launch: ${team.name}`,
+    '',
+    '### Step 1: Create Team',
+    `Use TeamCreate with team_name="${team.name}"`,
+    '',
+    '### Step 2: Create Tasks',
+    'Create one task per teammate describing their focus area:',
+    '',
+  ];
+
+  for (const mate of team.teammates) {
+    const resolved = resolveRole(mate);
+    lines.push(`- Task for **${mate.name}**: ${resolved.focus || 'See teammate prompt for details'}`);
+  }
+
+  lines.push('');
+  lines.push('### Step 3: Spawn Teammates');
+  lines.push('Spawn all teammates in parallel using the Task tool with run_in_background=true.');
+  lines.push('');
+
+  for (const mate of team.teammates) {
+    const resolved = resolveRole(mate);
+    const wtPath = worktreePaths[mate.name] || 'unknown';
+    lines.push(`#### ${mate.name}`);
+    lines.push('```');
+    lines.push(`Task tool parameters:`);
+    lines.push(`  name: "${mate.name}"`);
+    lines.push(`  team_name: "${team.name}"`);
+    lines.push(`  subagent_type: "${resolved.subagent_type || 'general-purpose'}"`);
+    lines.push(`  mode: "${resolved.mode || 'bypassPermissions'}"`);
+    lines.push(`  model: "${resolved.model || 'sonnet'}"`);
+    lines.push(`  run_in_background: true`);
+    lines.push(`  prompt: |`);
+    lines.push(indent(generateTeammatePrompt(resolved, wtPath, projectRoot), 4));
+    lines.push('```');
+    lines.push('');
+  }
+
+  lines.push('### Step 4: Assign Tasks');
+  lines.push('Use TaskUpdate to assign each task to the corresponding teammate by name.');
+
+  return lines.join('\n');
+}
+
+/**
+ * Generate the prompt for an individual teammate.
+ */
+function generateTeammatePrompt(mate, worktreePath, projectRoot) {
+  const focus = (mate.focus || '')
+    .replace(/\{WORKTREE_PATH\}/g, worktreePath)
+    .replace(/\{PROJECT_ROOT\}/g, projectRoot)
+    .replace(/\{TEAMMATE_NAME\}/g, mate.name);
+
+  const lines = [
+    `# Identity`,
+    `You are "${mate.name}" — a teammate working on branch "${mate.branch}"${mate.crew && mate.crew !== 'default' ? ` (crew: ${mate.crew})` : ''}.`,
+    '',
+    `# Working Directory`,
+    `Your worktree is at: ${worktreePath}`,
+    '',
+    '# Path Rules',
+    '| Action | Correct | Wrong |',
+    '|--------|---------|-------|',
+    `| Read/Write files | ${worktreePath}/... | ${projectRoot}/... |`,
+    `| Run commands | cd ${worktreePath} first | Commands in ${projectRoot} |`,
+    `| Create new files | ${worktreePath}/src/... | ${projectRoot}/src/... |`,
+    '',
+    `CRITICAL: ALL file operations MUST use paths starting with ${worktreePath}/`,
+    `NEVER use ${projectRoot}/ — that is the lead\'s project root.`,
+    '',
+    '# Focus',
+    focus,
+    '',
+    '# Discovery Sharing',
+    'When you discover something important (architectural patterns, API behavior, gotchas, design decisions), share it with the team:',
+    '',
+    '```bash',
+    'bash $HOME/.claude/cck/tools/context-query/context-query.sh save crew/_shared/discoveries "Title" "Summary"',
+    '```',
+    '',
+    'Examples:',
+    '- Architectural pattern: `save crew/_shared/discoveries "Hooks use ESM imports" "All hooks use ES modules, not CommonJS"`',
+    '- API behavior: `save crew/_shared/discoveries "Capsule namespace format" "Project-scoped: proj/{hash}/crew/{name}/session"`',
+    '- Gotcha: `save crew/_shared/discoveries "Worktree CWD issue" "Teammates inherit main CWD, need absolute paths"`',
+    '',
+    '# Task Workflow',
+    '1. Read your assigned task via TaskGet',
+    '2. Mark it in_progress via TaskUpdate',
+    '3. Do the work in your worktree',
+    '4. When done, mark the task completed via TaskUpdate',
+    '5. Check TaskList for more pending tasks',
+    '6. Send a message to the team lead when you finish all tasks',
+  ];
+
+  return lines.join('\n');
+}
+
+/**
+ * Generate a resume prompt for an individual teammate.
+ * Includes full identity context plus previous session info.
+ */
+function generateResumeTeammatePrompt(mate, worktreePath, projectRoot) {
+  const focus = (mate.focus || '')
+    .replace(/\{WORKTREE_PATH\}/g, worktreePath)
+    .replace(/\{PROJECT_ROOT\}/g, projectRoot)
+    .replace(/\{TEAMMATE_NAME\}/g, mate.name);
+
+  const lines = [
+    `# Identity`,
+    `You are "${mate.name}" — a teammate working on branch "${mate.branch}"${mate.crew && mate.crew !== 'default' ? ` (crew: ${mate.crew})` : ''}.`,
+    '',
+    `# Working Directory`,
+    `Your worktree is at: ${worktreePath}`,
+    '',
+    '# Path Rules',
+    '| Action | Correct | Wrong |',
+    '|--------|---------|-------|',
+    `| Read/Write files | ${worktreePath}/... | ${projectRoot}/... |`,
+    `| Run commands | cd ${worktreePath} first | Commands in ${projectRoot} |`,
+    `| Create new files | ${worktreePath}/src/... | ${projectRoot}/src/... |`,
+    '',
+    `CRITICAL: ALL file operations MUST use paths starting with ${worktreePath}/`,
+    `NEVER use ${projectRoot}/ — that is the lead\'s project root.`,
+    '',
+    '# Resume Context',
+    'You are resuming from a previous session. Your previous work context is available via Capsule.',
+    'Use the context-query tool to retrieve your previous session context:',
+    '```bash',
+    `bash $HOME/.claude/cck/tools/context-query/context-query.sh files crew/${mate.name}`,
+    '```',
+    '',
+    '# Focus',
+    focus,
+    '',
+    '# Discovery Sharing',
+    'When you discover something important (architectural patterns, API behavior, gotchas, design decisions), share it with the team:',
+    '',
+    '```bash',
+    'bash $HOME/.claude/cck/tools/context-query/context-query.sh save crew/_shared/discoveries "Title" "Summary"',
+    '```',
+    '',
+    'Examples:',
+    '- Architectural pattern: `save crew/_shared/discoveries "Hooks use ESM imports" "All hooks use ES modules, not CommonJS"`',
+    '- API behavior: `save crew/_shared/discoveries "Capsule namespace format" "Project-scoped: proj/{hash}/crew/{name}/session"`',
+    '- Gotcha: `save crew/_shared/discoveries "Worktree CWD issue" "Teammates inherit main CWD, need absolute paths"`',
+    '',
+    '# Task Workflow',
+    '1. Check TaskList to see pending tasks',
+    '2. If you have an assigned task, read it via TaskGet',
+    '3. Mark it in_progress via TaskUpdate',
+    '4. Do the work in your worktree',
+    '5. When done, mark the task completed via TaskUpdate',
+    '6. Check TaskList for more pending tasks',
+    '7. Send a message to the team lead when you finish all tasks',
+  ];
+
+  return lines.join('\n');
+}
+
+/**
+ * Indent every line of text by N spaces.
+ */
+function indent(text, spaces) {
+  const pad = ' '.repeat(spaces);
+  return text.split('\n').map(line => pad + line).join('\n');
+}

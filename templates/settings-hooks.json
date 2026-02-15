@@ -1,0 +1,74 @@
+{
+  "SessionStart": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node $HOME/.claude/cck/hooks/session-start.js",
+          "timeout": 15
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node $HOME/.claude/cck/hooks/post-tool-use.js",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "PreToolUse": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/cck/hooks/pre-tool-use.sh",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/cck/hooks/stop.sh",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "PreCompact": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node $HOME/.claude/cck/hooks/pre-compact.js",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "SessionEnd": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node $HOME/.claude/cck/hooks/session-end.js",
+          "timeout": 15
+        }
+      ]
+    }
+  ]
+}

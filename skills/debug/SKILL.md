@@ -48,10 +48,7 @@ You are a **Debug Orchestrator** responsible for systematic error resolution usi
 
 **Commands**:
 ```bash
-# Check recent changes
-cat .claude/capsule.toon | grep "FILES"
-
-# Git diff
+# Git diff (check recent changes)
 git diff --stat
 git log -5 --oneline
 
@@ -196,8 +193,7 @@ Edit(
   new_string="[corrected code]"
 )
 
-# Log the fix
-bash .claude/hooks/log-discovery.sh "bug" "Fixed X by addressing Y root cause"
+# Fix applied — Capsule hooks capture file operations automatically
 ```
 
 **Deliverable**: Fix applied addressing root cause
@@ -249,49 +245,18 @@ Provide verdict: APPROVE or REQUEST_CHANGES
 
 4. **Impact Analysis**
    ```bash
-   bash .claude/tools/impact-analysis/impact-analysis.sh <fixed-file>
+   bash $HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh <fixed-file>
    ```
 
-5. **Persist Knowledge**
-   ```bash
-   bash .claude/hooks/log-discovery.sh "bug" "Error X caused by Y, fixed by Z"
-   bash .claude/hooks/log-discovery.sh "decision" "Chose approach A over B because..."
-   ```
-
-**Deliverable**: Verified fix with no regressions, knowledge persisted
+**Deliverable**: Verified fix with no regressions
 
 ---
 
 ## Integration Points
 
-### With Memory Graph
+### With Capsule Context
 
-**Check for past similar errors** (Phase 1: Capture):
-```bash
-bash .claude/tools/memory-graph/memory-query.sh --search "error message keywords"
-```
-- Have we seen this before?
-- What was the fix?
-- Recurring pattern?
-
-**Store error resolution** (Phase 5: Verify):
-```bash
-bash .claude/hooks/log-discovery.sh "bug" "TypeError in X function: forgot null check"
-```
-
-### With Capsule
-
-**Check recent changes** (Phase 1: Capture):
-```bash
-cat .claude/capsule.toon | grep -A 10 "FILES"
-```
-- What files were recently edited?
-- Correlation with error timing?
-
-**Log fix details** (Phase 5: Verify):
-```bash
-bash .claude/hooks/log-discovery.sh "bug" "Fixed by adding validation in line 42"
-```
+Context from previous sessions is automatically injected at session start by `session-start.js`. Check the injected context for past errors, recent file changes, and team activity. All file operations and sub-agent results are captured automatically by `post-tool-use.js`.
 
 ### With Other Skills
 

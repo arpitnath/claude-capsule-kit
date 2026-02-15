@@ -239,13 +239,9 @@ gh issue create \
   --label "refactor,technical-debt,priority:low"
 ```
 
-## Integration with Claude Capsule Kit
+## Integration with Capsule Kit
 
-When creating issues, log them as discoveries:
-```bash
-./.claude/hooks/log-discovery.sh "decision" \
-  "Created GitHub issue #123 for auth token bug"
-```
+Issue creation and tracking are automatically captured by Capsule hooks (post-tool-use.js).
 
 ## Example Questions You Can Answer
 

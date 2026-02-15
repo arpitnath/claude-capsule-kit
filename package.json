@@ -1,0 +1,67 @@
+{
+  "name": "claude-capsule-kit",
+  "version": "3.0.0",
+  "type": "module",
+  "description": "A toolkit that makes Claude Code better at engineering — session memory, dependency tools, specialist agents, and crew teams",
+  "bin": {
+    "cck": "./bin/cck.js"
+  },
+  "files": [
+    "bin/",
+    "hooks/",
+    "tools/",
+    "!tools/*/bin/",
+    "!tools/**/*.go",
+    "!tools/**/go.mod",
+    "!tools/**/go.sum",
+    "!tools/**/Makefile",
+    "!tools/*/testdata/",
+    "!tools/*/test.sh",
+    "!tools/progressive-reader/install.sh",
+    "lib/",
+    "crew/lib/",
+    "agents/",
+    "skills/",
+    "commands/",
+    "scripts/postinstall.js",
+    "scripts/show-*.sh",
+    "docs/AGENT_ROUTING_GUIDE.md",
+    "docs/AGENT_TEAMS_WORKTREE_MODE.md",
+    "docs/BEST_PRACTICES.md",
+    "docs/SUPER_CLAUDE_SYSTEM_ARCHITECTURE.md",
+    "docs/SKILLS_ORCHESTRATION_ARCHITECTURE.md",
+    "docs/CAPSULE_DEGRADATION_RCA.md",
+    "docs/TOOL_ENFORCEMENT_REFERENCE.md",
+    "templates/"
+  ],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "anthropic",
+    "ai-agents",
+    "developer-tools",
+    "session-memory",
+    "dependency-analysis",
+    "crew-teams",
+    "git-worktrees",
+    "hooks",
+    "sub-agents",
+    "blink-query"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitnath/claude-capsule-kit.git"
+  },
+  "homepage": "https://github.com/arpitnath/claude-capsule-kit#readme",
+  "author": "Arpit Nath",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "blink-query": "latest"
+  },
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js"
+  }
+}

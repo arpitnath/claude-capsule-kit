@@ -243,7 +243,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Testing
 
-- Verified in super-claude-kit: 15 files, 0.05s scan time
+- Verified in claude-capsule-kit: 15 files, 0.05s scan time
 - Verified in Mid-size Repository: 1,228 files, 2.97s scan time
 - All 4 dependency tools tested with both absolute and relative paths
 
@@ -414,4 +414,4 @@ bash .claude/scripts/update-super-claude.sh
 
 - [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
-- [Claude Capsule Kit Repository](https://github.com/arpitnath/super-claude-kit)
+- [Claude Capsule Kit Repository](https://github.com/arpitnath/claude-capsule-kit)

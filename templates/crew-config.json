@@ -1,0 +1,21 @@
+{
+  "team": {
+    "name": "my-team",
+    "lead": {
+      "model": "sonnet"
+    },
+    "teammates": [
+      {
+        "name": "teammate-1",
+        "branch": "feature/my-feature",
+        "worktree": true,
+        "role": "developer",
+        "focus": "Describe what this teammate should work on."
+      }
+    ]
+  },
+  "project": {
+    "main_branch": "main"
+  },
+  "stale_after_hours": 4
+}

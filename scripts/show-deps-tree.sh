@@ -1,17 +1,20 @@
 #!/bin/bash
-# Dependency Tree Visualization (like git log --graph)
+# Dependency Tree Visualization (v3 - uses query-deps tool)
 # Shows file dependencies in tree format with colors
 
 FILE="${1:-}"
-DEP_GRAPH=".claude/dep-graph.toon"
 
 if [ -z "$FILE" ]; then
   echo "Usage: show-deps-tree.sh <file-path>"
   exit 1
 fi
 
-if [ ! -f "$DEP_GRAPH" ]; then
-  echo "No dependency graph found. Run dependency-scanner first."
+# In v3, use the query-deps tool instead of dep-graph.toon
+QUERY_DEPS_TOOL="$HOME/.claude/cck/tools/query-deps/query-deps.sh"
+
+if [ ! -f "$QUERY_DEPS_TOOL" ]; then
+  echo "query-deps tool not found at $QUERY_DEPS_TOOL"
+  echo "Make sure CCK v3 is installed: npm install -g claude-capsule-kit && cck setup"
   exit 1
 fi
 

@@ -2189,12 +2189,12 @@ def handle_user_request(prompt):
 
 # 1. Dependency Graph
 skill_query_dependencies() {
-  bash .claude/tools/query-deps/query-deps.sh "$FILE"
+  bash $HOME/.claude/cck/tools/query-deps/query-deps.sh "$FILE"
 }
 
 # 2. Memory Graph
 skill_query_memory() {
-  python3 .claude/tools/memory-graph/lib/query.py \
+  python3 $HOME/.claude/cck/tools/memory-graph/lib/query.py \
     --query "$SEARCH" \
     --format json
 }

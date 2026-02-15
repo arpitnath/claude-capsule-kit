@@ -40,24 +40,13 @@ You are a **Workflow Orchestrator** responsible for guiding systematic execution
 **Goal**: Build complete context before acting
 
 **Steps**:
-1. **Check Memory Graph**
-   ```bash
-   bash .claude/tools/memory-graph/memory-query.sh --recent 10
-   bash .claude/tools/memory-graph/memory-query.sh --search "<topic>"
-   ```
-   - Have we solved similar problems before?
-   - What decisions were made previously?
-   - Any relevant discoveries?
+1. **Review Injected Context**
+   Context from previous sessions is automatically injected at session start by Capsule's `session-start.js` hook. Review it for:
+   - Past decisions and discoveries
+   - Recently accessed files
+   - Team activity (in crew mode)
 
-2. **Check Capsule State**
-   ```bash
-   cat .claude/capsule.toon | grep -A 5 "FILES\|TASK\|DISCOVERY"
-   ```
-   - Files already accessed this session
-   - Current task context
-   - Recent discoveries
-
-3. **Use Progressive Reader for Large Files**
+2. **Use Progressive Reader for Large Files**
    ```bash
    $HOME/.claude/bin/progressive-reader --path <file> --list
    $HOME/.claude/bin/progressive-reader --path <file> --chunk <N>
@@ -234,19 +223,13 @@ Task(subagent_type="architecture-explorer", prompt="Understand flow Z")
 
 4. **Impact Analysis**
    ```bash
-   bash .claude/tools/impact-analysis/impact-analysis.sh <changed-file>
+   bash $HOME/.claude/cck/tools/impact-analysis/impact-analysis.sh <changed-file>
    ```
    - Check affected files
    - Verify risk assessment
    - Update tests if needed
 
-5. **Persist Knowledge**
-   ```bash
-   bash .claude/hooks/log-discovery.sh "architecture" "Discovered X pattern in Y module"
-   bash .claude/hooks/log-discovery.sh "decision" "Chose approach Z because of tradeoff A"
-   ```
-
-**Deliverable**: Verified, tested, documented solution with knowledge persisted
+**Deliverable**: Verified, tested, documented solution
 
 ---
 
@@ -259,30 +242,9 @@ Task(subagent_type="architecture-explorer", prompt="Understand flow Z")
 - **With /debug**: Workflow orchestrates debugging process
 - **Before /refactor-safely**: Use workflow to plan refactoring
 
-### With Memory Graph
+### With Capsule Context
 
-**Read from memory** (Phase 1: Understand):
-```bash
-bash .claude/tools/memory-graph/memory-query.sh --search "authentication"
-```
-
-**Write to memory** (Phase 5: Verify):
-```bash
-bash .claude/hooks/log-discovery.sh "decision" "Used JWT instead of sessions for scalability"
-```
-
-### With Capsule
-
-**Check before redundant work** (Phase 1: Understand):
-```bash
-cat .claude/capsule.toon | grep "FILES"
-# Don't re-read files already in capsule
-```
-
-**Log discoveries** (throughout):
-```bash
-bash .claude/hooks/log-discovery.sh "insight" "Module X depends on Y in unexpected way"
-```
+Context from previous sessions is automatically injected by `session-start.js`. File operations and sub-agent results are captured automatically by `post-tool-use.js`. No manual logging needed.
 
 ---
 
@@ -370,11 +332,10 @@ bash .claude/hooks/log-discovery.sh "insight" "Module X depends on Y in unexpect
 ### Workflow Execution
 
 ✅ All 5 phases completed (not skipped)
-✅ Context checked before work (memory + capsule)
+✅ Context checked before work (Capsule injection + files)
 ✅ Strategy documented (tools + agents + approach)
 ✅ Plan created with TodoWrite
 ✅ Verification performed (tests + review)
-✅ Knowledge persisted to memory-graph
 
 ### Quality Signals
 

@@ -73,11 +73,16 @@ func FormatChunkList(chunks []chunker.Chunk, filePath string) string {
 			typeInfo = fmt.Sprintf("%s: %s", chunk.Type, chunk.Name)
 		}
 
-		output.WriteString(fmt.Sprintf("Chunk %d/%d (lines %d-%d): %s\n",
-			i+1, len(chunks), chunk.StartLine, chunk.EndLine, typeInfo))
+		indent := ""
+		if chunk.Depth > 0 {
+			indent = strings.Repeat("  ", chunk.Depth)
+		}
+
+		output.WriteString(fmt.Sprintf("%sChunk %d/%d (lines %d-%d): %s\n",
+			indent, i+1, len(chunks), chunk.StartLine, chunk.EndLine, typeInfo))
 
 		if chunk.Context != "" {
-			output.WriteString(fmt.Sprintf("  %s\n", truncate(chunk.Context, 70)))
+			output.WriteString(fmt.Sprintf("%s  %s\n", indent, truncate(chunk.Context, 70)))
 		}
 	}
 
