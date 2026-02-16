@@ -149,6 +149,7 @@ function setup() {
     if (!settings.statusLine) {
       settings.statusLine = {};
     }
+    settings.statusLine.type = 'command';
     settings.statusLine.command = `bash ${statuslineDst}`;
     console.log('  Statusline installed');
   }
