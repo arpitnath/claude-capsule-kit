@@ -137,10 +137,6 @@ cat .crew-config.json
 
 **Step 1: Run crew start**
 ```bash
-node $HOME/.claude/cck/bin/cck.js crew start [profile]
-```
-Or if cck is in PATH:
-```bash
 cck crew start [profile]
 ```
 

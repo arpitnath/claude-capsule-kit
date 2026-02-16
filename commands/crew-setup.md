@@ -21,7 +21,12 @@ If agent teams are NOT enabled:
 ## Step 2: Check CCK Installation
 
 ```bash
-node $HOME/.claude/cck/bin/cck.js status 2>/dev/null || echo "CCK not installed. Run: npx claude-capsule-kit setup"
+if [ -d "$HOME/.claude/cck/hooks" ] && [ -f "$HOME/.claude/cck/package.json" ]; then
+  VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$HOME/.claude/cck/package.json','utf8')).version)" 2>/dev/null || echo "unknown")
+  echo "CCK installed: v$VERSION"
+else
+  echo "CCK not installed"
+fi
 ```
 
 If CCK is not installed, guide the user:
