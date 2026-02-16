@@ -113,6 +113,28 @@ function setup() {
       // Start fresh if settings.json is malformed
     }
   }
+
+  // Clean stale CCK hooks from previous versions before merging new ones.
+  // Old v2 hooks referenced paths like .claude/hooks/session-start.sh or
+  // .claude/cck/hooks/pre-task-analysis.sh that no longer exist in v3.
+  if (settings.hooks) {
+    const cckPathPatterns = ['.claude/hooks/', '.claude/cck/hooks/'];
+    for (const [event, matchers] of Object.entries(settings.hooks)) {
+      if (!Array.isArray(matchers)) continue;
+      for (const matcher of matchers) {
+        if (!matcher.hooks || !Array.isArray(matcher.hooks)) continue;
+        matcher.hooks = matcher.hooks.filter(hook => {
+          const cmd = hook.command || '';
+          const isCckHook = cckPathPatterns.some(p => cmd.includes(p));
+          return !isCckHook; // Keep non-CCK hooks, remove old CCK hooks
+        });
+      }
+      // Remove matchers with no hooks left
+      settings.hooks[event] = matchers.filter(m => m.hooks && m.hooks.length > 0);
+      if (settings.hooks[event].length === 0) delete settings.hooks[event];
+    }
+  }
+
   // Merge CCK hooks into existing hooks (preserve user's non-CCK hooks)
   if (!settings.hooks) {
     settings.hooks = {};
@@ -137,8 +159,20 @@ function setup() {
 
   const claudeMdSrc = join(PKG_ROOT, 'templates', 'CLAUDE.md');
   if (existsSync(claudeMdSrc)) {
-    cpSync(claudeMdSrc, CLAUDE_MD_PATH);
-    console.log('  CLAUDE.md installed');
+    if (existsSync(CLAUDE_MD_PATH)) {
+      const existing = readFileSync(CLAUDE_MD_PATH, 'utf8');
+      // Only overwrite if it's a CCK-managed CLAUDE.md (has our header)
+      if (existing.includes('# Capsule Kit') || existing.includes('# Claude Capsule Kit') || existing.includes('capsule.db')) {
+        cpSync(claudeMdSrc, CLAUDE_MD_PATH);
+        console.log('  CLAUDE.md updated');
+      } else {
+        console.log('  CLAUDE.md skipped (user-customized, not overwriting)');
+        console.log('  CCK CLAUDE.md saved to: ~/.claude/cck/templates/CLAUDE.md');
+      }
+    } else {
+      cpSync(claudeMdSrc, CLAUDE_MD_PATH);
+      console.log('  CLAUDE.md installed');
+    }
   }
 
   mkdirSync(BIN_DIR, { recursive: true });
@@ -163,6 +197,31 @@ function setup() {
     }
   } catch {
     console.log('  Go not found, skipping binary builds (optional)');
+  }
+
+  // Detect old per-project .claude/ artifacts from v1/v2
+  const localClaudeDir = resolve(process.cwd(), '.claude');
+  const v2Markers = [
+    join(localClaudeDir, '.super-claude-version'),
+    join(localClaudeDir, 'capsule.db'),
+    join(localClaudeDir, 'blink.db'),
+  ];
+  const hasV2Artifacts = v2Markers.some(p => existsSync(p));
+  const hasLocalHooks = existsSync(join(localClaudeDir, 'hooks'));
+  const hasLocalAgents = existsSync(join(localClaudeDir, 'agents'));
+
+  if (hasV2Artifacts || hasLocalHooks || hasLocalAgents) {
+    console.log('');
+    console.log('  Migration note: Found old per-project .claude/ artifacts.');
+    console.log('  CCK v3 is fully global — project-local .claude/ files are no longer used.');
+    if (existsSync(join(localClaudeDir, 'capsule.db')) || existsSync(join(localClaudeDir, 'blink.db'))) {
+      console.log('  Your old session data in .claude/capsule.db can be safely removed.');
+      console.log('  New data is stored in ~/.claude/capsule.db');
+    }
+    if (hasLocalHooks) {
+      console.log('  Old hooks in .claude/hooks/ are inactive — hooks now run from ~/.claude/cck/hooks/');
+    }
+    console.log('  To clean up: rm -rf .claude/hooks .claude/tools .claude/agents .claude/skills .claude/scripts .claude/lib .claude/.super-claude-version');
   }
 
   console.log('');
@@ -248,14 +307,30 @@ function teardown() {
   if (existsSync(SETTINGS_PATH)) {
     try {
       const settings = JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'));
-      delete settings.hooks;
+      // Remove only CCK hooks, preserve user's non-CCK hooks
+      if (settings.hooks) {
+        const cckPathPatterns = ['.claude/hooks/', '.claude/cck/hooks/'];
+        for (const [event, matchers] of Object.entries(settings.hooks)) {
+          if (!Array.isArray(matchers)) continue;
+          for (const matcher of matchers) {
+            if (!matcher.hooks || !Array.isArray(matcher.hooks)) continue;
+            matcher.hooks = matcher.hooks.filter(hook => {
+              const cmd = hook.command || '';
+              return !cckPathPatterns.some(p => cmd.includes(p));
+            });
+          }
+          settings.hooks[event] = matchers.filter(m => m.hooks && m.hooks.length > 0);
+          if (settings.hooks[event].length === 0) delete settings.hooks[event];
+        }
+        if (Object.keys(settings.hooks).length === 0) delete settings.hooks;
+      }
       // Remove statusline if it points to our script
       if (settings.statusLine?.command?.includes('statusline-command.sh')) {
         delete settings.statusLine;
         console.log('  Removed statusline from settings.json');
       }
       writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n');
-      console.log('  Removed hooks from settings.json');
+      console.log('  Removed CCK hooks from settings.json');
     } catch {
       console.warn('  Warning: Could not update settings.json');
     }
